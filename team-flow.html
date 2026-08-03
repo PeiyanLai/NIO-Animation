@@ -127,46 +127,41 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+html, body { height: 100%; }
 .wrap {
-  max-width: 1480px;
-  margin: 0 auto;
-  padding: 26px 20px 52px;
+  width: 100%;
+  height: 100dvh;
+  margin: 0;
+  padding: 10px 12px 12px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
 }
 
 /* ─── header ─────────────────────────────────────────────────────────── */
 .masthead {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 12px 20px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--line);
+  gap: 4px 20px;
 }
+.mrow { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .eyebrow {
   font-family: var(--f-data);
-  font-size: 11px;
-  letter-spacing: .16em;
+  font-size: 10.5px;
+  letter-spacing: .14em;
   text-transform: uppercase;
   color: var(--ink-4);
-  margin: 0 0 6px;
+  margin: 0;
 }
+@media (max-width: 760px) { .stats { display: none; } }
 .masthead h1 {
-  font-size: clamp(21px, 3vw, 28px);
-  line-height: 1.15;
+  font-size: 18px;
+  line-height: 1.2;
   margin: 0;
   color: var(--ink-1);
   letter-spacing: -.01em;
-  text-wrap: balance;
-}
-.masthead .sub {
-  margin: 7px 0 0;
-  max-width: 74ch;
-  color: var(--ink-3);
-  font-size: 13.5px;
 }
 .stats {
   display: flex;
@@ -223,12 +218,16 @@ body {
 .fchip:focus-visible, .node:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .reset-btn { margin-left: auto; }
 
-/* ─── 主区：画布 + 详情面板 ──────────────────────────────────────────── */
-.deck { display: flex; gap: 14px; align-items: stretch; }
-@media (max-width: 960px) { .deck { flex-direction: column; } }
+/* ─── 主区：画布铺满，详情浮层 ───────────────────────────────────────── */
+.stage-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
 
 .canvas-scroll {
-  flex: 1 1 720px;
+  flex: 1;
   min-width: 0;
   overflow: auto;
   border: 1px solid var(--line);
@@ -345,21 +344,37 @@ body {
 }
 .edge.hot text { fill: var(--accent); }
 
-/* 详情面板 */
+/* 详情浮层：覆盖在画布右上角，不占布局空间 */
 .panel {
-  flex: 0 0 308px;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: min(306px, calc(100% - 20px));
+  max-height: calc(100% - 20px);
+  overflow: auto;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--card);
-  box-shadow: var(--sh-card);
-  padding: 16px;
-  align-self: flex-start;
-  position: sticky;
-  top: 14px;
-  max-height: calc(100vh - 28px);
-  overflow: auto;
+  box-shadow: var(--sh-lift);
+  padding: 14px 16px 16px;
+  z-index: 30;
+  display: none;
 }
-@media (max-width: 960px) { .panel { position: static; flex: 1 1 auto; max-height: none; } }
+.panel.open { display: block; }
+.pclose {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  border: 0;
+  background: none;
+  color: var(--ink-4);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px;
+}
+.pclose:hover { color: var(--ink-1); }
+.pclose:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .panel .ph {
   font-family: var(--f-data);
   font-size: 11px;
@@ -469,10 +484,9 @@ body {
 <div class="wrap">
 
   <header class="masthead">
-    <div>
-      <p class="eyebrow">NIOFlow · 需求结构化拆解 · 2026-07-31</p>
+    <div class="mrow">
       <h1>对讲机组队功能 · 交互式用户流程图</h1>
-      <p class="sub">依据《对讲机组队功能及无网场景解决方案介绍》，按「用户类型 — 使用场景 — 依赖的端 / 系统」三维拆解。节点可自由拖拽调整布局，点击节点查看三维详情，上方筛选可按维度聚焦。</p>
+      <p class="eyebrow">NIOFlow · 需求拆解 · 2026-07-31</p>
     </div>
     <div class="stats">
       <span><b>3</b> 类用户</span>
@@ -512,7 +526,7 @@ body {
     <button class="fchip reset-btn" type="button" id="resetBtn">重置布局</button>
   </div>
 
-  <div class="deck">
+  <div class="stage-wrap">
 
     <div class="canvas-scroll" id="canvasScroll">
       <div class="canvas-outer" id="canvasOuter">
@@ -535,36 +549,14 @@ body {
     </div>
 
     <aside class="panel" id="panel">
+      <button class="pclose" id="panelClose" type="button" aria-label="关闭">×</button>
       <p class="ph">节点详情</p>
-      <div id="panelBody">
-        <p class="hint">点击任意节点，此处按「用户类型 — 使用场景 — 依赖端 / 系统」展示该步骤的三维信息。</p>
-        <div class="sec">
-          <div class="sl">用户类型</div>
-          <div class="row">
-            <span class="utag"><span class="dot dot-owner"></span>车主（发起人）</span>
-            <span class="utag"><span class="dot dot-mate"></span>品牌车队友</span>
-            <span class="utag"><span class="dot dot-frnd"></span>非品牌车朋友</span>
-          </div>
-        </div>
-        <div class="sec">
-          <div class="sl">依赖端 / 系统（全集）</div>
-          <div class="row">
-            <span class="dtag">商城</span><span class="dtag">车机 · 连接页/组队</span>
-            <span class="dtag">对讲机硬件</span><span class="dtag">方向盘按键</span>
-            <span class="dtag">云端 · 蜂窝网络</span><span class="dtag">手机 App</span>
-            <span class="dtag">账号系统</span>
-          </div>
-        </div>
-        <div class="sec">
-          <div class="sl">操作</div>
-          <p class="hint" style="margin:0">拖拽节点重新布局；单击看详情，双击直接编辑；点击连线可改标签/方向/删除；修改自动保存在本机。</p>
-        </div>
-      </div>
+      <div id="panelBody"></div>
     </aside>
 
   </div>
 
-  <p class="footnote"><b>关键约束（摘自原文）：</b>对讲上限 50 台车同时收播 · 对讲机硬件基本通信能力 5–8 公里 · 无网通信要求车辆配备对讲机硬件 · 桥接需要范围内至少一台有网车辆。</p>
+  
 
 </div>
 
@@ -649,6 +641,10 @@ body {
   var scroller = document.getElementById("canvasScroll");
   var svg = document.getElementById("edgeSvg");
   var panelBody = document.getElementById("panelBody");
+  var panelEl = document.getElementById("panel");
+
+  function openPanel() { panelEl.classList.add("open"); }
+  function hidePanel() { panelEl.classList.remove("open"); }
   var CW = 1360, CH = 850;
   var NS = "http://www.w3.org/2000/svg";
 
@@ -699,7 +695,10 @@ body {
     outer.style.width = (CW * S) + "px";
     outer.style.height = (CH * S) + "px";
   }
-  function fit() { setScale((scroller.clientWidth - 2) / CW, "fit"); }
+  function fit() {
+    var s = Math.max((scroller.clientWidth - 2) / CW, (scroller.clientHeight - 2) / CH);
+    setScale(s, "fit");
+  }
 
   /* ── 节点 DOM ───────────────────────────────────────────────────── */
   function renderNodeContent(n) {
@@ -907,37 +906,10 @@ body {
     parent.appendChild(s);
   }
 
-  function showHome() {
-    panelBody.innerHTML = "";
-    var hint = document.createElement("p");
-    hint.className = "hint";
-    hint.textContent = "点击任意节点，此处按「用户类型 — 使用场景 — 依赖端 / 系统」展示该步骤的三维信息。";
-    panelBody.appendChild(hint);
-    sec(panelBody, "用户类型", function (row) {
-      ["owner", "mate", "frnd"].forEach(function (u) {
-        var tag = document.createElement("span");
-        tag.className = "utag";
-        tag.innerHTML = '<span class="dot ' + USERS[u].dot + '"></span>' + USERS[u].name;
-        row.appendChild(tag);
-      });
-    });
-    sec(panelBody, "依赖端 / 系统（全集）", function (row) {
-      var all = {};
-      NODES.forEach(function (n) { n.deps.forEach(function (d) { all[d] = 1; }); });
-      Object.keys(all).forEach(function (d) {
-        var tag = document.createElement("span");
-        tag.className = "dtag";
-        tag.textContent = d;
-        row.appendChild(tag);
-      });
-    });
-    var op = document.createElement("p");
-    op.className = "meta-hint";
-    op.textContent = "拖拽节点重新布局；单击看详情，双击直接编辑；点击连线可改标签 / 方向 / 删除；「＋ 新增节点」添加步骤。所有修改自动保存在本机浏览器。";
-    panelBody.appendChild(op);
-  }
+  function showHome() { hidePanel(); }
 
   function showNode(n) {
+    openPanel();
     panelBody.innerHTML = "";
     var h3 = document.createElement("h3");
     h3.textContent = n.t;
@@ -1029,6 +1001,7 @@ body {
   }
 
   function showNodeForm(n, isNew) {
+    openPanel();
     panelBody.innerHTML = "";
     var h3 = document.createElement("h3");
     h3.textContent = isNew ? "新增节点" : "编辑节点";
@@ -1089,6 +1062,7 @@ body {
   }
 
   function showEdge(e) {
+    openPanel();
     panelBody.innerHTML = "";
     var a = byId[e.f], b = byId[e.t];
     var h3 = document.createElement("h3");
@@ -1292,6 +1266,7 @@ body {
   });
 
   document.getElementById("addNodeBtn").addEventListener("click", addNode);
+  document.getElementById("panelClose").addEventListener("click", function () { select(null); });
 
   document.getElementById("exportBtn").addEventListener("click", function () {
     var blob = new Blob([JSON.stringify(serialize(), null, 2)], { type: "application/json" });
