@@ -399,6 +399,69 @@ body {
   padding-top: 12px;
 }
 .footnote b { color: var(--ink-3); font-weight: 600; }
+
+/* ─── 编辑表单与连线选择 ─────────────────────────────────────────────── */
+.field { margin-top: 10px; }
+.field > label {
+  display: block;
+  font-family: var(--f-data);
+  font-size: 10.5px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-4);
+  margin-bottom: 4px;
+}
+.field input[type="text"], .field textarea, .field select {
+  width: 100%;
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  padding: 6px 9px;
+  font: inherit;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--ink-1);
+}
+.field textarea { min-height: 76px; resize: vertical; }
+.field input:focus-visible, .field textarea:focus-visible, .field select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.checks { display: flex; flex-wrap: wrap; gap: 6px; }
+.checks label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.checks input { accent-color: var(--accent); margin: 0; }
+.pbtns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+.pbtn {
+  border: 1px solid var(--line-2);
+  background: var(--card);
+  color: var(--ink-2);
+  border-radius: 8px;
+  padding: 6px 13px;
+  font-size: 12.5px;
+  font-family: inherit;
+  cursor: pointer;
+}
+.pbtn:hover { border-color: var(--accent); }
+.pbtn.primary {
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  border-color: transparent;
+  color: #FFFFFF;
+  font-weight: 600;
+}
+.pbtn.danger { color: var(--neg); border-color: #E0B4B4; }
+.pbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.canvas.linking .node { cursor: crosshair; }
+.canvas svg .hit { pointer-events: stroke; cursor: pointer; stroke: rgba(0,0,0,0); stroke-width: 16; fill: none; }
+.meta-hint { font-size: 11.5px; color: var(--ink-4); margin-top: 10px; }
 </style>
 </head>
 <body>
@@ -432,6 +495,12 @@ body {
       <button class="fchip" type="button" data-user="owner" aria-pressed="false"><span class="dot dot-owner"></span>车主（发起人）</button>
       <button class="fchip" type="button" data-user="mate" aria-pressed="false"><span class="dot dot-mate"></span>品牌车队友</button>
       <button class="fchip" type="button" data-user="frnd" aria-pressed="false"><span class="dot dot-frnd"></span>非品牌车朋友</button>
+    </div>
+    <div class="tgroup" role="group" aria-label="编辑">
+      <span class="tlabel">编辑</span>
+      <button class="fchip" type="button" id="addNodeBtn">＋ 新增节点</button>
+      <button class="fchip" type="button" id="exportBtn">导出 JSON</button>
+      <button class="fchip" type="button" id="restoreBtn">恢复默认</button>
     </div>
     <div class="tgroup" role="group" aria-label="缩放">
       <span class="tlabel">缩放</span>
@@ -488,7 +557,7 @@ body {
         </div>
         <div class="sec">
           <div class="sl">操作</div>
-          <p class="hint" style="margin:0">拖拽节点可重新布局，连线自动跟随；「重置布局」恢复初始位置。</p>
+          <p class="hint" style="margin:0">拖拽节点重新布局；单击看详情，双击直接编辑；点击连线可改标签/方向/删除；修改自动保存在本机。</p>
         </div>
       </div>
     </aside>
@@ -510,68 +579,70 @@ body {
     team:  { name: "全体成员",       dot: "dot-team" }
   };
   var SCENS = { main: "主流程", s1: "场景一 · 无网通信", s2: "场景二 · 非品牌车加入" };
+  var KEY = "teamflow-doc-v1";
 
-  var NODES = [
-    { id: "n1", x: 56,   y: 118, u: ["owner"], scen: ["main", "s2"], deps: ["商城"],
-      t: "商城购买对讲机", s: "组队增强能力的前提",
-      d: "用户在商城购买对讲机硬件。这是后续车机连接、无网通信与非品牌车方案的共同前提。" },
-    { id: "n2", x: 312,  y: 118, u: ["owner"], scen: ["main", "s1"], deps: ["车机 · 连接页", "对讲机硬件"],
-      t: "车机连接对讲机", s: "专门提供的连接页面",
-      d: "拿到对讲机后，先在车机上通过专门提供的页面完成与对讲机的连接配对。" },
-    { id: "n3", x: 56,   y: 252, u: ["owner"], scen: ["main"], deps: ["车机", "云端 · 蜂窝网络"],
-      t: "发起组队", s: "标准流程在两台车之间",
-      d: "连接建立后，由车主在车机上发起组队。标准的组队流程在两台车之间进行。" },
-    { id: "n4", x: 312,  y: 252, u: ["mate"], scen: ["main"], deps: ["车机", "云端 · 蜂窝网络"],
-      t: "队友加入组队", s: "另一台品牌车确认加入",
-      d: "另一台品牌车辆通过车机加入，两车完成标准组队，形成小队关系。" },
-    { id: "n5", x: 592,  y: 128, u: ["team"], scen: ["main"], deps: ["车机", "云端 · 蜂窝网络"],
-      t: "小队信息共享", s: "定位 / 车辆信息 / 导航目的地",
-      d: "组队完成后，小队内共享：实时定位、车辆信息、导航目的地——便于观察队友车辆是否偏离路线。" },
-    { id: "n6", x: 848,  y: 128, u: ["team"], scen: ["main"], deps: ["方向盘按键", "车机", "云端 · 蜂窝网络"],
-      t: "方向盘按键对讲", s: "按下讲话，再按发送 · 上限 50 台",
-      d: "有网络时，按下方向盘中间按键开始讲话，讲完再次按下确认发送。队伍中所有车辆（上限 50 台）同时收到并播放这条语音。" },
-    { id: "n7", x: 1104, y: 128, u: ["team"], scen: ["main", "s1"], deps: ["云端 · 蜂窝网络"], kind: "pain",
-      t: "痛点 · 复杂地形断网", s: "断网车辆无法收发消息",
-      d: "进入网络信号复杂的地形后，无网车辆无法交流——某台车断网就收不到其他人发送的信息。对讲是实时信号功能，网络成为单点依赖。" },
-    { id: "n8", x: 592,  y: 396, u: ["team"], scen: ["s1"], deps: ["对讲机硬件"],
-      t: "对讲机硬件组网", s: "基本通信能力 5–8 公里",
-      d: "无网情况下由对讲机硬件组网，基本通信能力 5 到 8 公里；范围内的语音以硬件广播方式收发。" },
-    { id: "n9", x: 848,  y: 396, u: ["team"], scen: ["s1"], deps: ["车机", "云端 · 蜂窝网络", "对讲机硬件"],
-      t: "有网车辆＝桥接节点", s: "云端 ↔ 硬件网中继，形成长队伍链",
-      d: "范围内只要有一台车有网络，它就可以作为桥接节点，在云端与硬件网之间中继，从而形成很长的队伍链。" },
-    { id: "n10", x: 1104, y: 396, u: ["team"], scen: ["s1"], deps: ["对讲机硬件"],
-      t: "无网车辆硬件收发", s: "收 / 发都经对讲机硬件",
-      d: "无网用户接收队友消息、向外发送语音，都必须经过对讲机硬件。硬件对讲的语音信号可被范围内的其他车辆全部接收。" },
-    { id: "n11", x: 56,  y: 664, u: ["owner"], scen: ["s2"], deps: ["对讲机硬件"],
-      t: "车主转交对讲机", s: "朋友的车没有组队功能",
-      d: "同行朋友的车不是品牌车、没有组队功能时，车主可将车上已有的对讲机硬件交给朋友。" },
-    { id: "n12", x: 312, y: 664, u: ["frnd"], scen: ["s2"], deps: ["手机 App", "账号系统"],
-      t: "下载 App · 绑定新账号", s: "对讲机与新账户绑定",
-      d: "朋友拿到对讲机后，下载 App 并绑定一个新的账户。" },
-    { id: "n13", x: 568, y: 664, u: ["frnd"], scen: ["s2"], deps: ["手机 App", "对讲机硬件", "云端 · 蜂窝网络"],
-      t: "对讲机成为组队节点", s: "类似车机系统，与车主组队",
-      d: "绑定成功后，这台对讲机就变得类似车机系统，可以与车主形成组队关系。" },
-    { id: "n14", x: 828, y: 664, u: ["frnd"], scen: ["s2"], deps: ["手机 App", "对讲机硬件"], kind: "note", wide: true,
-      t: "能力边界", s: "有硬件可无网通信；无硬件仅有网通话",
-      d: "同伴车辆没有对讲机硬件时，无法参与场景一的无网通信；但有网络时仍能通过 App 与对讲机实现远距离通话。该功能因此能服务于并非全部由品牌车辆组成的混编车队。" }
-  ];
-
-  var EDGES = [
-    { f: "n1",  t: "n2" },
-    { f: "n2",  t: "n3" },
-    { f: "n3",  t: "n4",  l: "双车标准流程" },
-    { f: "n4",  t: "n5",  l: "组队完成" },
-    { f: "n5",  t: "n6" },
-    { f: "n6",  t: "n7",  l: "网络受限" },
-    { f: "n7",  t: "n8",  l: "无网时启用硬件" },
-    { f: "n8",  t: "n9",  l: "任一台有网即可" },
-    { f: "n9",  t: "n10" },
-    { f: "n1",  t: "n11", l: "可转交" },
-    { f: "n11", t: "n12" },
-    { f: "n12", t: "n13" },
-    { f: "n13", t: "n5",  l: "获得组队能力", bend: "left" },
-    { f: "n13", t: "n14" }
-  ];
+  var DEFAULT = {
+    nodes: [
+      { id: "n1", x: 56,   y: 118, u: ["owner"], scen: ["main", "s2"], deps: ["商城"],
+        t: "商城购买对讲机", s: "组队增强能力的前提",
+        d: "用户在商城购买对讲机硬件。这是后续车机连接、无网通信与非品牌车方案的共同前提。" },
+      { id: "n2", x: 312,  y: 118, u: ["owner"], scen: ["main", "s1"], deps: ["车机 · 连接页", "对讲机硬件"],
+        t: "车机连接对讲机", s: "专门提供的连接页面",
+        d: "拿到对讲机后，先在车机上通过专门提供的页面完成与对讲机的连接配对。" },
+      { id: "n3", x: 56,   y: 252, u: ["owner"], scen: ["main"], deps: ["车机", "云端 · 蜂窝网络"],
+        t: "发起组队", s: "标准流程在两台车之间",
+        d: "连接建立后，由车主在车机上发起组队。标准的组队流程在两台车之间进行。" },
+      { id: "n4", x: 312,  y: 252, u: ["mate"], scen: ["main"], deps: ["车机", "云端 · 蜂窝网络"],
+        t: "队友加入组队", s: "另一台品牌车确认加入",
+        d: "另一台品牌车辆通过车机加入，两车完成标准组队，形成小队关系。" },
+      { id: "n5", x: 592,  y: 128, u: ["team"], scen: ["main"], deps: ["车机", "云端 · 蜂窝网络"],
+        t: "小队信息共享", s: "定位 / 车辆信息 / 导航目的地",
+        d: "组队完成后，小队内共享：实时定位、车辆信息、导航目的地——便于观察队友车辆是否偏离路线。" },
+      { id: "n6", x: 848,  y: 128, u: ["team"], scen: ["main"], deps: ["方向盘按键", "车机", "云端 · 蜂窝网络"],
+        t: "方向盘按键对讲", s: "按下讲话，再按发送 · 上限 50 台",
+        d: "有网络时，按下方向盘中间按键开始讲话，讲完再次按下确认发送。队伍中所有车辆（上限 50 台）同时收到并播放这条语音。" },
+      { id: "n7", x: 1104, y: 128, u: ["team"], scen: ["main", "s1"], deps: ["云端 · 蜂窝网络"], kind: "pain",
+        t: "痛点 · 复杂地形断网", s: "断网车辆无法收发消息",
+        d: "进入网络信号复杂的地形后，无网车辆无法交流——某台车断网就收不到其他人发送的信息。对讲是实时信号功能，网络成为单点依赖。" },
+      { id: "n8", x: 592,  y: 396, u: ["team"], scen: ["s1"], deps: ["对讲机硬件"],
+        t: "对讲机硬件组网", s: "基本通信能力 5–8 公里",
+        d: "无网情况下由对讲机硬件组网，基本通信能力 5 到 8 公里；范围内的语音以硬件广播方式收发。" },
+      { id: "n9", x: 848,  y: 396, u: ["team"], scen: ["s1"], deps: ["车机", "云端 · 蜂窝网络", "对讲机硬件"],
+        t: "有网车辆＝桥接节点", s: "云端 ↔ 硬件网中继，形成长队伍链",
+        d: "范围内只要有一台车有网络，它就可以作为桥接节点，在云端与硬件网之间中继，从而形成很长的队伍链。" },
+      { id: "n10", x: 1104, y: 396, u: ["team"], scen: ["s1"], deps: ["对讲机硬件"],
+        t: "无网车辆硬件收发", s: "收 / 发都经对讲机硬件",
+        d: "无网用户接收队友消息、向外发送语音，都必须经过对讲机硬件。硬件对讲的语音信号可被范围内的其他车辆全部接收。" },
+      { id: "n11", x: 56,  y: 664, u: ["owner"], scen: ["s2"], deps: ["对讲机硬件"],
+        t: "车主转交对讲机", s: "朋友的车没有组队功能",
+        d: "同行朋友的车不是品牌车、没有组队功能时，车主可将车上已有的对讲机硬件交给朋友。" },
+      { id: "n12", x: 312, y: 664, u: ["frnd"], scen: ["s2"], deps: ["手机 App", "账号系统"],
+        t: "下载 App · 绑定新账号", s: "对讲机与新账户绑定",
+        d: "朋友拿到对讲机后，下载 App 并绑定一个新的账户。" },
+      { id: "n13", x: 568, y: 664, u: ["frnd"], scen: ["s2"], deps: ["手机 App", "对讲机硬件", "云端 · 蜂窝网络"],
+        t: "对讲机成为组队节点", s: "类似车机系统，与车主组队",
+        d: "绑定成功后，这台对讲机就变得类似车机系统，可以与车主形成组队关系。" },
+      { id: "n14", x: 828, y: 664, u: ["frnd"], scen: ["s2"], deps: ["手机 App", "对讲机硬件"], kind: "note", wide: true,
+        t: "能力边界", s: "有硬件可无网通信；无硬件仅有网通话",
+        d: "同伴车辆没有对讲机硬件时，无法参与场景一的无网通信；但有网络时仍能通过 App 与对讲机实现远距离通话。该功能因此能服务于并非全部由品牌车辆组成的混编车队。" }
+    ],
+    edges: [
+      { f: "n1",  t: "n2" },
+      { f: "n2",  t: "n3" },
+      { f: "n3",  t: "n4",  l: "双车标准流程" },
+      { f: "n4",  t: "n5",  l: "组队完成" },
+      { f: "n5",  t: "n6" },
+      { f: "n6",  t: "n7",  l: "网络受限" },
+      { f: "n7",  t: "n8",  l: "无网时启用硬件" },
+      { f: "n8",  t: "n9",  l: "任一台有网即可" },
+      { f: "n9",  t: "n10" },
+      { f: "n1",  t: "n11", l: "可转交" },
+      { f: "n11", t: "n12" },
+      { f: "n12", t: "n13" },
+      { f: "n13", t: "n5",  l: "获得组队能力", bend: "left" },
+      { f: "n13", t: "n14" }
+    ]
+  };
 
   var canvas = document.getElementById("canvas");
   var outer = document.getElementById("canvasOuter");
@@ -579,9 +650,48 @@ body {
   var svg = document.getElementById("edgeSvg");
   var panelBody = document.getElementById("panelBody");
   var CW = 1360, CH = 850;
-  var state = { scen: "all", user: "all", sel: null };
-  var S = 1, zoomMode = "fit";
+  var NS = "http://www.w3.org/2000/svg";
 
+  var NODES = [], EDGES = [], byId = {};
+  var state = { scen: "all", user: "all", sel: null, selEdge: null, linking: null };
+  var S = 1, zoomMode = "fit";
+  var idSeq = 100;
+
+  /* ── 存取 ───────────────────────────────────────────────────────── */
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function strip(n) {
+    var o = { id: n.id, x: Math.round(n.x), y: Math.round(n.y), u: n.u, scen: n.scen,
+              deps: n.deps, t: n.t, s: n.s, d: n.d };
+    if (n.kind) o.kind = n.kind;
+    if (n.wide) o.wide = true;
+    return o;
+  }
+  function serialize() {
+    return {
+      nodes: NODES.map(strip),
+      edges: EDGES.map(function (e) {
+        var o = { f: e.f, t: e.t2 !== undefined ? e.t2 : e.t };
+        if (e.l) o.l = e.l;
+        if (e.bend) o.bend = e.bend;
+        return o;
+      })
+    };
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(serialize())); } catch (err) {}
+  }
+  function loadData() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw) {
+        var d = JSON.parse(raw);
+        if (d && d.nodes && d.nodes.length) return d;
+      }
+    } catch (err) {}
+    return clone(DEFAULT);
+  }
+
+  /* ── 缩放 ───────────────────────────────────────────────────────── */
   function setScale(sc, mode) {
     S = Math.max(.4, Math.min(1.5, sc));
     zoomMode = mode;
@@ -590,33 +700,31 @@ body {
     outer.style.height = (CH * S) + "px";
   }
   function fit() { setScale((scroller.clientWidth - 2) / CW, "fit"); }
-  var byId = {};
 
-  /* ── 建节点 DOM ─────────────────────────────────────────────────── */
-  NODES.forEach(function (n) {
-    n.x0 = n.x; n.y0 = n.y;
-    var el = document.createElement("div");
-    el.className = "node" + (n.wide ? " wide" : "");
-    el.dataset.u = n.u.length === 1 ? (n.u[0] === "team" ? "team" : n.u[0]) : "team";
-    if (n.kind) el.dataset.kind = n.kind;
-    el.setAttribute("role", "button");
-    el.setAttribute("tabindex", "0");
+  /* ── 节点 DOM ───────────────────────────────────────────────────── */
+  function renderNodeContent(n) {
+    n.el.className = "node" + (n.wide ? " wide" : "");
+    var key = n.u.indexOf("team") >= 0 || n.u.length > 1 ? "team" : n.u[0];
+    n.el.dataset.u = key;
+    if (n.kind) n.el.dataset.kind = n.kind; else delete n.el.dataset.kind;
 
+    n.el.innerHTML = "";
     var h = document.createElement("h4");
     if (n.kind === "pain") { var pd = document.createElement("span"); pd.className = "pain-dot"; h.appendChild(pd); }
     h.appendChild(document.createTextNode(n.t));
-    el.appendChild(h);
+    n.el.appendChild(h);
 
-    var ns = document.createElement("div");
-    ns.className = "ns";
-    ns.textContent = n.s;
-    el.appendChild(ns);
+    if (n.s) {
+      var ns = document.createElement("div");
+      ns.className = "ns";
+      ns.textContent = n.s;
+      n.el.appendChild(ns);
+    }
 
     var row = document.createElement("div");
     row.className = "nrow";
     var ut = document.createElement("span");
     ut.className = "utag";
-    var key = n.u[0] === "team" ? "team" : n.u[0];
     ut.innerHTML = '<span class="dot ' + USERS[key].dot + '"></span>' + USERS[key].name;
     row.appendChild(ut);
     n.deps.slice(0, 2).forEach(function (dep) {
@@ -631,43 +739,64 @@ body {
       more.textContent = "+" + (n.deps.length - 2);
       row.appendChild(more);
     }
-    el.appendChild(row);
+    n.el.appendChild(row);
+  }
 
-    canvas.appendChild(el);
+  function makeNodeEl(n) {
+    var el = document.createElement("div");
+    el.setAttribute("role", "button");
+    el.setAttribute("tabindex", "0");
     n.el = el;
-    byId[n.id] = n;
+    if (n.x0 === undefined) { n.x0 = n.x; n.y0 = n.y; }
     el.style.left = n.x + "px";
     el.style.top = n.y + "px";
-  });
+    renderNodeContent(n);
+    canvas.appendChild(el);
 
-  /* ── 建边 SVG ───────────────────────────────────────────────────── */
-  var NS = "http://www.w3.org/2000/svg";
-  var defs = document.createElementNS(NS, "defs");
-  ["arr", "arrHot"].forEach(function (id) {
-    var m = document.createElementNS(NS, "marker");
-    m.setAttribute("id", id);
-    m.setAttribute("markerWidth", "8");
-    m.setAttribute("markerHeight", "8");
-    m.setAttribute("refX", "6.5");
-    m.setAttribute("refY", "4");
-    m.setAttribute("orient", "auto-start-reverse");
-    var p = document.createElementNS(NS, "path");
-    p.setAttribute("d", "M1 1 L7 4 L1 7");
-    p.setAttribute("fill", "none");
-    p.setAttribute("stroke", id === "arrHot" ? "var(--accent)" : "var(--line-2)");
-    p.setAttribute("stroke-width", "1.6");
-    p.setAttribute("stroke-linecap", "round");
-    m.appendChild(p);
-    defs.appendChild(m);
-  });
-  svg.appendChild(defs);
+    var sx, sy, nx, ny, moved;
+    el.addEventListener("pointerdown", function (ev) {
+      ev.preventDefault();
+      el.setPointerCapture(ev.pointerId);
+      sx = ev.clientX; sy = ev.clientY;
+      nx = n.x; ny = n.y; moved = false;
+    });
+    el.addEventListener("pointermove", function (ev) {
+      if (sx === undefined) return;
+      var dx = (ev.clientX - sx) / S, dy = (ev.clientY - sy) / S;
+      if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
+      if (!moved) return;
+      n.x = Math.max(6, Math.min(CW - el.offsetWidth - 6, nx + dx));
+      n.y = Math.max(6, Math.min(CH - el.offsetHeight - 6, ny + dy));
+      el.style.left = n.x + "px";
+      el.style.top = n.y + "px";
+      drawEdges();
+    });
+    function up() {
+      if (sx === undefined) return;
+      sx = undefined;
+      if (moved) { save(); return; }
+      if (state.linking && state.linking !== n.id) { finishLink(n.id); return; }
+      if (state.linking === n.id) { cancelLink(); return; }
+      select(state.sel === n.id ? null : n.id);
+    }
+    el.addEventListener("pointerup", up);
+    el.addEventListener("pointercancel", up);
+    el.addEventListener("dblclick", function () { state.sel = n.id; apply(); showNodeForm(n); });
+    el.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); select(n.id); }
+    });
+  }
 
-  EDGES.forEach(function (e) {
+  /* ── 边 DOM ─────────────────────────────────────────────────────── */
+  function makeEdgeEl(e) {
     var g = document.createElementNS(NS, "g");
     g.setAttribute("class", "edge");
     var p = document.createElementNS(NS, "path");
     p.setAttribute("marker-end", "url(#arr)");
     g.appendChild(p);
+    var hit = document.createElementNS(NS, "path");
+    hit.setAttribute("class", "hit");
+    g.appendChild(hit);
     var tx = null;
     if (e.l) {
       tx = document.createElementNS(NS, "text");
@@ -676,8 +805,16 @@ body {
       g.appendChild(tx);
     }
     svg.appendChild(g);
-    e.g = g; e.p = p; e.tx = tx;
-  });
+    e.g = g; e.p = p; e.hit = hit; e.tx = tx;
+    hit.addEventListener("click", function () { selectEdge(e); });
+  }
+
+  function rebuildEdgeEl(e) {
+    if (e.g) e.g.remove();
+    makeEdgeEl(e);
+    drawEdges();
+    apply();
+  }
 
   function anchors(a, b) {
     var aw = a.el.offsetWidth, ah = a.el.offsetHeight;
@@ -696,6 +833,7 @@ body {
   function drawEdges() {
     EDGES.forEach(function (e) {
       var a = byId[e.f], b = byId[e.t];
+      if (!a || !b) return;
       var an = anchors(a, b);
       var x1 = an[0], y1 = an[1], x2 = an[2], y2 = an[3], dir = an[4];
       var c1x, c1y, c2x, c2y;
@@ -713,7 +851,9 @@ body {
         c1x = x1; c1y = y1 + dy;
         c2x = x2; c2y = y2 - dy;
       }
-      e.p.setAttribute("d", "M" + x1 + " " + y1 + " C" + c1x + " " + c1y + ", " + c2x + " " + c2y + ", " + x2 + " " + y2);
+      var d = "M" + x1 + " " + y1 + " C" + c1x + " " + c1y + ", " + c2x + " " + c2y + ", " + x2 + " " + y2;
+      e.p.setAttribute("d", d);
+      e.hit.setAttribute("d", d);
       if (e.tx) {
         e.tx.setAttribute("x", cubicAt(.5, x1, c1x, c2x, x2).toFixed(1));
         e.tx.setAttribute("y", (cubicAt(.5, y1, c1y, c2y, y2) - 6).toFixed(1));
@@ -721,10 +861,10 @@ body {
     });
   }
 
-  /* ── 筛选与选中 ─────────────────────────────────────────────────── */
+  /* ── 筛选与高亮 ─────────────────────────────────────────────────── */
   function nodeVisible(n) {
     var sOK = state.scen === "all" || n.scen.indexOf(state.scen) >= 0;
-    var uOK = state.user === "all" || n.u.indexOf(state.user) >= 0 || n.u[0] === "team";
+    var uOK = state.user === "all" || n.u.indexOf(state.user) >= 0 || n.u.indexOf("team") >= 0;
     return sOK && uOK;
   }
 
@@ -735,50 +875,93 @@ body {
     });
     EDGES.forEach(function (e) {
       var a = byId[e.f], b = byId[e.t];
+      if (!a || !b) return;
       var dim = !nodeVisible(a) || !nodeVisible(b);
-      var hot = state.sel && (e.f === state.sel || e.t === state.sel) && !dim;
+      var hot = !dim && (state.selEdge === e ||
+                (state.sel && (e.f === state.sel || e.t === state.sel)));
       e.g.setAttribute("class", "edge" + (dim ? " dim" : "") + (hot ? " hot" : ""));
       e.p.setAttribute("marker-end", hot ? "url(#arrHot)" : "url(#arr)");
     });
   }
 
-  function showPanel(n) {
+  /* ── 面板 ───────────────────────────────────────────────────────── */
+  function elBtn(text, cls, fn) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "pbtn" + (cls ? " " + cls : "");
+    b.textContent = text;
+    b.addEventListener("click", fn);
+    return b;
+  }
+  function sec(parent, label, fill) {
+    var s = document.createElement("div");
+    s.className = "sec";
+    var sl = document.createElement("div");
+    sl.className = "sl";
+    sl.textContent = label;
+    s.appendChild(sl);
+    var row = document.createElement("div");
+    row.className = "row";
+    fill(row);
+    s.appendChild(row);
+    parent.appendChild(s);
+  }
+
+  function showHome() {
     panelBody.innerHTML = "";
-    var h3 = document.createElement("h3");
-    h3.textContent = n.t;
-    panelBody.appendChild(h3);
-
-    function sec(label, fill) {
-      var s = document.createElement("div");
-      s.className = "sec";
-      var sl = document.createElement("div");
-      sl.className = "sl";
-      sl.textContent = label;
-      s.appendChild(sl);
-      var row = document.createElement("div");
-      row.className = "row";
-      fill(row);
-      s.appendChild(row);
-      panelBody.appendChild(s);
-    }
-
-    sec("用户类型", function (row) {
-      n.u.forEach(function (u) {
+    var hint = document.createElement("p");
+    hint.className = "hint";
+    hint.textContent = "点击任意节点，此处按「用户类型 — 使用场景 — 依赖端 / 系统」展示该步骤的三维信息。";
+    panelBody.appendChild(hint);
+    sec(panelBody, "用户类型", function (row) {
+      ["owner", "mate", "frnd"].forEach(function (u) {
         var tag = document.createElement("span");
         tag.className = "utag";
         tag.innerHTML = '<span class="dot ' + USERS[u].dot + '"></span>' + USERS[u].name;
         row.appendChild(tag);
       });
     });
-    sec("使用场景", function (row) {
+    sec(panelBody, "依赖端 / 系统（全集）", function (row) {
+      var all = {};
+      NODES.forEach(function (n) { n.deps.forEach(function (d) { all[d] = 1; }); });
+      Object.keys(all).forEach(function (d) {
+        var tag = document.createElement("span");
+        tag.className = "dtag";
+        tag.textContent = d;
+        row.appendChild(tag);
+      });
+    });
+    var op = document.createElement("p");
+    op.className = "meta-hint";
+    op.textContent = "拖拽节点重新布局；单击看详情，双击直接编辑；点击连线可改标签 / 方向 / 删除；「＋ 新增节点」添加步骤。所有修改自动保存在本机浏览器。";
+    panelBody.appendChild(op);
+  }
+
+  function showNode(n) {
+    panelBody.innerHTML = "";
+    var h3 = document.createElement("h3");
+    h3.textContent = n.t;
+    panelBody.appendChild(h3);
+
+    sec(panelBody, "用户类型", function (row) {
+      n.u.forEach(function (u) {
+        if (!USERS[u]) return;
+        var tag = document.createElement("span");
+        tag.className = "utag";
+        tag.innerHTML = '<span class="dot ' + USERS[u].dot + '"></span>' + USERS[u].name;
+        row.appendChild(tag);
+      });
+    });
+    sec(panelBody, "使用场景", function (row) {
       n.scen.forEach(function (sc) {
+        if (!SCENS[sc]) return;
         var tag = document.createElement("span");
         tag.className = "scen-tag";
         tag.textContent = SCENS[sc];
         row.appendChild(tag);
       });
     });
-    sec("依赖端 / 系统", function (row) {
+    sec(panelBody, "依赖端 / 系统", function (row) {
       n.deps.forEach(function (dep) {
         var tag = document.createElement("span");
         tag.className = "dtag";
@@ -786,50 +969,300 @@ body {
         row.appendChild(tag);
       });
     });
-    var desc = document.createElement("p");
-    desc.className = "desc";
-    desc.textContent = n.d;
-    panelBody.appendChild(desc);
+    if (n.d) {
+      var desc = document.createElement("p");
+      desc.className = "desc";
+      desc.textContent = n.d;
+      panelBody.appendChild(desc);
+    }
+
+    var btns = document.createElement("div");
+    btns.className = "pbtns";
+    btns.appendChild(elBtn("编辑节点", "primary", function () { showNodeForm(n); }));
+    btns.appendChild(elBtn("从此节点连线", "", function () { startLink(n); }));
+    btns.appendChild(elBtn("删除节点", "danger", function () {
+      if (window.confirm("删除节点「" + n.t + "」及其全部连线？")) deleteNode(n);
+    }));
+    panelBody.appendChild(btns);
+
+    var mh = document.createElement("p");
+    mh.className = "meta-hint";
+    mh.textContent = "提示：双击画布上的节点也可直接进入编辑。";
+    panelBody.appendChild(mh);
+  }
+
+  function field(parent, label, make) {
+    var f = document.createElement("div");
+    f.className = "field";
+    var l = document.createElement("label");
+    l.textContent = label;
+    f.appendChild(l);
+    var input = make();
+    f.appendChild(input);
+    parent.appendChild(f);
+    return input;
+  }
+
+  function checks(parent, label, opts, selected) {
+    var f = document.createElement("div");
+    f.className = "field";
+    var l = document.createElement("label");
+    l.textContent = label;
+    f.appendChild(l);
+    var box = document.createElement("div");
+    box.className = "checks";
+    var inputs = [];
+    opts.forEach(function (o) {
+      var lab = document.createElement("label");
+      var cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.value = o.v;
+      cb.checked = selected.indexOf(o.v) >= 0;
+      lab.appendChild(cb);
+      lab.appendChild(document.createTextNode(o.n));
+      box.appendChild(lab);
+      inputs.push(cb);
+    });
+    f.appendChild(box);
+    parent.appendChild(f);
+    return inputs;
+  }
+
+  function showNodeForm(n, isNew) {
+    panelBody.innerHTML = "";
+    var h3 = document.createElement("h3");
+    h3.textContent = isNew ? "新增节点" : "编辑节点";
+    panelBody.appendChild(h3);
+
+    var iT = field(panelBody, "标题", function () {
+      var i = document.createElement("input"); i.type = "text"; i.value = n.t; return i;
+    });
+    var iS = field(panelBody, "副标题（一句话要点）", function () {
+      var i = document.createElement("input"); i.type = "text"; i.value = n.s || ""; return i;
+    });
+    var iD = field(panelBody, "描述", function () {
+      var i = document.createElement("textarea"); i.value = n.d || ""; return i;
+    });
+    var cbU = checks(panelBody, "用户类型（勾「全体成员」时忽略其他）",
+      [{ v: "owner", n: "车主" }, { v: "mate", n: "品牌车队友" },
+       { v: "frnd", n: "非品牌车朋友" }, { v: "team", n: "全体成员" }], n.u);
+    var cbS = checks(panelBody, "使用场景",
+      [{ v: "main", n: "主流程" }, { v: "s1", n: "场景一" }, { v: "s2", n: "场景二" }], n.scen);
+    var iDep = field(panelBody, "依赖端 / 系统（逗号分隔）", function () {
+      var i = document.createElement("input"); i.type = "text"; i.value = n.deps.join("，"); return i;
+    });
+    var iK = field(panelBody, "节点样式", function () {
+      var sel = document.createElement("select");
+      [["", "普通步骤"], ["pain", "痛点（红点标记）"], ["note", "说明（虚线框）"]].forEach(function (o) {
+        var op = document.createElement("option");
+        op.value = o[0]; op.textContent = o[1];
+        if ((n.kind || "") === o[0]) op.selected = true;
+        sel.appendChild(op);
+      });
+      return sel;
+    });
+
+    var btns = document.createElement("div");
+    btns.className = "pbtns";
+    btns.appendChild(elBtn("保存", "primary", function () {
+      n.t = iT.value.trim() || "未命名节点";
+      n.s = iS.value.trim();
+      n.d = iD.value.trim();
+      var us = cbU.filter(function (c) { return c.checked; }).map(function (c) { return c.value; });
+      n.u = us.indexOf("team") >= 0 ? ["team"] : (us.length ? us : ["team"]);
+      var scs = cbS.filter(function (c) { return c.checked; }).map(function (c) { return c.value; });
+      n.scen = scs.length ? scs : ["main"];
+      n.deps = iDep.value.split(/[,，、;；]/).map(function (x) { return x.trim(); }).filter(Boolean);
+      n.kind = iK.value || undefined;
+      renderNodeContent(n);
+      drawEdges();
+      apply();
+      save();
+      showNode(n);
+    }));
+    btns.appendChild(elBtn("取消", "", function () {
+      if (isNew) { deleteNode(n); } else { showNode(n); }
+    }));
+    panelBody.appendChild(btns);
+    iT.focus();
+    iT.select();
+  }
+
+  function showEdge(e) {
+    panelBody.innerHTML = "";
+    var a = byId[e.f], b = byId[e.t];
+    var h3 = document.createElement("h3");
+    h3.textContent = "连线";
+    panelBody.appendChild(h3);
+    var route = document.createElement("p");
+    route.className = "desc";
+    route.textContent = a.t + "  →  " + b.t;
+    panelBody.appendChild(route);
+
+    var iL = field(panelBody, "连线标签（可留空）", function () {
+      var i = document.createElement("input"); i.type = "text"; i.value = e.l || ""; return i;
+    });
+
+    var btns = document.createElement("div");
+    btns.className = "pbtns";
+    btns.appendChild(elBtn("保存标签", "primary", function () {
+      e.l = iL.value.trim();
+      if (!e.l) delete e.l;
+      rebuildEdgeEl(e);
+      save();
+      selectEdge(e);
+    }));
+    btns.appendChild(elBtn("反转方向", "", function () {
+      var tmp = e.f; e.f = e.t; e.t = tmp;
+      delete e.bend;
+      drawEdges();
+      apply();
+      save();
+      showEdge(e);
+    }));
+    btns.appendChild(elBtn("删除连线", "danger", function () {
+      e.g.remove();
+      EDGES.splice(EDGES.indexOf(e), 1);
+      state.selEdge = null;
+      apply();
+      save();
+      showHome();
+    }));
+    panelBody.appendChild(btns);
   }
 
   function select(id) {
     state.sel = id;
-    if (id) showPanel(byId[id]);
+    state.selEdge = null;
+    if (id) showNode(byId[id]); else showHome();
+    apply();
+  }
+  function selectEdge(e) {
+    state.sel = null;
+    state.selEdge = e;
+    showEdge(e);
     apply();
   }
 
-  /* ── 拖拽 ───────────────────────────────────────────────────────── */
-  NODES.forEach(function (n) {
-    var sx, sy, nx, ny, moved;
-    n.el.addEventListener("pointerdown", function (ev) {
-      ev.preventDefault();
-      n.el.setPointerCapture(ev.pointerId);
-      sx = ev.clientX; sy = ev.clientY;
-      nx = n.x; ny = n.y; moved = false;
-    });
-    n.el.addEventListener("pointermove", function (ev) {
-      if (sx === undefined) return;
-      var dx = (ev.clientX - sx) / S, dy = (ev.clientY - sy) / S;
-      if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
-      if (!moved) return;
-      n.x = Math.max(6, Math.min(CW - n.el.offsetWidth - 6, nx + dx));
-      n.y = Math.max(6, Math.min(CH - n.el.offsetHeight - 6, ny + dy));
-      n.el.style.left = n.x + "px";
-      n.el.style.top = n.y + "px";
-      drawEdges();
-    });
-    function up(ev) {
-      if (sx === undefined) return;
-      sx = undefined;
-      if (!moved) select(state.sel === n.id ? null : n.id);
-      if (state.sel === null && !moved) { /* 取消选中回默认面板 */ location.hash = ""; }
+  /* ── 连线模式 ───────────────────────────────────────────────────── */
+  function startLink(n) {
+    state.linking = n.id;
+    canvas.classList.add("linking");
+    panelBody.innerHTML = "";
+    var h3 = document.createElement("h3");
+    h3.textContent = "连线模式";
+    panelBody.appendChild(h3);
+    var p = document.createElement("p");
+    p.className = "desc";
+    p.textContent = "从「" + n.t + "」出发：点击目标节点完成连线；按 Esc 或点击原节点取消。";
+    panelBody.appendChild(p);
+    var btns = document.createElement("div");
+    btns.className = "pbtns";
+    btns.appendChild(elBtn("取消连线", "", cancelLink));
+    panelBody.appendChild(btns);
+  }
+  function finishLink(targetId) {
+    var from = state.linking;
+    state.linking = null;
+    canvas.classList.remove("linking");
+    var dup = EDGES.some(function (e) { return e.f === from && e.t === targetId; });
+    if (dup || from === targetId) { select(targetId); return; }
+    var e = { f: from, t: targetId };
+    EDGES.push(e);
+    makeEdgeEl(e);
+    drawEdges();
+    save();
+    selectEdge(e);
+  }
+  function cancelLink() {
+    state.linking = null;
+    canvas.classList.remove("linking");
+    select(state.sel);
+  }
+
+  /* ── 增删节点 ───────────────────────────────────────────────────── */
+  function addNode() {
+    var id;
+    do { id = "n" + (++idSeq); } while (byId[id]);
+    var cx = Math.round((scroller.scrollLeft + scroller.clientWidth / 2) / S - 100);
+    var cy = Math.round((scroller.scrollTop + scroller.clientHeight / 2) / S - 40);
+    var n = {
+      id: id,
+      x: Math.max(6, Math.min(CW - 210, cx)),
+      y: Math.max(6, Math.min(CH - 100, cy)),
+      u: ["team"], scen: ["main"], deps: [],
+      t: "新节点", s: "", d: ""
+    };
+    NODES.push(n);
+    byId[id] = n;
+    makeNodeEl(n);
+    state.sel = id;
+    apply();
+    save();
+    showNodeForm(n, true);
+  }
+
+  function deleteNode(n) {
+    for (var i = EDGES.length - 1; i >= 0; i--) {
+      if (EDGES[i].f === n.id || EDGES[i].t === n.id) {
+        EDGES[i].g.remove();
+        EDGES.splice(i, 1);
+      }
     }
-    n.el.addEventListener("pointerup", up);
-    n.el.addEventListener("pointercancel", up);
-    n.el.addEventListener("keydown", function (ev) {
-      if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); select(n.id); }
+    n.el.remove();
+    NODES.splice(NODES.indexOf(n), 1);
+    delete byId[n.id];
+    if (state.sel === n.id) state.sel = null;
+    drawEdges();
+    apply();
+    save();
+    showHome();
+  }
+
+  /* ── 初始化 / 重建 ──────────────────────────────────────────────── */
+  function initMarkers() {
+    var defs = document.createElementNS(NS, "defs");
+    ["arr", "arrHot"].forEach(function (id) {
+      var m = document.createElementNS(NS, "marker");
+      m.setAttribute("id", id);
+      m.setAttribute("markerWidth", "8");
+      m.setAttribute("markerHeight", "8");
+      m.setAttribute("refX", "6.5");
+      m.setAttribute("refY", "4");
+      m.setAttribute("orient", "auto-start-reverse");
+      var p = document.createElementNS(NS, "path");
+      p.setAttribute("d", "M1 1 L7 4 L1 7");
+      p.setAttribute("fill", "none");
+      p.setAttribute("stroke", id === "arrHot" ? "var(--accent)" : "var(--line-2)");
+      p.setAttribute("stroke-width", "1.6");
+      p.setAttribute("stroke-linecap", "round");
+      m.appendChild(p);
+      defs.appendChild(m);
     });
-  });
+    svg.appendChild(defs);
+  }
+
+  function buildFrom(data) {
+    NODES.forEach(function (n) { if (n.el) n.el.remove(); });
+    EDGES.forEach(function (e) { if (e.g) e.g.remove(); });
+    NODES = data.nodes.map(clone);
+    EDGES = data.edges.map(clone);
+    byId = {};
+    idSeq = 100;
+    NODES.forEach(function (n) {
+      byId[n.id] = n;
+      var m = /^n(\d+)$/.exec(n.id);
+      if (m) idSeq = Math.max(idSeq, +m[1]);
+      makeNodeEl(n);
+    });
+    EDGES.forEach(makeEdgeEl);
+    state.sel = null; state.selEdge = null; state.linking = null;
+    drawEdges();
+    apply();
+    showHome();
+    window.__flow.nodes = NODES;
+    window.__flow.edges = EDGES;
+  }
 
   /* ── 工具条 ─────────────────────────────────────────────────────── */
   function chipGroup(elId, attr, key) {
@@ -849,11 +1282,30 @@ body {
 
   document.getElementById("resetBtn").addEventListener("click", function () {
     NODES.forEach(function (n) {
+      if (n.x0 === undefined) return;
       n.x = n.x0; n.y = n.y0;
       n.el.style.left = n.x + "px";
       n.el.style.top = n.y + "px";
     });
     drawEdges();
+    save();
+  });
+
+  document.getElementById("addNodeBtn").addEventListener("click", addNode);
+
+  document.getElementById("exportBtn").addEventListener("click", function () {
+    var blob = new Blob([JSON.stringify(serialize(), null, 2)], { type: "application/json" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "team-flow.json";
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+  });
+
+  document.getElementById("restoreBtn").addEventListener("click", function () {
+    if (!window.confirm("恢复为文档原始拆解？你的全部修改（含布局）将被清除。")) return;
+    try { localStorage.removeItem(KEY); } catch (err) {}
+    buildFrom(clone(DEFAULT));
   });
 
   document.getElementById("zoomOut").addEventListener("click", function () { setScale(S - .1, "manual"); });
@@ -861,18 +1313,23 @@ body {
   document.getElementById("zoomFit").addEventListener("click", fit);
   document.getElementById("zoom100").addEventListener("click", function () { setScale(1, "manual"); });
   window.addEventListener("resize", function () { if (zoomMode === "fit") fit(); drawEdges(); });
+  window.addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape" && state.linking) cancelLink();
+  });
 
   /* 测试钩子 */
   window.__flow = {
     nodes: NODES, edges: EDGES, state: state,
     select: select, apply: apply, draw: drawEdges,
-    scale: function () { return S; }
+    scale: function () { return S; },
+    addNode: addNode, serialize: serialize
   };
 
+  initMarkers();
   fit();
-  drawEdges();
-  apply();
+  buildFrom(loadData());
 })();
+
 </script>
 
 </body>
