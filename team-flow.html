@@ -538,7 +538,7 @@ html, body { height: 100%; }
 
     <aside class="panel" id="panel">
       <button class="pclose" id="panelClose" type="button" aria-label="关闭">×</button>
-      <p class="ph">节点详情</p>
+      <p class="ph">编辑</p>
       <div id="panelBody"></div>
     </aside>
 
@@ -794,6 +794,7 @@ html, body { height: 100%; }
     var el = document.createElement("div");
     el.setAttribute("role", "button");
     el.setAttribute("tabindex", "0");
+    el.title = "双击编辑 · 拖拽移动";
     n.el = el;
     if (n.x0 === undefined) { n.x0 = n.x; n.y0 = n.y; }
     el.style.left = n.x + "px";
@@ -958,61 +959,6 @@ html, body { height: 100%; }
 
   function showHome() { hidePanel(); }
 
-  function showNode(n) {
-    openPanel();
-    panelBody.innerHTML = "";
-    var h3 = document.createElement("h3");
-    h3.textContent = n.t;
-    panelBody.appendChild(h3);
-
-    sec(panelBody, "用户类型", function (row) {
-      n.u.forEach(function (u) {
-        if (!USERS[u]) return;
-        var tag = document.createElement("span");
-        tag.className = "utag";
-        tag.innerHTML = '<span class="dot ' + USERS[u].dot + '"></span>' + USERS[u].name;
-        row.appendChild(tag);
-      });
-    });
-    sec(panelBody, "使用场景", function (row) {
-      n.scen.forEach(function (sc) {
-        if (!SCENS[sc]) return;
-        var tag = document.createElement("span");
-        tag.className = "scen-tag";
-        tag.textContent = SCENS[sc];
-        row.appendChild(tag);
-      });
-    });
-    sec(panelBody, "依赖端 / 系统", function (row) {
-      n.deps.forEach(function (dep) {
-        var tag = document.createElement("span");
-        tag.className = "dtag";
-        tag.textContent = dep;
-        row.appendChild(tag);
-      });
-    });
-    if (n.d) {
-      var desc = document.createElement("p");
-      desc.className = "desc";
-      desc.textContent = n.d;
-      panelBody.appendChild(desc);
-    }
-
-    var btns = document.createElement("div");
-    btns.className = "pbtns";
-    btns.appendChild(elBtn("编辑节点", "primary", function () { showNodeForm(n); }));
-    btns.appendChild(elBtn("从此节点连线", "", function () { startLink(n); }));
-    btns.appendChild(elBtn("删除节点", "danger", function () {
-      if (window.confirm("删除节点「" + n.t + "」及其全部连线？")) deleteNode(n);
-    }));
-    panelBody.appendChild(btns);
-
-    var mh = document.createElement("p");
-    mh.className = "meta-hint";
-    mh.textContent = "提示：双击画布上的节点也可直接进入编辑。";
-    panelBody.appendChild(mh);
-  }
-
   function field(parent, label, make) {
     var f = document.createElement("div");
     f.className = "field";
@@ -1095,9 +1041,7 @@ html, body { height: 100%; }
       return sel;
     });
 
-    var btns = document.createElement("div");
-    btns.className = "pbtns";
-    btns.appendChild(elBtn("保存", "primary", function () {
+    function applyForm() {
       n.t = iT.value.trim() || "未命名节点";
       n.s = iS.value.trim();
       n.d = iD.value.trim();
@@ -1113,12 +1057,30 @@ html, body { height: 100%; }
       drawEdges();
       apply();
       save();
-      showNode(n);
+    }
+
+    var btns = document.createElement("div");
+    btns.className = "pbtns";
+    btns.appendChild(elBtn("保存", "primary", function () {
+      applyForm();
+      hidePanel();
+    }));
+    btns.appendChild(elBtn("从此节点连线", "", function () {
+      applyForm();
+      startLink(n);
+    }));
+    btns.appendChild(elBtn("删除节点", "danger", function () {
+      if (window.confirm("删除节点「" + n.t + "」及其全部连线？")) deleteNode(n);
     }));
     btns.appendChild(elBtn("取消", "", function () {
-      if (isNew) { deleteNode(n); } else { showNode(n); }
+      if (isNew) { deleteNode(n); } else { hidePanel(); }
     }));
     panelBody.appendChild(btns);
+
+    var mh = document.createElement("p");
+    mh.className = "meta-hint";
+    mh.textContent = "单击节点＝高亮关联连线；双击节点＝编辑；点击连线可改标签 / 方向 / 删除。";
+    panelBody.appendChild(mh);
     iT.focus();
     iT.select();
   }
@@ -1170,7 +1132,7 @@ html, body { height: 100%; }
   function select(id) {
     state.sel = id;
     state.selEdge = null;
-    if (id) showNode(byId[id]); else showHome();
+    hidePanel();
     apply();
   }
   function selectEdge(e) {
