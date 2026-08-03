@@ -531,18 +531,6 @@ html, body { height: 100%; }
     <div class="canvas-scroll" id="canvasScroll">
       <div class="canvas-outer" id="canvasOuter">
       <div class="canvas" id="canvas">
-        <div class="zone" style="left:30px; top:64px; width:508px; height:322px;">
-          <span class="zl"><b>阶段一</b> · 购买与组队 — 主流程</span>
-        </div>
-        <div class="zone" style="left:566px; top:64px; width:764px; height:230px;">
-          <span class="zl"><b>阶段二</b> · 有网组队体验 — 主流程</span>
-        </div>
-        <div class="zone" style="left:566px; top:322px; width:764px; height:238px;">
-          <span class="zl"><b>场景一</b> · 无网通信 — 对讲机硬件组网</span>
-        </div>
-        <div class="zone" style="left:30px; top:600px; width:1300px; height:222px;">
-          <span class="zl"><b>场景二</b> · 非品牌车加入 — App + 对讲机硬件</span>
-        </div>
         <svg id="edgeSvg" aria-hidden="true"></svg>
       </div>
       </div>
@@ -571,50 +559,58 @@ html, body { height: 100%; }
     team:  { name: "全体成员",       dot: "dot-team" }
   };
   var SCENS = { main: "主流程", s1: "场景一 · 无网通信", s2: "场景二 · 非品牌车加入" };
+  var ZONES = [
+    { z: "a", html: "<b>阶段一</b> · 购买与组队 — 主流程" },
+    { z: "b", html: "<b>阶段二</b> · 有网组队体验 — 主流程" },
+    { z: "c", html: "<b>场景一</b> · 无网通信 — 对讲机硬件组网" },
+    { z: "d", html: "<b>场景二</b> · 非品牌车加入 — App + 对讲机硬件" }
+  ];
+  var ZNAMES = { "": "无分区", a: "阶段一", b: "阶段二", c: "场景一", d: "场景二" };
+  var ZMAP = { n1:"a",n2:"a",n3:"a",n4:"a",n5:"b",n6:"b",n7:"b",n8:"c",n9:"c",n10:"c",n11:"d",n12:"d",n13:"d",n14:"d" };
   var KEY = "teamflow-doc-v1";
 
   var DEFAULT = {
     nodes: [
-      { id: "n1", x: 56,   y: 118, u: ["owner"], scen: ["main", "s2"], deps: ["商城"],
+      { id: "n1", z: "a", x: 56,   y: 118, u: ["owner"], scen: ["main", "s2"], deps: ["商城"],
         t: "商城购买对讲机", s: "组队增强能力的前提",
         d: "用户在商城购买对讲机硬件。这是后续车机连接、无网通信与非品牌车方案的共同前提。" },
-      { id: "n2", x: 312,  y: 118, u: ["owner"], scen: ["main", "s1"], deps: ["车机 · 连接页", "对讲机硬件"],
+      { id: "n2", z: "a", x: 312,  y: 118, u: ["owner"], scen: ["main", "s1"], deps: ["车机 · 连接页", "对讲机硬件"],
         t: "车机连接对讲机", s: "专门提供的连接页面",
         d: "拿到对讲机后，先在车机上通过专门提供的页面完成与对讲机的连接配对。" },
-      { id: "n3", x: 56,   y: 252, u: ["owner"], scen: ["main"], deps: ["车机", "云端 · 蜂窝网络"],
+      { id: "n3", z: "a", x: 56,   y: 252, u: ["owner"], scen: ["main"], deps: ["车机", "云端 · 蜂窝网络"],
         t: "发起组队", s: "标准流程在两台车之间",
         d: "连接建立后，由车主在车机上发起组队。标准的组队流程在两台车之间进行。" },
-      { id: "n4", x: 312,  y: 252, u: ["mate"], scen: ["main"], deps: ["车机", "云端 · 蜂窝网络"],
+      { id: "n4", z: "a", x: 312,  y: 252, u: ["mate"], scen: ["main"], deps: ["车机", "云端 · 蜂窝网络"],
         t: "队友加入组队", s: "另一台品牌车确认加入",
         d: "另一台品牌车辆通过车机加入，两车完成标准组队，形成小队关系。" },
-      { id: "n5", x: 592,  y: 128, u: ["team"], scen: ["main"], deps: ["车机", "云端 · 蜂窝网络"],
+      { id: "n5", z: "b", x: 592,  y: 128, u: ["team"], scen: ["main"], deps: ["车机", "云端 · 蜂窝网络"],
         t: "小队信息共享", s: "定位 / 车辆信息 / 导航目的地",
         d: "组队完成后，小队内共享：实时定位、车辆信息、导航目的地——便于观察队友车辆是否偏离路线。" },
-      { id: "n6", x: 848,  y: 128, u: ["team"], scen: ["main"], deps: ["方向盘按键", "车机", "云端 · 蜂窝网络"],
+      { id: "n6", z: "b", x: 848,  y: 128, u: ["team"], scen: ["main"], deps: ["方向盘按键", "车机", "云端 · 蜂窝网络"],
         t: "方向盘按键对讲", s: "按下讲话，再按发送 · 上限 50 台",
         d: "有网络时，按下方向盘中间按键开始讲话，讲完再次按下确认发送。队伍中所有车辆（上限 50 台）同时收到并播放这条语音。" },
-      { id: "n7", x: 1104, y: 128, u: ["team"], scen: ["main", "s1"], deps: ["云端 · 蜂窝网络"], kind: "pain",
+      { id: "n7", z: "b", x: 1104, y: 128, u: ["team"], scen: ["main", "s1"], deps: ["云端 · 蜂窝网络"], kind: "pain",
         t: "痛点 · 复杂地形断网", s: "断网车辆无法收发消息",
         d: "进入网络信号复杂的地形后，无网车辆无法交流——某台车断网就收不到其他人发送的信息。对讲是实时信号功能，网络成为单点依赖。" },
-      { id: "n8", x: 592,  y: 396, u: ["team"], scen: ["s1"], deps: ["对讲机硬件"],
+      { id: "n8", z: "c", x: 592,  y: 330, u: ["team"], scen: ["s1"], deps: ["对讲机硬件"],
         t: "对讲机硬件组网", s: "基本通信能力 5–8 公里",
         d: "无网情况下由对讲机硬件组网，基本通信能力 5 到 8 公里；范围内的语音以硬件广播方式收发。" },
-      { id: "n9", x: 848,  y: 396, u: ["team"], scen: ["s1"], deps: ["车机", "云端 · 蜂窝网络", "对讲机硬件"],
+      { id: "n9", z: "c", x: 848,  y: 330, u: ["team"], scen: ["s1"], deps: ["车机", "云端 · 蜂窝网络", "对讲机硬件"],
         t: "有网车辆＝桥接节点", s: "云端 ↔ 硬件网中继，形成长队伍链",
         d: "范围内只要有一台车有网络，它就可以作为桥接节点，在云端与硬件网之间中继，从而形成很长的队伍链。" },
-      { id: "n10", x: 1104, y: 396, u: ["team"], scen: ["s1"], deps: ["对讲机硬件"],
+      { id: "n10", z: "c", x: 1104, y: 330, u: ["team"], scen: ["s1"], deps: ["对讲机硬件"],
         t: "无网车辆硬件收发", s: "收 / 发都经对讲机硬件",
         d: "无网用户接收队友消息、向外发送语音，都必须经过对讲机硬件。硬件对讲的语音信号可被范围内的其他车辆全部接收。" },
-      { id: "n11", x: 56,  y: 664, u: ["owner"], scen: ["s2"], deps: ["对讲机硬件"],
+      { id: "n11", z: "d", x: 56,  y: 536, u: ["owner"], scen: ["s2"], deps: ["对讲机硬件"],
         t: "车主转交对讲机", s: "朋友的车没有组队功能",
         d: "同行朋友的车不是品牌车、没有组队功能时，车主可将车上已有的对讲机硬件交给朋友。" },
-      { id: "n12", x: 312, y: 664, u: ["frnd"], scen: ["s2"], deps: ["手机 App", "账号系统"],
+      { id: "n12", z: "d", x: 312, y: 536, u: ["frnd"], scen: ["s2"], deps: ["手机 App", "账号系统"],
         t: "下载 App · 绑定新账号", s: "对讲机与新账户绑定",
         d: "朋友拿到对讲机后，下载 App 并绑定一个新的账户。" },
-      { id: "n13", x: 568, y: 664, u: ["frnd"], scen: ["s2"], deps: ["手机 App", "对讲机硬件", "云端 · 蜂窝网络"],
+      { id: "n13", z: "d", x: 568, y: 536, u: ["frnd"], scen: ["s2"], deps: ["手机 App", "对讲机硬件", "云端 · 蜂窝网络"],
         t: "对讲机成为组队节点", s: "类似车机系统，与车主组队",
         d: "绑定成功后，这台对讲机就变得类似车机系统，可以与车主形成组队关系。" },
-      { id: "n14", x: 828, y: 664, u: ["frnd"], scen: ["s2"], deps: ["手机 App", "对讲机硬件"], kind: "note", wide: true,
+      { id: "n14", z: "d", x: 828, y: 536, u: ["frnd"], scen: ["s2"], deps: ["手机 App", "对讲机硬件"], kind: "note", wide: true,
         t: "能力边界", s: "有硬件可无网通信；无硬件仅有网通话",
         d: "同伴车辆没有对讲机硬件时，无法参与场景一的无网通信；但有网络时仍能通过 App 与对讲机实现远距离通话。该功能因此能服务于并非全部由品牌车辆组成的混编车队。" }
     ],
@@ -660,6 +656,7 @@ html, body { height: 100%; }
               deps: n.deps, t: n.t, s: n.s, d: n.d };
     if (n.kind) o.kind = n.kind;
     if (n.wide) o.wide = true;
+    if (n.z) o.z = n.z;
     return o;
   }
   function serialize() {
@@ -681,7 +678,14 @@ html, body { height: 100%; }
       var raw = localStorage.getItem(KEY);
       if (raw) {
         var d = JSON.parse(raw);
-        if (d && d.nodes && d.nodes.length) return d;
+        if (d && d.nodes && d.nodes.length) {
+          d.nodes.forEach(function (n) {
+            if (n.z === undefined) {
+              n.z = ZMAP[n.id] || (n.scen.indexOf("s2") >= 0 ? "d" : n.scen.indexOf("s1") >= 0 ? "c" : "b");
+            }
+          });
+          return d;
+        }
       }
     } catch (err) {}
     return clone(DEFAULT);
@@ -698,6 +702,51 @@ html, body { height: 100%; }
   function fit() {
     var s = Math.max((scroller.clientWidth - 2) / CW, (scroller.clientHeight - 2) / CH);
     setScale(s, "fit");
+  }
+
+  /* ── 动态分区：分区框贴合成员节点，画布尺寸随内容收缩 ──────────── */
+  function initZones() {
+    ZONES.forEach(function (zn) {
+      var d = document.createElement("div");
+      d.className = "zone";
+      var l = document.createElement("span");
+      l.className = "zl";
+      l.innerHTML = zn.html;
+      d.appendChild(l);
+      canvas.insertBefore(d, svg);
+      zn.el = d;
+    });
+  }
+
+  function updateZones(resize) {
+    ZONES.forEach(function (zn) {
+      var x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9, cnt = 0;
+      NODES.forEach(function (n) {
+        if (n.z !== zn.z) return;
+        cnt++;
+        x1 = Math.min(x1, n.x); y1 = Math.min(y1, n.y);
+        x2 = Math.max(x2, n.x + n.el.offsetWidth);
+        y2 = Math.max(y2, n.y + n.el.offsetHeight);
+      });
+      if (!cnt) { zn.el.style.display = "none"; return; }
+      zn.el.style.display = "block";
+      zn.el.style.left = (x1 - 22) + "px";
+      zn.el.style.top = (y1 - 42) + "px";
+      zn.el.style.width = (x2 - x1 + 44) + "px";
+      zn.el.style.height = (y2 - y1 + 64) + "px";
+    });
+    if (resize) {
+      var maxR = 1332, maxB = 652;
+      NODES.forEach(function (n) {
+        maxR = Math.max(maxR, n.x + n.el.offsetWidth);
+        maxB = Math.max(maxB, n.y + n.el.offsetHeight);
+      });
+      CW = Math.min(2200, maxR + 28);
+      CH = Math.min(1380, maxB + 28);
+      canvas.style.width = CW + "px";
+      canvas.style.height = CH + "px";
+      if (zoomMode === "fit") fit(); else setScale(S, zoomMode);
+    }
   }
 
   /* ── 节点 DOM ───────────────────────────────────────────────────── */
@@ -764,16 +813,17 @@ html, body { height: 100%; }
       var dx = (ev.clientX - sx) / S, dy = (ev.clientY - sy) / S;
       if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
       if (!moved) return;
-      n.x = Math.max(6, Math.min(CW - el.offsetWidth - 6, nx + dx));
-      n.y = Math.max(6, Math.min(CH - el.offsetHeight - 6, ny + dy));
+      n.x = Math.max(6, Math.min(2200 - el.offsetWidth - 6, nx + dx));
+      n.y = Math.max(6, Math.min(1380 - el.offsetHeight - 6, ny + dy));
       el.style.left = n.x + "px";
       el.style.top = n.y + "px";
+      updateZones(false);
       drawEdges();
     });
     function up() {
       if (sx === undefined) return;
       sx = undefined;
-      if (moved) { save(); return; }
+      if (moved) { updateZones(true); drawEdges(); save(); return; }
       if (state.linking && state.linking !== n.id) { finishLink(n.id); return; }
       if (state.linking === n.id) { cancelLink(); return; }
       select(state.sel === n.id ? null : n.id);
@@ -1024,6 +1074,16 @@ html, body { height: 100%; }
     var iDep = field(panelBody, "依赖端 / 系统（逗号分隔）", function () {
       var i = document.createElement("input"); i.type = "text"; i.value = n.deps.join("，"); return i;
     });
+    var iZ = field(panelBody, "所属分区", function () {
+      var sel = document.createElement("select");
+      ["", "a", "b", "c", "d"].forEach(function (zv) {
+        var op = document.createElement("option");
+        op.value = zv; op.textContent = ZNAMES[zv];
+        if ((n.z || "") === zv) op.selected = true;
+        sel.appendChild(op);
+      });
+      return sel;
+    });
     var iK = field(panelBody, "节点样式", function () {
       var sel = document.createElement("select");
       [["", "普通步骤"], ["pain", "痛点（红点标记）"], ["note", "说明（虚线框）"]].forEach(function (o) {
@@ -1047,7 +1107,9 @@ html, body { height: 100%; }
       n.scen = scs.length ? scs : ["main"];
       n.deps = iDep.value.split(/[,，、;；]/).map(function (x) { return x.trim(); }).filter(Boolean);
       n.kind = iK.value || undefined;
+      n.z = iZ.value || undefined;
       renderNodeContent(n);
+      updateZones(true);
       drawEdges();
       apply();
       save();
@@ -1170,6 +1232,7 @@ html, body { height: 100%; }
     NODES.push(n);
     byId[id] = n;
     makeNodeEl(n);
+    updateZones(true);
     state.sel = id;
     apply();
     save();
@@ -1187,6 +1250,7 @@ html, body { height: 100%; }
     NODES.splice(NODES.indexOf(n), 1);
     delete byId[n.id];
     if (state.sel === n.id) state.sel = null;
+    updateZones(true);
     drawEdges();
     apply();
     save();
@@ -1231,6 +1295,7 @@ html, body { height: 100%; }
     });
     EDGES.forEach(makeEdgeEl);
     state.sel = null; state.selEdge = null; state.linking = null;
+    updateZones(true);
     drawEdges();
     apply();
     showHome();
@@ -1261,6 +1326,7 @@ html, body { height: 100%; }
       n.el.style.left = n.x + "px";
       n.el.style.top = n.y + "px";
     });
+    updateZones(true);
     drawEdges();
     save();
   });
@@ -1301,6 +1367,7 @@ html, body { height: 100%; }
   };
 
   initMarkers();
+  initZones();
   fit();
   buildFrom(loadData());
 })();
