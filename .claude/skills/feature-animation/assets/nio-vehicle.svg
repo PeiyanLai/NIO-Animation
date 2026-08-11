@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" font-family="sans-serif">
+<!-- NIO 风格车辆矢量三视图 · 供 feature-animation 舞台复用
+     用法：把需要的 <g id="nio-top|nio-side|nio-cabin"> 整组复制进舞台 SVG，
+     再通过 CSS 变量换色（各元素 fill/stroke 均带 var() 回退值，适配日/夜主题）。
+     标志性设计元素：瞭望塔式激光雷达、Double-Dash 日行灯、贯穿式尾灯、
+     隐藏门把手、NOMI、竖向中控屏。
+     注意：这是示意矢量，不是官方渲染图——用户提供官方图片时优先用真图。 -->
+  <style>
+    .nv-body  { fill: var(--nv-body, #232F3B); stroke: var(--nv-edge, #46586A); stroke-width: 2.5; }
+    .nv-glass { fill: var(--nv-glass, #141E28); stroke: var(--nv-edge, #46586A); stroke-width: 1.5; }
+    .nv-seat  { fill: var(--nv-glass, #141E28); stroke: var(--nv-edge, #46586A); stroke-width: 1.5; }
+    .nv-detail{ fill: var(--nv-edge, #46586A); }
+    .nv-line  { stroke: var(--nv-edge, #46586A); stroke-width: 1.5; fill: none; }
+    .nv-drl   { fill: var(--nv-drl, #CFEFFF); }
+    .nv-tail  { fill: var(--nv-tail, #E4574F); }
+    .nv-tire  { fill: var(--nv-tire, #0C1218); stroke: var(--nv-edge, #46586A); stroke-width: 1.5; }
+    .nv-lidar { fill: var(--nv-lidar, #0E1620); stroke: var(--nv-edge, #46586A); stroke-width: 1.5; }
+    .nv-accent{ fill: var(--nv-accent, #00D4D4); }
+  </style>
+
+  <!-- ═══ 顶视图（车头朝上）：泊车/车外位置类演示 ═══ -->
+  <g id="nio-top" transform="translate(120 200)">
+    <!-- 车轮 -->
+    <rect class="nv-tire" x="-74" y="-104" width="13" height="48" rx="5" />
+    <rect class="nv-tire" x="61"  y="-104" width="13" height="48" rx="5" />
+    <rect class="nv-tire" x="-74" y="64"   width="13" height="48" rx="5" />
+    <rect class="nv-tire" x="61"  y="64"   width="13" height="48" rx="5" />
+    <!-- 车身（前窄后收的溜背轿身） -->
+    <path class="nv-body" d="M0 -158 C 42 -158, 60 -146, 62 -110 L 66 68 C 66 118, 44 150, 0 150
+                             C -44 150, -66 118, -66 68 L -62 -110 C -60 -146, -42 -158, 0 -158 Z" />
+    <!-- 引擎盖分缝 -->
+    <path class="nv-line" d="M-52 -96 C -20 -108, 20 -108, 52 -96" />
+    <!-- 前风挡 + 全景玻璃顶 + 后风挡 -->
+    <path class="nv-glass" d="M-50 -64 C -20 -84, 20 -84, 50 -64 L 44 -36 C 20 -48, -20 -48, -44 -36 Z" />
+    <rect class="nv-glass" x="-44" y="-32" width="88" height="116" rx="22" />
+    <path class="nv-glass" d="M-46 90 C -18 100, 18 100, 46 90 L 40 120 C 16 130, -16 130, -40 120 Z" />
+    <!-- 瞭望塔式激光雷达（风挡顶中央） + 车顶侧摄像头 -->
+    <rect class="nv-lidar" x="-14" y="-76" width="28" height="13" rx="6.5" />
+    <circle class="nv-detail" cx="-40" cy="-58" r="4" />
+    <circle class="nv-detail" cx="40"  cy="-58" r="4" />
+    <!-- 外后视镜 -->
+    <rect class="nv-body" x="-84" y="-50" width="18" height="11" rx="5" />
+    <rect class="nv-body" x="66"  y="-50" width="18" height="11" rx="5" />
+    <!-- Double-Dash 日行灯（双段式，左右各一组） -->
+    <rect class="nv-drl" x="-54" y="-144" width="21" height="4.5" rx="2.2" />
+    <rect class="nv-drl" x="-54" y="-136" width="13" height="4.5" rx="2.2" />
+    <rect class="nv-drl" x="33"  y="-144" width="21" height="4.5" rx="2.2" />
+    <rect class="nv-drl" x="41"  y="-136" width="13" height="4.5" rx="2.2" />
+    <!-- 贯穿式尾灯 -->
+    <rect class="nv-tail" x="-52" y="136" width="104" height="6" rx="3" opacity=".85" />
+  </g>
+
+  <!-- ═══ 侧视图（车头朝右）：充电/悬架/开门类演示 ═══ -->
+  <g id="nio-side" transform="translate(300 40)">
+    <!-- 车身溜背轮廓 -->
+    <path class="nv-body" d="M22 96 C 16 84, 16 72, 26 62 C 60 40, 110 28, 165 30
+                             C 205 32, 245 48, 280 64 C 315 74, 345 82, 362 90
+                             C 370 94, 372 100, 371 106 L 368 114 L 338 114
+                             A 30 30 0 0 0 270 114 L 128 114
+                             A 30 30 0 0 0 60 114 L 30 114 C 22 110, 20 104, 22 96 Z" />
+    <!-- 车窗带（隐藏 A/C 柱的整体玻璃带） -->
+    <path class="nv-glass" d="M62 60 C 100 42, 150 34, 172 36 L 244 62 C 190 68, 110 70, 68 66 Z" />
+    <!-- 瞭望塔激光雷达（车顶前端） -->
+    <rect class="nv-lidar" x="158" y="22" width="28" height="11" rx="5.5" />
+    <!-- Double-Dash 日行灯（车头） -->
+    <rect class="nv-drl" x="338" y="80" width="22" height="4.5" rx="2.2" />
+    <rect class="nv-drl" x="346" y="88" width="14" height="4.5" rx="2.2" />
+    <!-- 贯穿尾灯（车尾立面） -->
+    <rect class="nv-tail" x="18" y="68" width="7" height="20" rx="3.5" opacity=".85" />
+    <!-- 隐藏式门把手 -->
+    <rect class="nv-detail" x="150" y="76" width="17" height="3.5" rx="1.7" />
+    <rect class="nv-detail" x="222" y="72" width="17" height="3.5" rx="1.7" />
+    <!-- 门缝 -->
+    <path class="nv-line" d="M178 40 L 186 112" />
+    <path class="nv-line" d="M248 64 L 252 112" />
+    <!-- 充电口盖（左后翼子板） -->
+    <rect class="nv-line" x="48" y="72" width="14" height="10" rx="3" />
+    <!-- 车轮（五辐轮毂） -->
+    <g>
+      <circle class="nv-tire" cx="94" cy="114" r="27" />
+      <circle class="nv-detail" cx="94" cy="114" r="12" />
+      <g stroke="var(--nv-tire, #0C1218)" stroke-width="3">
+        <path d="M94 104 L94 124 M85 109 L103 119 M103 109 L85 119" />
+      </g>
+    </g>
+    <g>
+      <circle class="nv-tire" cx="304" cy="114" r="27" />
+      <circle class="nv-detail" cx="304" cy="114" r="12" />
+      <g stroke="var(--nv-tire, #0C1218)" stroke-width="3">
+        <path d="M304 104 L304 124 M295 109 L313 119 M313 109 L295 119" />
+      </g>
+    </g>
+  </g>
+
+  <!-- ═══ 座舱顶视图（车头朝上）：空调/座椅/宠物/车内感知类演示 ═══ -->
+  <g id="nio-cabin" transform="translate(790 200)">
+    <!-- 车身外壳 -->
+    <rect class="nv-body" x="-75" y="-130" width="150" height="260" rx="34" />
+    <path class="nv-glass" d="M-58 -92 C -30 -112, 30 -112, 58 -92 Z" />
+    <path class="nv-glass" d="M-58 96 C -30 114, 30 114, 58 96 Z" />
+    <!-- 仪表台 -->
+    <rect class="nv-detail" x="-58" y="-96" width="116" height="16" rx="7" opacity=".55" />
+    <!-- NOMI（仪表台顶部中央，圆头双眼） -->
+    <circle class="nv-body" cx="0" cy="-100" r="8" />
+    <circle class="nv-accent" cx="-2.8" cy="-101" r="1.6" />
+    <circle class="nv-accent" cx="2.8"  cy="-101" r="1.6" />
+    <!-- 竖向中控屏 -->
+    <rect class="nv-accent" x="-9" y="-88" width="18" height="30" rx="3" opacity=".8" />
+    <!-- 方向盘 -->
+    <circle class="nv-line" cx="-36" cy="-64" r="14" />
+    <circle class="nv-detail" cx="-36" cy="-64" r="4" />
+    <!-- 前排座椅 -->
+    <rect class="nv-seat" x="-58" y="-46" width="46" height="54" rx="11" />
+    <rect class="nv-seat" x="12"  y="-46" width="46" height="54" rx="11" />
+    <!-- 后排长椅 -->
+    <rect class="nv-seat" x="-58" y="34" width="116" height="62" rx="12" />
+  </g>
+</svg>

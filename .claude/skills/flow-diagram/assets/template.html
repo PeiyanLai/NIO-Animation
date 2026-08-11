@@ -477,6 +477,65 @@ html, body { height: 100%; }
 .canvas.linking .node { cursor: crosshair; }
 .canvas svg .hit { pointer-events: stroke; cursor: pointer; stroke: rgba(0,0,0,0); stroke-width: 16; fill: none; }
 .meta-hint { font-size: 11.5px; color: var(--ink-4); margin-top: 10px; }
+
+/* ─── 卡片视图：按阶段分组，点击进入编辑 ─────────────────────────────── */
+.cards-scroll {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: var(--sh-card);
+  padding: 18px 20px 24px;
+  display: none;
+}
+.stage-wrap[data-view="cards"] .cards-scroll { display: block; }
+.stage-wrap[data-view="cards"] .canvas-scroll { display: none; }
+.phaseb { margin-bottom: 24px; }
+.phaseb-h { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.ppill {
+  min-width: 27px; height: 27px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  color: #FFFFFF;
+  font-family: var(--f-data);
+  font-size: 12.5px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.phaseb-t { font-size: 15px; font-weight: 700; color: var(--ink-1); }
+.phaseb-t b { color: var(--accent); }
+.pgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+.pcard {
+  border: 1px solid var(--line-2);
+  border-left: 4px solid var(--accent);
+  border-radius: 10px;
+  background: var(--card);
+  padding: 10px 12px 9px;
+  cursor: pointer;
+  transition: box-shadow .15s, border-color .15s, opacity .2s;
+}
+.pcard:hover { box-shadow: var(--sh-card); border-color: var(--accent); }
+.pcard:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pcard.dim { opacity: .25; }
+.pcard[data-u="owner"] { border-left-color: var(--u-owner-b); }
+.pcard[data-u="mate"]  { border-left-color: var(--u-mate-b); }
+.pcard[data-u="frnd"]  { border-left-color: var(--u-frnd-b); }
+.pcard[data-u="team"]  { border-left-color: var(--u-team); }
+.pcard[data-kind="pain"] { border-left-color: var(--risk-2); }
+.pcard[data-kind="note"] { border-style: dashed; border-left-style: solid; }
+.pcard h4 { margin: 0 0 2px; font-size: 13.5px; line-height: 1.3; color: var(--ink-1); display: flex; align-items: center; gap: 6px; }
+.pcard .ns { font-size: 11.5px; color: var(--ink-3); line-height: 1.45; }
+.pcard .pdesc { font-size: 12px; color: var(--ink-2); margin-top: 5px; line-height: 1.55; }
+.pcard .nrow { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
 </style>
 </head>
 <body>
@@ -510,6 +569,11 @@ html, body { height: 100%; }
       <button class="fchip" type="button" data-user="mate" aria-pressed="false"><span class="dot dot-mate"></span>品牌车队友</button>
       <button class="fchip" type="button" data-user="frnd" aria-pressed="false"><span class="dot dot-frnd"></span>非品牌车朋友</button>
     </div>
+    <div class="tgroup" id="viewChips" role="group" aria-label="视图切换">
+      <span class="tlabel">视图</span>
+      <button class="fchip" type="button" data-view="canvas" aria-pressed="true">画布</button>
+      <button class="fchip" type="button" data-view="cards" aria-pressed="false">卡片</button>
+    </div>
     <div class="tgroup" role="group" aria-label="编辑">
       <span class="tlabel">编辑</span>
       <button class="fchip" type="button" id="addNodeBtn">＋ 新增节点</button>
@@ -526,7 +590,7 @@ html, body { height: 100%; }
     <button class="fchip reset-btn" type="button" id="resetBtn">重置布局</button>
   </div>
 
-  <div class="stage-wrap">
+  <div class="stage-wrap" id="stageWrap" data-view="canvas">
 
     <div class="canvas-scroll" id="canvasScroll">
       <div class="canvas-outer" id="canvasOuter">
@@ -535,6 +599,8 @@ html, body { height: 100%; }
       </div>
       </div>
     </div>
+
+    <div class="cards-scroll"><div id="cardsBody"></div></div>
 
     <aside class="panel" id="panel">
       <button class="pclose" id="panelClose" type="button" aria-label="关闭">×</button>
@@ -1061,6 +1127,7 @@ html, body { height: 100%; }
       drawEdges();
       apply();
       save();
+      syncCards();
     }
 
     var btns = document.createElement("div");
@@ -1220,6 +1287,7 @@ html, body { height: 100%; }
     drawEdges();
     apply();
     save();
+    syncCards();
     showHome();
   }
 
@@ -1265,8 +1333,81 @@ html, body { height: 100%; }
     drawEdges();
     apply();
     showHome();
+    syncCards();
     window.__flow.nodes = NODES;
     window.__flow.edges = EDGES;
+  }
+
+  /* ── 卡片视图：按分区分组，点击卡片进入编辑 ────────────────────── */
+  var cardsBody = document.getElementById("cardsBody");
+  var stageWrap = document.getElementById("stageWrap");
+
+  function renderCards() {
+    cardsBody.innerHTML = "";
+    var groups = ZONES.map(function (zn) {
+      return { zn: zn, members: NODES.filter(function (n) { return n.z === zn.z; }) };
+    });
+    groups.push({ zn: { html: "未分区" }, members: NODES.filter(function (n) { return !n.z; }) });
+    var num = 0;
+    groups.forEach(function (g) {
+      if (!g.members.length) return;
+      num++;
+      var blk = document.createElement("div");
+      blk.className = "phaseb";
+      var h = document.createElement("div");
+      h.className = "phaseb-h";
+      var pill = document.createElement("span");
+      pill.className = "ppill";
+      pill.textContent = String(num).padStart(2, "0");
+      h.appendChild(pill);
+      var ht = document.createElement("div");
+      ht.className = "phaseb-t";
+      ht.innerHTML = g.zn.html;
+      h.appendChild(ht);
+      blk.appendChild(h);
+      var grid = document.createElement("div");
+      grid.className = "pgrid";
+      g.members.slice().sort(function (a, b) { return a.y - b.y || a.x - b.x; }).forEach(function (n) {
+        var c = document.createElement("div");
+        c.className = "pcard" + (nodeVisible(n) ? "" : " dim");
+        var key = n.u.indexOf("team") >= 0 || n.u.length > 1 ? "team" : n.u[0];
+        c.dataset.u = key;
+        if (n.kind) c.dataset.kind = n.kind;
+        c.setAttribute("role", "button");
+        c.setAttribute("tabindex", "0");
+        var h4 = document.createElement("h4");
+        if (n.kind === "pain") { var pd = document.createElement("span"); pd.className = "pain-dot"; h4.appendChild(pd); }
+        h4.appendChild(document.createTextNode(n.t));
+        c.appendChild(h4);
+        if (n.s) { var ns = document.createElement("div"); ns.className = "ns"; ns.textContent = n.s; c.appendChild(ns); }
+        if (n.d) { var dd = document.createElement("div"); dd.className = "pdesc"; dd.textContent = n.d; c.appendChild(dd); }
+        var row = document.createElement("div");
+        row.className = "nrow";
+        var ut = document.createElement("span");
+        ut.className = "utag";
+        ut.innerHTML = '<span class="dot ' + USERS[key].dot + '"></span>' + USERS[key].name;
+        row.appendChild(ut);
+        n.deps.forEach(function (dep) {
+          var dt = document.createElement("span");
+          dt.className = "dtag";
+          dt.textContent = dep;
+          row.appendChild(dt);
+        });
+        c.appendChild(row);
+        function openIt() { state.sel = n.id; state.selEdge = null; apply(); showNodeForm(n); }
+        c.addEventListener("click", openIt);
+        c.addEventListener("keydown", function (ev) {
+          if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); openIt(); }
+        });
+        grid.appendChild(c);
+      });
+      blk.appendChild(grid);
+      cardsBody.appendChild(blk);
+    });
+  }
+
+  function syncCards() {
+    if (stageWrap.dataset.view === "cards") renderCards();
   }
 
   /* ── 工具条 ─────────────────────────────────────────────────────── */
@@ -1280,10 +1421,23 @@ html, body { height: 100%; }
         c.setAttribute("aria-pressed", String(c === btn));
       });
       apply();
+      syncCards();
     });
   }
   chipGroup("scenChips", "scen", "scen");
   chipGroup("userChips", "user", "user");
+
+  var viewBox = document.getElementById("viewChips");
+  viewBox.addEventListener("click", function (ev) {
+    var btn = ev.target.closest(".fchip");
+    if (!btn || !btn.dataset.view) return;
+    stageWrap.dataset.view = btn.dataset.view;
+    Array.prototype.forEach.call(viewBox.querySelectorAll(".fchip"), function (c) {
+      c.setAttribute("aria-pressed", String(c === btn));
+    });
+    if (btn.dataset.view === "cards") renderCards();
+    else { if (zoomMode === "fit") fit(); drawEdges(); }
+  });
 
   document.getElementById("resetBtn").addEventListener("click", function () {
     NODES.forEach(function (n) {
@@ -1329,7 +1483,8 @@ html, body { height: 100%; }
     nodes: NODES, edges: EDGES, state: state,
     select: select, apply: apply, draw: drawEdges,
     scale: function () { return S; },
-    addNode: addNode, serialize: serialize
+    addNode: addNode, serialize: serialize,
+    renderCards: renderCards
   };
 
   initMarkers();
