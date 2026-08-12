@@ -313,8 +313,7 @@ body {
 /* ─── SVG 元素 ────────────────────────────────────────────────────────── */
 .body-shell { fill: var(--car-fill); stroke: var(--car-edge); stroke-width: 2.5; }
 .glass      { fill: var(--car-glass); stroke: var(--car-edge); stroke-width: 1.5; }
-.seat       { fill: var(--car-glass); stroke: var(--car-edge); stroke-width: 1.5; }
-.hu         { fill: var(--car-edge); transition: fill .3s; }
+.hu         { fill: var(--nv-screen); stroke: var(--nv-amber); stroke-width: 1; transition: fill .3s; }
 .stage[data-detect="true"] .hu { fill: var(--accent); }
 
 .paw  { fill: var(--pet); }
@@ -406,7 +405,7 @@ body {
   100% { opacity: 0; transform: scale(.6); }
 }
 
-.turn { fill: var(--pet); opacity: 0; }
+.turn { fill: var(--nv-amber); opacity: 0; }
 .stage[data-lock="true"] .turn { animation: blink .5s steps(1, end) 2; }
 @keyframes blink { 0%, 49% { opacity: .95; } 50%, 100% { opacity: 0; } }
 
@@ -467,6 +466,29 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .tag-pulse, .airflow, .zz, .guard, .spark, .turn { animation: none !important; }
 }
+
+/* ─── 统一蔚来车矢量（座舱） ─────────────────────────────────────────── */
+:root {
+  --nv-body:#C8A57B; --nv-edge:#8C7355; --nv-roof:#221E1C;
+  --nv-seat:#E8E2D6; --nv-trim:#5C3A2E; --nv-amber:#D9A96A; --nv-screen:#1A2430;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --nv-body:#A98963; --nv-edge:#6E5A42; --nv-roof:#15120F;
+    --nv-seat:#CFC6B4; --nv-trim:#3E2A22; --nv-amber:#E0B071; --nv-screen:#101A24;
+  }
+}
+:root[data-theme="dark"] {
+  --nv-body:#A98963; --nv-edge:#6E5A42; --nv-roof:#15120F;
+  --nv-seat:#CFC6B4; --nv-trim:#3E2A22; --nv-amber:#E0B071; --nv-screen:#101A24;
+}
+.nv-body  { fill: var(--nv-body); stroke: var(--nv-edge); stroke-width: 2; }
+.nv-roof  { fill: var(--nv-roof); stroke: var(--nv-edge); stroke-width: 1.2; }
+.nv-line  { stroke: var(--nv-edge); stroke-width: 1.4; fill: none; }
+.nv-seat  { fill: var(--nv-seat); stroke: var(--nv-trim); stroke-width: 1.4; }
+.nv-trim  { fill: var(--nv-trim); }
+.nv-amber { fill: var(--nv-amber); }
+.nv-screen{ fill: var(--nv-screen); stroke: var(--nv-amber); stroke-width: 1; }
 </style>
 </head>
 <body>
@@ -501,53 +523,85 @@ body {
     <div class="stage" id="stage" data-scn="a" data-phase="0" data-pill="off"
          data-detect="false" data-air="" data-zz="false" data-guard="false"
          data-lock="false" data-spark="false">
-      <svg viewBox="0 0 820 560" preserveAspectRatio="xMidYMid meet" aria-label="宠物模式动画：车辆俯视图，宠物在车自动恒温，离车后自动净化">
+      <svg viewBox="0 0 820 560" preserveAspectRatio="xMidYMid meet" aria-label="宠物模式动画：蔚来座舱俯视，宠物在车自动恒温，离车后自动净化">
 
         <g transform="translate(360 285)">
           <!-- 守护环 -->
-          <circle class="guard" cx="0" cy="0" r="168" />
+          <circle class="guard" cx="0" cy="0" r="184" />
 
-          <!-- 车身 -->
-          <rect class="body-shell" x="-75" y="-130" width="150" height="260" rx="34" />
-          <path class="glass" d="M-58 -92 C -30 -112, 30 -112, 58 -92 Z" />
-          <path class="glass" d="M-58 96 C -30 114, 30 114, 58 96 Z" />
-
-          <!-- 座椅 -->
-          <rect class="seat" x="-56" y="-64" width="46" height="54" rx="11" />
-          <rect class="seat" x="10"  y="-64" width="46" height="54" rx="11" />
-          <rect class="seat" x="-56" y="30"  width="112" height="62" rx="12" />
-
-          <!-- 车机（中控） -->
-          <rect class="hu" x="-16" y="-102" width="32" height="13" rx="4" />
+          <!-- 车身外壳（统一蔚来座舱） -->
+          <rect class="nv-body" x="-78" y="-150" width="156" height="300" rx="32" />
+          <path class="nv-roof" d="M-60 -112 C -32 -130, 32 -130, 60 -112 Z" opacity=".85" />
+          <path class="nv-roof" d="M-60 116 C -32 132, 32 132, 60 116 Z" opacity=".85" />
 
           <!-- 转向灯（落锁双闪） -->
-          <rect class="turn" x="-72" y="-124" width="12" height="20" rx="5" />
-          <rect class="turn" x="60"  y="-124" width="12" height="20" rx="5" />
-          <rect class="turn" x="-72" y="104"  width="12" height="20" rx="5" />
-          <rect class="turn" x="60"  y="104"  width="12" height="20" rx="5" />
+          <rect class="turn" x="-74" y="-144" width="12" height="20" rx="5" />
+          <rect class="turn" x="62"  y="-144" width="12" height="20" rx="5" />
+          <rect class="turn" x="-74" y="124"  width="12" height="20" rx="5" />
+          <rect class="turn" x="62"  y="124"  width="12" height="20" rx="5" />
 
-          <!-- 空调气流 -->
-          <path class="airflow" d="M-45 -84 C -45 -20, -52 30, -45 86" />
-          <path class="airflow" d="M-15 -84 C -15 -14, -20 36, -15 86" />
-          <path class="airflow" d="M15 -84 C 15 -14, 20 36, 15 86" />
-          <path class="airflow" d="M45 -84 C 45 -20, 52 30, 45 86" />
+          <!-- 仪表台 + 横向中控宽屏（车机，检测时高亮） + NOMI -->
+          <rect class="nv-trim" x="-62" y="-116" width="124" height="15" rx="7" opacity=".6" />
+          <rect class="hu" x="-24" y="-110" width="48" height="11" rx="3" />
+          <circle class="nv-body" cx="0" cy="-121" r="7.5" />
+          <circle cx="-2.6" cy="-122" r="1.5" fill="var(--accent)" />
+          <circle cx="2.6"  cy="-122" r="1.5" fill="var(--accent)" />
+
+          <!-- 方向盘 -->
+          <circle class="nv-line" cx="-40" cy="-86" r="13" />
+          <circle class="nv-trim" cx="-40" cy="-86" r="3.6" />
+
+          <!-- 空调气流：从仪表台吹向后舱 -->
+          <path class="airflow" d="M-48 -96 C -48 -20, -54 50, -48 128" />
+          <path class="airflow" d="M-16 -96 C -16 -14, -20 56, -16 128" />
+          <path class="airflow" d="M16 -96 C 16 -14, 20 56, 16 128" />
+          <path class="airflow" d="M48 -96 C 48 -20, 54 50, 48 128" />
 
           <!-- 异味颗粒（场景二净化目标） -->
           <g id="odors">
-            <circle class="odor" cx="-40" cy="-16" r="7" />
-            <circle class="odor" cx="32"  cy="-34" r="6" />
-            <circle class="odor" cx="-14" cy="44"  r="8" />
-            <circle class="odor" cx="42"  cy="76"  r="6" />
-            <circle class="odor" cx="-46" cy="86"  r="5.5" />
+            <circle class="odor" cx="-42" cy="-20" r="7" />
+            <circle class="odor" cx="34"  cy="-42" r="6" />
+            <circle class="odor" cx="-16" cy="52"  r="8" />
+            <circle class="odor" cx="46"  cy="88"  r="6" />
+            <circle class="odor" cx="-48" cy="102" r="5.5" />
           </g>
 
           <!-- 清新星光 -->
-          <path class="spark" transform="translate(-40 -40)" d="M0 -7 L2 -2 L7 0 L2 2 L0 7 L-2 2 L-7 0 L-2 -2 Z" />
-          <path class="spark" transform="translate(45 -10)"  d="M0 -7 L2 -2 L7 0 L2 2 L0 7 L-2 2 L-7 0 L-2 -2 Z" />
-          <path class="spark" transform="translate(-30 66)"  d="M0 -7 L2 -2 L7 0 L2 2 L0 7 L-2 2 L-7 0 L-2 -2 Z" />
-          <path class="spark" transform="translate(38 100)"  d="M0 -7 L2 -2 L7 0 L2 2 L0 7 L-2 2 L-7 0 L-2 -2 Z" />
+          <path class="spark" transform="translate(-42 -46)" d="M0 -7 L2 -2 L7 0 L2 2 L0 7 L-2 2 L-7 0 L-2 -2 Z" />
+          <path class="spark" transform="translate(48 -12)"  d="M0 -7 L2 -2 L7 0 L2 2 L0 7 L-2 2 L-7 0 L-2 -2 Z" />
+          <path class="spark" transform="translate(-34 74)"  d="M0 -7 L2 -2 L7 0 L2 2 L0 7 L-2 2 L-7 0 L-2 -2 Z" />
+          <path class="spark" transform="translate(40 112)"  d="M0 -7 L2 -2 L7 0 L2 2 L0 7 L-2 2 L-7 0 L-2 -2 Z" />
 
-          <!-- 宠物（爪印 + 定位器） -->
+          <!-- 天空岛中轴（贯穿一二排，端头带屏） -->
+          <rect class="nv-seat" x="-11" y="-96" width="22" height="140" rx="9" />
+          <rect class="nv-screen" x="-7" y="22" width="14" height="16" rx="3" />
+
+          <!-- 一排双座 + 椅背娱乐屏 -->
+          <rect class="nv-seat" x="-62" y="-68" width="44" height="52" rx="11" />
+          <rect class="nv-seat" x="18"  y="-68" width="44" height="52" rx="11" />
+          <rect class="nv-screen" x="-53" y="-12" width="27" height="6" rx="2" />
+          <rect class="nv-screen" x="26"  y="-12" width="27" height="6" rx="2" />
+
+          <!-- 行政二排：独立双座 + 外侧扶手 -->
+          <rect class="nv-seat" x="-62" y="6" width="44" height="56" rx="11" />
+          <rect class="nv-seat" x="18"  y="6" width="44" height="56" rx="11" />
+          <rect class="nv-seat" x="-70" y="16" width="8" height="34" rx="4" />
+          <rect class="nv-seat" x="62"  y="16" width="8" height="34" rx="4" />
+
+          <!-- 三排长椅 -->
+          <rect class="nv-seat" x="-62" y="82" width="124" height="52" rx="12" />
+
+          <!-- 氛围灯带 + 扬声器点位 -->
+          <path d="M-70 -100 L -70 120" stroke="var(--nv-amber)" stroke-width="2.2" stroke-linecap="round" opacity=".8" />
+          <path d="M70 -100 L 70 120"  stroke="var(--nv-amber)" stroke-width="2.2" stroke-linecap="round" opacity=".8" />
+          <g fill="var(--nv-amber)" opacity=".55">
+            <circle cx="-66" cy="-104" r="2.6" /><circle cx="66" cy="-104" r="2.6" />
+            <circle cx="-72" cy="-30" r="2.6" /><circle cx="72" cy="-30" r="2.6" />
+            <circle cx="-72" cy="34"  r="2.6" /><circle cx="72" cy="34"  r="2.6" />
+            <circle cx="-66" cy="104" r="2.6" /><circle cx="66" cy="104" r="2.6" />
+          </g>
+
+          <!-- 宠物（爪印 + 定位器，行政二排右座） -->
           <g id="pet">
             <ellipse class="paw" cx="0" cy="8" rx="12" ry="9.5" />
             <circle class="paw" cx="-9" cy="-3" r="5" />
@@ -558,9 +612,9 @@ body {
           </g>
 
           <!-- 睡意 zzz -->
-          <text class="zz" x="34" y="30" font-size="11">z</text>
-          <text class="zz" x="47" y="14" font-size="13.5">z</text>
-          <text class="zz" x="61" y="-4" font-size="16">z</text>
+          <text class="zz" x="62" y="20" font-size="11">z</text>
+          <text class="zz" x="75" y="4" font-size="13.5">z</text>
+          <text class="zz" x="89" y="-14" font-size="16">z</text>
 
           <!-- 车主 -->
           <g id="owner">
@@ -569,7 +623,7 @@ body {
           </g>
 
           <!-- 落锁 -->
-          <g id="lockG" transform="translate(0 -162)" opacity="0">
+          <g id="lockG" transform="translate(0 -182)" opacity="0">
             <rect class="lock-body" x="-11" y="-5" width="22" height="16" rx="4" />
             <path class="lock-arc" d="M-6 -5 v-4 a6 6 0 0 1 12 0 v4" />
           </g>
@@ -577,8 +631,8 @@ body {
 
         <!-- 完成确认（场景二） -->
         <g id="checkG" opacity="0">
-          <circle class="check-bg" cx="520" cy="150" r="17" />
-          <path class="check-mk" d="M512 150 L518 156 L529 144" />
+          <circle class="check-bg" cx="530" cy="140" r="17" />
+          <path class="check-mk" d="M522 140 L528 146 L539 134" />
         </g>
       </svg>
 
@@ -658,9 +712,9 @@ body {
   var hudTemp = document.getElementById("hudTemp");
   var hudStat = document.getElementById("hudStat");
 
-  var PET_HOME = { x: 12, y: 58 };
-  var OWNER_SEAT = { x: -33, y: -44 };
-  var OWNER_OUT = -198;
+  var PET_HOME = { x: 40, y: 32 };
+  var OWNER_SEAT = { x: -40, y: -44 };
+  var OWNER_OUT = -208;
 
   for (var i = 0; i < 5; i++) {
     var d = document.createElement("span");
@@ -752,12 +806,12 @@ body {
       }
 
       if (t >= b[3]) { checkK = clamp01((t - b[3]) / .5); }
-      pop(checkG, checkK, "translate(520 150) translate(-520 -150)");
+      pop(checkG, checkK, "translate(530 140) translate(-530 -140)");
     }
 
     // 落锁图标（车组局部坐标）
     var lk = clamp01((t - lockT) / .45);
-    lockG.setAttribute("transform", "translate(0 -162) scale(" + (lk > 0 ? easeOutBack(lk).toFixed(3) : "0.001") + ")");
+    lockG.setAttribute("transform", "translate(0 -182) scale(" + (lk > 0 ? easeOutBack(lk).toFixed(3) : "0.001") + ")");
     lockG.setAttribute("opacity", Math.min(1, lk * 2).toFixed(2));
 
     hudTemp.textContent = temp.toFixed(1) + "°C";

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>平移泊入 V2 · 车载功能动画</title>
+<title>平移泊入 · 车载功能动画</title>
 <style>
 /* ─── tokens：日间默认，夜间在媒体查询与 data-theme 下重定义 ─────────── */
 :root {
@@ -11,7 +11,6 @@
 
   --ground:      #E7ECF1;
   --panel:       #FDFEFF;
-  --panel-sunk:  #EDF2F6;
   --line:        #C6D2DC;
   --line-soft:   #DCE4EB;
 
@@ -26,14 +25,19 @@
   --ok:          #12735A;
   --ok-wash:     #DCF2EA;
 
-  --car-fill:    #D7E0E8;
-  --car-edge:    #94A4B2;
-  --car-glass:   #C2D0DB;
-  --car-tire:    #3E4A55;
-
   --stage-bg:    #E1E8EE;
   --stage-grid:  #D0DAE3;
+  --slot-line:   #94A4B2;
   --shadow:      0 1px 2px rgba(20,32,43,.06), 0 8px 24px -12px rgba(20,32,43,.28);
+
+  /* 统一蔚来车矢量配色（官方照片色系） */
+  --nv-body:   #C8A57B;
+  --nv-edge:   #8C7355;
+  --nv-roof:   #1A1A1E;
+  --nv-drl:    #EAF4FF;
+  --nv-tail:   #D8322A;
+  --nv-tire:   #14161A;
+  --nv-chrome: #C9CDD2;
 
   --f-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
           "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
@@ -45,7 +49,6 @@
   :root {
     --ground:      #0A0E13;
     --panel:       #121A22;
-    --panel-sunk:  #0E151C;
     --line:        #24313D;
     --line-soft:   #1B252F;
 
@@ -60,21 +63,24 @@
     --ok:          #4FD1A0;
     --ok-wash:     #0D2B22;
 
-    --car-fill:    #232F3B;
-    --car-edge:    #46586A;
-    --car-glass:   #141E28;
-    --car-tire:    #0C1218;
-
     --stage-bg:    #080C10;
     --stage-grid:  #131C24;
+    --slot-line:   #46586A;
     --shadow:      0 1px 2px rgba(0,0,0,.5), 0 10px 30px -14px rgba(0,0,0,.8);
+
+    --nv-body:   #A98963;
+    --nv-edge:   #6E5A42;
+    --nv-roof:   #101014;
+    --nv-drl:    #DCEFFF;
+    --nv-tail:   #E4574F;
+    --nv-tire:   #0A0C10;
+    --nv-chrome: #8F969E;
   }
 }
 
 :root[data-theme="dark"] {
   --ground:      #0A0E13;
   --panel:       #121A22;
-  --panel-sunk:  #0E151C;
   --line:        #24313D;
   --line-soft:   #1B252F;
 
@@ -89,20 +95,23 @@
   --ok:          #4FD1A0;
   --ok-wash:     #0D2B22;
 
-  --car-fill:    #232F3B;
-  --car-edge:    #46586A;
-  --car-glass:   #141E28;
-  --car-tire:    #0C1218;
-
   --stage-bg:    #080C10;
   --stage-grid:  #131C24;
+  --slot-line:   #46586A;
   --shadow:      0 1px 2px rgba(0,0,0,.5), 0 10px 30px -14px rgba(0,0,0,.8);
+
+  --nv-body:   #A98963;
+  --nv-edge:   #6E5A42;
+  --nv-roof:   #101014;
+  --nv-drl:    #DCEFFF;
+  --nv-tail:   #E4574F;
+  --nv-tire:   #0A0C10;
+  --nv-chrome: #8F969E;
 }
 
 :root[data-theme="light"] {
   --ground:      #E7ECF1;
   --panel:       #FDFEFF;
-  --panel-sunk:  #EDF2F6;
   --line:        #C6D2DC;
   --line-soft:   #DCE4EB;
 
@@ -117,14 +126,18 @@
   --ok:          #12735A;
   --ok-wash:     #DCF2EA;
 
-  --car-fill:    #D7E0E8;
-  --car-edge:    #94A4B2;
-  --car-glass:   #C2D0DB;
-  --car-tire:    #3E4A55;
-
   --stage-bg:    #E1E8EE;
   --stage-grid:  #D0DAE3;
+  --slot-line:   #94A4B2;
   --shadow:      0 1px 2px rgba(20,32,43,.06), 0 8px 24px -12px rgba(20,32,43,.28);
+
+  --nv-body:   #C8A57B;
+  --nv-edge:   #8C7355;
+  --nv-roof:   #1A1A1E;
+  --nv-drl:    #EAF4FF;
+  --nv-tail:   #D8322A;
+  --nv-tire:   #14161A;
+  --nv-chrome: #C9CDD2;
 }
 
 * { box-sizing: border-box; }
@@ -167,7 +180,7 @@ body {
 }
 .masthead p {
   margin: 8px 0 0;
-  max-width: 60ch;
+  max-width: 62ch;
   color: var(--ink-2);
   font-size: 14px;
 }
@@ -235,7 +248,6 @@ body {
 }
 .hud b { font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; }
 
-/* 屏内功能按钮：第 2 步"点按开启"的视觉落点 */
 .pill {
   position: absolute;
   left: 16px; bottom: 14px;
@@ -278,7 +290,7 @@ body {
 
 /* ─── SVG 元素 ────────────────────────────────────────────────────────── */
 .open-line { stroke: var(--ink-3); stroke-width: 2; stroke-dasharray: 10 8; }
-.slot-line { stroke: var(--car-edge); stroke-width: 2.5; fill: none; stroke-linecap: round; }
+.slot-line { stroke: var(--slot-line); stroke-width: 2.5; fill: none; stroke-linecap: round; }
 .slot-num  { font-family: var(--f-data); font-size: 13px; fill: var(--ink-3); letter-spacing: .1em; }
 
 .target-rect {
@@ -303,26 +315,27 @@ body {
   stroke-width: 2;
   stroke-dasharray: 7 7;
 }
-
-/* 规划轨迹：之字形挪移路线 */
 .plan {
   fill: none;
   stroke: var(--accent);
   stroke-width: 2;
-  stroke-dasharray: 4 8;
+  stroke-dasharray: 4 7;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.body-shell { fill: var(--car-fill); stroke: var(--car-edge); stroke-width: 2.5; }
-.glass      { fill: var(--car-glass); stroke: var(--car-edge); stroke-width: 1.5; }
-.wheel-rect { fill: var(--car-tire); stroke: var(--ink-3); stroke-width: 1.5; }
+/* 统一蔚来车矢量类 */
+.nv-body  { fill: var(--nv-body); stroke: var(--nv-edge); stroke-width: 2; }
+.nv-roof  { fill: var(--nv-roof); stroke: var(--nv-edge); stroke-width: 1.2; }
+.nv-line  { stroke: var(--nv-edge); stroke-width: 1.4; fill: none; }
+.nv-chrome{ stroke: var(--nv-chrome); stroke-width: 2; fill: none; }
+.nv-drl   { fill: var(--nv-drl); }
+.nv-tail  { fill: var(--nv-tail); }
+.nv-tire  { fill: var(--nv-tire); stroke: var(--nv-edge); stroke-width: 1.4; }
+.nv-lidar { fill: var(--nv-roof); stroke: var(--nv-edge); stroke-width: 1.4; }
+.npc { opacity: .68; }
 
-/* 邻车：已停满的旁位 */
-.npc-body  { fill: var(--car-fill); stroke: var(--car-edge); stroke-width: 2; opacity: .68; }
-.npc-glass { fill: var(--car-glass); stroke: var(--car-edge); stroke-width: 1.2; opacity: .68; }
-
-/* 四轮同向打角标注 */
+/* 转角标注 */
 .fw-tag { opacity: 0; transition: opacity .3s; }
 .stage[data-phase="2"] .fw-tag { opacity: 1; }
 .fw-tag text { font-size: 14px; font-weight: 600; fill: var(--ink); }
@@ -402,99 +415,119 @@ body {
 <div class="wrap">
 
   <header class="masthead">
-    <p class="eyebrow">Vehicle HMI · 用户教育动画 · V2</p>
-    <h1>平移泊入 · 功能演示 V2</h1>
-    <p>真实转角版：车轮最大转角 40°。四轮同向打角，斜向前挪、反向打角再斜向后挪 —— 纵向位移相互抵消，车身始终是正的，一步步横向蹭进车位。</p>
+    <p class="eyebrow">Vehicle HMI · 用户教育动画</p>
+    <h1>平移泊入 · 功能演示</h1>
+    <p>前轮最大转角 40°、后轮同向最大 8°。车身始终保持摆正，以小幅「斜向前挪 → 反向后挪」全程匀步蹭移，横向滑入现实尺寸的车位。动画自动循环，切换下方场景。</p>
   </header>
 
   <div class="chips" role="group" aria-label="场景切换">
     <button class="chip" type="button" data-scn="a" aria-pressed="true">
       <b>场景一 · 车位旁一键泊入</b>
-      <span>两侧已停满，先大幅斜挪、再小幅碎挪入位</span>
+      <span>两侧已停满，全程小幅碎步横移入位</span>
     </button>
     <button class="chip" type="button" data-scn="b" aria-pressed="false">
       <b>场景二 · 泊车中途解围</b>
-      <span>泊到一半车身已正，夹缝中小幅碎挪补完</span>
+      <span>泊到一半车身已正，碎步补完最后一段</span>
     </button>
   </div>
 
   <section class="stage-shell">
-    <div class="stage" id="stage" data-phase="0" data-slot="idle">
-      <svg viewBox="0 0 820 560" preserveAspectRatio="xMidYMid meet" aria-label="平移泊入动画：四轮同向打角，斜向交替挪移进入车位的俯视演示">
+    <div class="stage" id="stage" data-scn="a" data-phase="0" data-slot="idle">
+      <svg viewBox="0 0 820 560" preserveAspectRatio="xMidYMid meet" aria-label="平移泊入动画：前轮40°后轮8°同向，小幅碎步横移入位">
+        <defs>
+          <!-- 统一蔚来车顶视（静态版，邻车用） -->
+          <g id="nioTopStatic">
+            <rect class="nv-tire" x="-84" y="-144" width="14" height="52" rx="6" />
+            <rect class="nv-tire" x="70"  y="-144" width="14" height="52" rx="6" />
+            <rect class="nv-tire" x="-84" y="92"   width="14" height="52" rx="6" />
+            <rect class="nv-tire" x="70"  y="92"   width="14" height="52" rx="6" />
+            <rect class="nv-body" x="-75" y="-184" width="150" height="368" rx="30" />
+            <path class="nv-line" d="M-26 -176 C -22 -150, -22 -128, -24 -110" />
+            <path class="nv-line" d="M26 -176 C 22 -150, 22 -128, 24 -110" />
+            <path class="nv-roof" d="M-58 -102 C -30 -122, 30 -122, 58 -102 L 62 148 C 40 162, -40 162, -62 148 Z" />
+            <rect class="nv-lidar" x="-14" y="-114" width="28" height="13" rx="6.5" />
+            <circle class="nv-lidar" cx="-46" cy="-96" r="4.5" />
+            <circle class="nv-lidar" cx="46"  cy="-96" r="4.5" />
+            <rect class="nv-body" x="-94" y="-88" width="20" height="11" rx="5" />
+            <rect class="nv-body" x="74"  y="-88" width="20" height="11" rx="5" />
+            <rect class="nv-drl" x="-62" y="-179" width="34" height="3.6" rx="1.8" />
+            <rect class="nv-drl" x="28"  y="-179" width="34" height="3.6" rx="1.8" />
+            <rect class="nv-tail" x="-56" y="172" width="112" height="5.5" rx="2.7" opacity=".9" />
+          </g>
+        </defs>
 
-        <!-- 车位列：开口朝左（虚线），右侧封闭 -->
-        <line class="open-line" x1="470" y1="18" x2="470" y2="542" />
-        <path class="slot-line" d="M470 30 H640 V540 H470" />
-        <path class="slot-line" d="M470 200 H640" />
-        <path class="slot-line" d="M470 370 H640" />
-        <text class="slot-num" x="626" y="56"  text-anchor="end">01</text>
-        <text class="slot-num t-num" x="626" y="226" text-anchor="end">02</text>
-        <text class="slot-num" x="626" y="396" text-anchor="end">03</text>
+        <!-- 车位列：开口朝左（虚线），右侧封闭；车位为现实尺寸（长≈车长×1.25，深≈车宽×1.25） -->
+        <line class="open-line" x1="560" y1="0" x2="560" y2="560" />
+        <line class="slot-line" x1="678" y1="0" x2="678" y2="560" />
+        <path class="slot-line" d="M560 159 H678" />
+        <path class="slot-line" d="M560 411 H678" />
+        <text class="slot-num t-num" x="668" y="182" text-anchor="end">02</text>
+
+        <!-- 邻车：上下车位已停满（半可见） -->
+        <g class="npc" transform="translate(619 33) scale(0.55)"><use href="#nioTopStatic" /></g>
+        <g class="npc" transform="translate(619 537) scale(0.55)"><use href="#nioTopStatic" /></g>
 
         <!-- 目标车位高亮 -->
-        <rect class="target-rect" x="473" y="203" width="164" height="164" rx="4" />
+        <rect class="target-rect" x="562" y="161" width="114" height="248" rx="4" />
 
-        <!-- 邻车：01、03 已停满 -->
-        <g transform="translate(555 115)">
-          <rect class="npc-body" x="-31" y="-62" width="62" height="124" rx="14" />
-          <path class="npc-glass" d="M-23 -28 C -13 -40, 13 -40, 23 -28 Z" />
-          <rect class="npc-glass" x="-24" y="-23" width="48" height="40" rx="8" />
-          <path class="npc-glass" d="M-23 31 C -13 40, 13 40, 23 31 Z" />
-        </g>
-        <g transform="translate(555 455)">
-          <rect class="npc-body" x="-31" y="-62" width="62" height="124" rx="14" />
-          <path class="npc-glass" d="M-23 -28 C -13 -40, 13 -40, 23 -28 Z" />
-          <rect class="npc-glass" x="-24" y="-23" width="48" height="40" rx="8" />
-          <path class="npc-glass" d="M-23 31 C -13 40, 13 40, 23 31 Z" />
-        </g>
+        <!-- 目标虚影（车身足迹） -->
+        <rect class="ghost" id="ghost" x="573" y="184" width="92" height="202" rx="18" opacity="0" />
 
-        <!-- 目标位置虚影 -->
-        <rect class="ghost" id="ghost" x="516" y="212" width="78" height="146" rx="16" opacity="0" />
-
-        <!-- 规划的之字形挪移路线 -->
+        <!-- 全程匀步的之字形规划路线 -->
         <polyline class="plan" id="plan" points="" opacity="0" />
 
-        <!-- 车辆（局部坐标：车头朝上，中心 0,0） -->
+        <!-- 主车：统一蔚来车顶视 + 可转向车轮（前 40° / 后 8°） -->
         <g id="car">
-          <g class="wheel" id="w0"><rect class="wheel-rect" x="-5.5" y="-15" width="11" height="30" rx="4.5" /></g>
-          <g class="wheel" id="w1"><rect class="wheel-rect" x="-5.5" y="-15" width="11" height="30" rx="4.5" /></g>
-          <g class="wheel" id="w2"><rect class="wheel-rect" x="-5.5" y="-15" width="11" height="30" rx="4.5" /></g>
-          <g class="wheel" id="w3"><rect class="wheel-rect" x="-5.5" y="-15" width="11" height="30" rx="4.5" /></g>
+          <g transform="scale(0.55)">
+            <g class="wheel" id="wFL"><rect class="nv-tire" x="-7" y="-26" width="14" height="52" rx="6" /></g>
+            <g class="wheel" id="wFR"><rect class="nv-tire" x="-7" y="-26" width="14" height="52" rx="6" /></g>
+            <g class="wheel" id="wRL"><rect class="nv-tire" x="-7" y="-26" width="14" height="52" rx="6" /></g>
+            <g class="wheel" id="wRR"><rect class="nv-tire" x="-7" y="-26" width="14" height="52" rx="6" /></g>
+            <rect class="nv-body" x="-75" y="-184" width="150" height="368" rx="30" />
+            <path class="nv-line" d="M-26 -176 C -22 -150, -22 -128, -24 -110" />
+            <path class="nv-line" d="M26 -176 C 22 -150, 22 -128, 24 -110" />
+            <path class="nv-roof" d="M-58 -102 C -30 -122, 30 -122, 58 -102 L 62 148 C 40 162, -40 162, -62 148 Z" />
+            <rect class="nv-lidar" x="-14" y="-114" width="28" height="13" rx="6.5" />
+            <circle class="nv-lidar" cx="-46" cy="-96" r="4.5" />
+            <circle class="nv-lidar" cx="46"  cy="-96" r="4.5" />
+            <rect class="nv-body" x="-94" y="-88" width="20" height="11" rx="5" />
+            <rect class="nv-body" x="74"  y="-88" width="20" height="11" rx="5" />
+            <rect class="nv-drl" x="-62" y="-179" width="34" height="3.6" rx="1.8" />
+            <rect class="nv-drl" x="28"  y="-179" width="34" height="3.6" rx="1.8" />
+            <rect class="nv-tail" x="-56" y="172" width="112" height="5.5" rx="2.7" opacity=".9" />
 
-          <rect class="body-shell" x="-31" y="-70" width="62" height="140" rx="16" />
-          <path class="glass" d="M-25 -32 C -14 -46, 14 -46, 25 -32 Z" />
-          <rect class="glass" x="-26" y="-26" width="52" height="46" rx="9" />
-          <path class="glass" d="M-25 36 C -14 46, 14 46, 25 36 Z" />
-
-          <!-- 四轮同向打角标注 -->
-          <g class="fw-tag">
-            <circle class="fw-pulse" cx="-36" cy="-46" r="15" />
-            <circle class="fw-pulse" cx="36"  cy="-46" r="15" style="animation-delay:.25s" />
-            <circle class="fw-pulse" cx="-36" cy="46"  r="15" style="animation-delay:.5s" />
-            <circle class="fw-pulse" cx="36"  cy="46"  r="15" style="animation-delay:.75s" />
-            <line x1="-96" y1="0" x2="-46" y2="0" />
-            <text x="-104" y="-4"  text-anchor="end">四轮同向打角</text>
-            <text x="-104" y="16" text-anchor="end" class="sub">转角上限 40°</text>
+            <!-- 转角标注（前轮大角度 + 后轮小角度） -->
+            <g class="fw-tag">
+              <circle class="fw-pulse" cx="-77" cy="-118" r="30" />
+              <circle class="fw-pulse" cx="77"  cy="-118" r="30" style="animation-delay:.25s" />
+              <circle class="fw-pulse" cx="-77" cy="118"  r="22" style="animation-delay:.5s" />
+              <circle class="fw-pulse" cx="77"  cy="118"  r="22" style="animation-delay:.75s" />
+              <line x1="-196" y1="-118" x2="-96" y2="-118" />
+              <text x="-208" y="-124" text-anchor="end" font-size="25">前轮 40°</text>
+              <line x1="-196" y1="118" x2="-96" y2="118" />
+              <text x="-208" y="112" text-anchor="end" font-size="25">后轮 8°</text>
+              <text x="-208" y="140" text-anchor="end" class="sub" font-size="20">同向 · 车身保持摆正</text>
+            </g>
           </g>
         </g>
 
         <!-- 完成确认 -->
         <g id="checkG" opacity="0">
-          <circle class="check-bg" cx="555" cy="285" r="17" />
-          <path class="check-mk" d="M547 285 L553 291 L564 279" />
+          <circle class="check-bg" cx="732" cy="140" r="17" />
+          <path class="check-mk" d="M724 140 L730 146 L741 134" />
         </g>
       </svg>
 
       <div class="hud">
         <span>俯视图 · TOP VIEW</span>
-        <span>AUTO PARK · 转角 <b id="hudAng">0°</b></span>
+        <span>前轮 <b id="hudF">0°</b> · 后轮 <b id="hudR">0°</b></span>
       </div>
 
       <div class="pill" aria-hidden="true"><i></i>一键平移泊入</div>
     </div>
 
     <div class="capbar">
-      <div class="cap" id="cap" data-done="false">车身与车位平行，两侧车位已停满</div>
+      <div class="cap" id="cap" data-done="false">车身与车位平行，停在车位旁</div>
       <div class="dots" id="dots" aria-hidden="true"></div>
     </div>
   </section>
@@ -502,15 +535,15 @@ body {
   <section class="notes">
     <div class="note">
       <h3>运动原理</h3>
-      <p>四个车轮同向偏转同一角度时，车身不旋转，只沿车轮指向平移。斜向前挪与反向斜挪交替，纵向位移相互抵消，净效果就是横向移动。</p>
+      <p>前轮最大 40°、后轮同向最大 8° 打角，车身不旋转、始终摆正；斜向前挪与反向后挪交替，纵向位移相互抵消，净效果是每步横移一小段。</p>
     </div>
     <div class="note">
-      <h3>幅度自适应</h3>
-      <p>车位外空间充裕时大幅斜挪，进入两车之间后受邻车限制自动改为小幅碎挪 —— 这也是该功能在狭窄场景下的核心价值。</p>
+      <h3>为什么是碎步</h3>
+      <p>车位为现实尺寸（长约为车长 1.25 倍），上下邻车限死了每步的纵向余量——全程只能小幅匀步蹭移，这正是该功能在狭小车位的核心价值。</p>
     </div>
     <div class="note">
-      <h3>与第一版的区别</h3>
-      <p>第一版为示意版（车轮画成 90° 横移）。本版按真实转角上限 40° 演示实际的之字形挪移轨迹与节奏。</p>
+      <h3>实现方式</h3>
+      <p>单文件 SVG + JS 时间轴（render(t) 纯函数），统一蔚来车矢量资产，日/夜双主题，支持减弱动态效果降级。</p>
     </div>
   </section>
 
@@ -520,81 +553,63 @@ body {
 (function () {
   "use strict";
 
-  var END = { x: 555, y: 285 };
+  var END = { x: 619, y: 285 };     // 目标车位中心
   var RAD = Math.PI / 180;
+  var TH = 20;                       // 斜挪方向角（视觉）
+  var F_MAX = 40, R_MAX = 8;         // 前/后轮转角上限
 
-  /* cycles：每个循环 = 打角 θ 斜向前挪 d，再反向打角斜向后挪 d
-     场景一：车位外先大幅（20°）斜挪，进入夹缝后小幅（40°）碎挪
-     场景二：全程在夹缝内，小幅碎挪                                  */
+  /* 全程匀步：每循环 = 前轮±40°/后轮±8° 打角 → 斜向前挪 d → 反向 → 斜向后挪 d */
   var SCN = {
-    a: {
-      idle: 0.9,
-      startX: 300,
-      cycles: [
-        { th: 20, d: 196, md: 1.3 },
-        { th: 40, d: 47,  md: 0.6 },
-        { th: 40, d: 47,  md: 0.6 }
-      ],
+    a: { idle: 0.9, startX: 475, cycles: 8,
       caps: [
-        "车身与车位平行，两侧车位已停满",
+        "车身与车位平行，停在车位旁（两侧已停满）",
         "点按开启，全程无需操作",
-        "四轮同向打角（上限 40°），斜向前挪",
-        "反向打角、斜向后挪，如此往复横移入位",
+        "前轮打角 40° · 后轮同向 8° —— 车身保持摆正",
+        "小幅斜向前挪 · 反向后挪，匀步横移入位",
         "泊入完成，车轮回正"
-      ]
-    },
-    b: {
-      idle: 1.3,
-      startX: 478,
-      cycles: [
-        { th: 40, d: 29.9, md: 0.5 },
-        { th: 40, d: 29.9, md: 0.5 }
-      ],
+      ] },
+    b: { idle: 1.3, startX: 566, cycles: 3,
       caps: [
         "自己泊到一半：车身已正，仍有一截在位外",
         "点按开启，全程无需操作",
-        "四轮同向打角（上限 40°），斜向前挪",
-        "反向打角、斜向后挪，如此往复横移入位",
+        "前轮打角 40° · 后轮同向 8° —— 车身保持摆正",
+        "小幅斜向前挪 · 反向后挪，匀步横移入位",
         "泊入完成，车轮回正"
-      ]
-    }
+      ] }
   };
 
-  /* 由 cycles 生成分段时间轴：idle / tap / steer / move / done */
   function build(s) {
     var segs = [], t = 0, x = s.startX, y = 285;
+    var latPer = (END.x - s.startX) / s.cycles;        // 每循环横移量（匀步）
+    var d = latPer / 2 / Math.sin(TH * RAD);           // 每步位移
     function add(o) { o.t0 = t; t += o.dur; segs.push(o); }
 
     add({ type: "idle", dur: s.idle, px: x, py: y, a: 0, ph: 0 });
     add({ type: "tap",  dur: 1.0,    px: x, py: y, a: 0, ph: 1 });
 
-    var strokes = [];
-    s.cycles.forEach(function (c) {
-      var sx = Math.sin(c.th * RAD), cy = Math.cos(c.th * RAD);
-      strokes.push({ a: +c.th, dx: c.d * sx, dy: -c.d * cy, md: c.md });
-      strokes.push({ a: -c.th, dx: c.d * sx, dy: +c.d * cy, md: c.md });
-    });
-
     var pts = [[x, y]];
-    strokes.forEach(function (st, i) {
-      var prev = i ? strokes[i - 1].a : 0;
-      add({ type: "steer", dur: i ? 0.55 : 0.5, from: prev, to: st.a, px: x, py: y, ph: i ? 3 : 2 });
-      var tx = x + st.dx, ty = y + st.dy;
-      if (i === strokes.length - 1) { tx = END.x; ty = END.y; }   // 消除累计舍入
-      add({ type: "move", dur: st.md, a: st.a, fx: x, fy: y, tx: tx, ty: ty, ph: i === 0 ? 2 : 3 });
+    var n = s.cycles * 2;
+    for (var i = 0; i < n; i++) {
+      var up = i % 2 === 0;
+      var ang = up ? F_MAX : -F_MAX;
+      var prev = i ? (up ? -F_MAX : F_MAX) : 0;
+      add({ type: "steer", dur: i ? 0.28 : 0.4, from: prev, to: ang, px: x, py: y, ph: i ? 3 : 2 });
+      var tx = x + d * Math.sin(TH * RAD);
+      var ty = y + (up ? -1 : 1) * d * Math.cos(TH * RAD);
+      if (i === n - 1) { tx = END.x; ty = END.y; }
+      add({ type: "move", dur: 0.36, a: ang, fx: x, fy: y, tx: tx, ty: ty, ph: i === 0 ? 2 : 3 });
       x = tx; y = ty;
       pts.push([x, y]);
-    });
-
-    add({ type: "steer", dur: 0.7, from: strokes[strokes.length - 1].a, to: 0, px: x, py: y, ph: 4 });
-    add({ type: "done", dur: 1.6, px: x, py: y, a: 0, ph: 4 });
+    }
+    add({ type: "steer", dur: 0.6, from: -F_MAX, to: 0, px: x, py: y, ph: 4 });
+    add({ type: "done", dur: 1.5, px: x, py: y, a: 0, ph: 4 });
 
     s.segs = segs;
     s.T = t;
     s.plan = pts.map(function (p) { return p[0].toFixed(1) + "," + p[1].toFixed(1); }).join(" ");
-    s.tDone = segs[segs.length - 2].t0;      // 最后一次回正开始
     s.tTap = segs[1].t0;
-    s.tArrive = segs[segs.length - 2].t0;    // 车到位时刻
+    s.tArrive = segs[segs.length - 2].t0;
+    s.tDone = segs[segs.length - 2].t0;
   }
   Object.keys(SCN).forEach(function (k) { build(SCN[k]); });
 
@@ -605,19 +620,20 @@ body {
   var checkG = document.getElementById("checkG");
   var capEl  = document.getElementById("cap");
   var dotsEl = document.getElementById("dots");
-  var hudAng = document.getElementById("hudAng");
+  var hudF   = document.getElementById("hudF");
+  var hudR   = document.getElementById("hudR");
 
   var WHEELS = [
-    { el: document.getElementById("w0"), x: -36, y: -46 },
-    { el: document.getElementById("w1"), x:  36, y: -46 },
-    { el: document.getElementById("w2"), x: -36, y:  46 },
-    { el: document.getElementById("w3"), x:  36, y:  46 }
+    { el: document.getElementById("wFL"), x: -77, y: -118, k: 1 },
+    { el: document.getElementById("wFR"), x:  77, y: -118, k: 1 },
+    { el: document.getElementById("wRL"), x: -77, y:  118, k: R_MAX / F_MAX },
+    { el: document.getElementById("wRR"), x:  77, y:  118, k: R_MAX / F_MAX }
   ];
 
   for (var i = 0; i < 5; i++) {
-    var d = document.createElement("span");
-    d.className = "dot";
-    dotsEl.appendChild(d);
+    var dd = document.createElement("span");
+    dd.className = "dot";
+    dotsEl.appendChild(dd);
   }
   var dots = dotsEl.children;
 
@@ -659,30 +675,28 @@ body {
 
     carG.setAttribute("transform", "translate(" + x.toFixed(2) + " " + y.toFixed(2) + ")");
     WHEELS.forEach(function (w) {
-      w.el.setAttribute("transform", "translate(" + w.x + " " + w.y + ") rotate(" + a.toFixed(1) + ")");
+      w.el.setAttribute("transform", "translate(" + w.x + " " + w.y + ") rotate(" + (a * w.k).toFixed(2) + ")");
     });
-    hudAng.textContent = (a > 0 ? "+" : "") + a.toFixed(0) + "°";
+    hudF.textContent = (a > 0 ? "+" : "") + a.toFixed(0) + "°";
+    hudR.textContent = (a > 0 ? "+" : "") + (a * R_MAX / F_MAX).toFixed(1) + "°";
 
-    // 目标虚影与规划路线：开启后出现，车到位即隐藏
     var show = (t >= s.tTap && t < s.tArrive);
     var gOp = show ? Math.min(1, (t - s.tTap) / .3) : 0;
     ghost.setAttribute("opacity", (gOp * .95).toFixed(2));
     plan.setAttribute("opacity", (gOp * .8).toFixed(2));
 
-    // 完成确认
-    if (t >= s.tDone + 0.35) {
-      var ck = Math.min(1, (t - s.tDone - 0.35) / .45);
+    if (t >= s.tDone + 0.4) {
+      var ck = Math.min(1, (t - s.tDone - 0.4) / .45);
       checkG.setAttribute("opacity", Math.min(1, ck * 2).toFixed(2));
-      checkG.setAttribute("transform", "translate(555 285) scale(" + easeOutBack(ck).toFixed(3) + ") translate(-555 -285)");
+      checkG.setAttribute("transform", "translate(732 140) scale(" + easeOutBack(ck).toFixed(3) + ") translate(-732 -140)");
     } else {
       checkG.setAttribute("opacity", "0");
     }
 
-    // 状态属性
+    stage.dataset.scn = cur;
     stage.dataset.phase = String(seg.ph);
     stage.dataset.slot = t < s.tTap ? "idle" : t < s.tDone ? "active" : "done";
 
-    // 字幕与步骤点
     var key = cur + seg.ph;
     if (key !== lastKey) {
       lastKey = key;
@@ -691,7 +705,7 @@ body {
       capEl.style.animation = "none";
       void capEl.offsetWidth;
       capEl.style.animation = "capIn .45s ease";
-      for (var j = 0; j < dots.length; j++) dots[j].dataset.on = String(j <= seg.ph);
+      for (var m = 0; m < dots.length; m++) dots[m].dataset.on = String(m <= seg.ph);
     }
   }
 
@@ -715,13 +729,12 @@ body {
     c.addEventListener("click", function () { setScn(c.dataset.scn); });
   });
 
-  // 测试钩子
   window.__seek = function (t) { paused = true; render(t); };
   window.__scn = setScn;
   window.__play = function () { paused = false; t0 = performance.now(); };
   window.__info = function () {
     var s = SCN[cur];
-    return { T: s.T, tDone: s.tDone, tTap: s.tTap, plan: s.plan };
+    return { T: s.T, tDone: s.tDone, scn: cur, fMax: F_MAX, rMax: R_MAX };
   };
 
   plan.setAttribute("points", SCN.a.plan);
