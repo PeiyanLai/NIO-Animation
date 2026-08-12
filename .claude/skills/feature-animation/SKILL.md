@@ -25,7 +25,7 @@ description: 为任意产品功能制作「用户教育/演示动画」——单
 
 **车辆形象**（涉车演示必读）：
 - **优先用官方图片**：用户提供官方渲染图/照片时，转 base64 以 `<image href="data:image/...">` 嵌入舞台底层，动画元素（光效/气流/轨迹/标注）作为 SVG 图层叠加其上。注意执行环境通常无法外网下载图片——需要真图时直接请用户上传，不要试图自己抓取。
-- **没有真图时**：用 `assets/nio-vehicle.svg` 的 NIO 风格矢量，含三视图（`#nio-top` 顶视 / `#nio-side` 侧视 / `#nio-cabin` 座舱），带瞭望塔激光雷达、Double-Dash 日行灯、贯穿尾灯、隐藏门把手、NOMI、竖向中控屏等标志元素。整组复制进舞台，CSS 变量（`--nv-body/--nv-edge/--nv-glass/…`）接主题 token 换色。不要自己从零画车。
+- **没有真图时**：用 `assets/nio-vehicle.svg` 的统一「蔚来车」矢量（依据官方照片观察绘制，**不区分具体车型**），含三视图：`#nio-top` 顶视（SUV 比例 2.45:1、悬浮黑顶、瞭望塔激光雷达）/ `#nio-side` 侧视（分体灯组：细长 DRL 光带＋竖向主灯、翼子板气刃、贯穿尾灯、黑侧裙，内含 `#nio-welcome-mat` 迎宾光毯预留图层）/ `#nio-cabin` 座舱（2+2+2 六座、天空岛中轴、横向中控宽屏＋NOMI、椅背娱乐屏、氛围灯带、扬声器点位）。整组复制进舞台，CSS 变量（`--nv-body/--nv-roof/--nv-drl/…`）接主题 token 换色，默认值即官方照片色系（沙丘金＋黑顶＋米白舱）。造型依据与修正规则见 `references/nio-vehicle-design-notes.md`。不要自己从零画车。
 
 ## 架构模式（参考 assets/example-zigzag-parking.html，可运行）
 
