@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>对讲机组队 · 车队互联动画</title>
+<style>
+:root {
+  color-scheme: light dark;
+
+  --ground:      #E9EFEF;
+  --panel:       #FCFEFE;
+  --line:        #C4D6D6;
+  --line-soft:   #DAE8E8;
+
+  --ink:         #14201F;
+  --ink-2:       #526A6A;
+  --ink-3:       #829C9C;
+
+  --accent:      #008A8A;
+  --accent-dim:  #6BC2C2;
+  --accent-wash: #D8F2F2;
+
+  --ok:          #12735A;
+  --ok-wash:     #DCF2EA;
+
+  --warn:        #B07A14;
+  --warn-wash:   #F6ECD4;
+
+  --radio:       #5D4DD4;
+  --radio-wash:  #E7E3FA;
+
+  --stage-bg:    #E2EAEA;
+  --stage-grid:  #D2DEDE;
+  --road:        #93A6A6;
+  --shadow: 0 1px 2px rgba(20,32,31,.06), 0 8px 24px -12px rgba(20,32,31,.28);
+
+  --nv-body:   #C8A57B;
+  --nv-edge:   #8C7355;
+  --nv-roof:   #1A1A1E;
+  --nv-drl:    #EAF4FF;
+  --nv-tail:   #D8322A;
+  --nv-tire:   #14161A;
+  --nv-chrome: #C9CDD2;
+  --fr-body:   #9AA7B4;
+  --fr-edge:   #6E7C88;
+
+  --f-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+          "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --f-data: ui-monospace, "SF Mono", SFMono-Regular, "Roboto Mono",
+            "DejaVu Sans Mono", Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground:      #0A0E0E;
+    --panel:       #121A1A;
+    --line:        #243737;
+    --line-soft:   #1B2A2A;
+
+    --ink:         #E4F0F0;
+    --ink-2:       #90A9A9;
+    --ink-3:       #5F7878;
+
+    --accent:      #00D4D4;
+    --accent-dim:  #1D6F6F;
+    --accent-wash: #0E3232;
+
+    --ok:          #4FD1A0;
+    --ok-wash:     #0D2B22;
+
+    --warn:        #E8B947;
+    --warn-wash:   #2E2510;
+
+    --radio:       #8F82EC;
+    --radio-wash:  #221E45;
+
+    --stage-bg:    #080C0C;
+    --stage-grid:  #12201F;
+    --road:        #3C5252;
+    --shadow: 0 1px 2px rgba(0,0,0,.5), 0 10px 30px -14px rgba(0,0,0,.8);
+
+    --nv-body:   #A98963;
+    --nv-edge:   #6E5A42;
+    --nv-roof:   #101014;
+    --nv-drl:    #DCEFFF;
+    --nv-tail:   #E4574F;
+    --nv-tire:   #0A0C10;
+    --nv-chrome: #8F969E;
+    --fr-body:   #566470;
+    --fr-edge:   #38434D;
+  }
+}
+
+:root[data-theme="dark"] {
+  --ground:      #0A0E0E;
+  --panel:       #121A1A;
+  --line:        #243737;
+  --line-soft:   #1B2A2A;
+
+  --ink:         #E4F0F0;
+  --ink-2:       #90A9A9;
+  --ink-3:       #5F7878;
+
+  --accent:      #00D4D4;
+  --accent-dim:  #1D6F6F;
+  --accent-wash: #0E3232;
+
+  --ok:          #4FD1A0;
+  --ok-wash:     #0D2B22;
+
+  --warn:        #E8B947;
+  --warn-wash:   #2E2510;
+
+  --radio:       #8F82EC;
+  --radio-wash:  #221E45;
+
+  --stage-bg:    #080C0C;
+  --stage-grid:  #12201F;
+  --road:        #3C5252;
+  --shadow: 0 1px 2px rgba(0,0,0,.5), 0 10px 30px -14px rgba(0,0,0,.8);
+
+  --nv-body:   #A98963;
+  --nv-edge:   #6E5A42;
+  --nv-roof:   #101014;
+  --nv-drl:    #DCEFFF;
+  --nv-tail:   #E4574F;
+  --nv-tire:   #0A0C10;
+  --nv-chrome: #8F969E;
+  --fr-body:   #566470;
+  --fr-edge:   #38434D;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--f-ui);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 28px 18px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.masthead { padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.eyebrow {
+  font-family: var(--f-data);
+  font-size: 11px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0 0 6px;
+}
+.masthead h1 {
+  font-size: clamp(23px, 3.4vw, 32px);
+  line-height: 1.15;
+  letter-spacing: -.01em;
+  margin: 0;
+  text-wrap: balance;
+}
+.masthead p {
+  margin: 8px 0 0;
+  max-width: 68ch;
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  flex: 1 1 230px;
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--ink-2);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: border-color .15s, background .15s;
+}
+.chip:hover { border-color: var(--accent-dim); }
+.chip b { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.chip span { font-size: 12px; color: var(--ink-3); }
+.chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-wash); }
+.chip[aria-pressed="true"] span { color: var(--accent); }
+.chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.stage-shell {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.stage {
+  position: relative;
+  aspect-ratio: 1000 / 560;
+  background: var(--stage-bg);
+  background-image:
+    linear-gradient(var(--stage-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--stage-grid) 1px, transparent 1px);
+  background-size: 28px 28px;
+  border: 1px solid var(--line-soft);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.stage svg { width: 100%; height: 100%; display: block; font-family: var(--f-ui); }
+
+.hud {
+  position: absolute;
+  top: 12px; left: 16px; right: 16px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  font-family: var(--f-data);
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.hud b { font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; }
+
+.pill {
+  position: absolute;
+  left: 16px; bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  font-size: 12.5px;
+  color: var(--ink-2);
+  transition: border-color .25s, color .25s;
+}
+.pill i {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  transition: background .25s, box-shadow .25s;
+}
+.stage:not([data-phase="0"]) .pill { border-color: var(--accent); color: var(--ink); }
+.stage:not([data-phase="0"]) .pill i {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-wash);
+}
+.pill::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 999px;
+  border: 2px solid var(--accent);
+  opacity: 0;
+  pointer-events: none;
+}
+.stage[data-scn="a"][data-phase="2"] .pill::after { animation: ripple .8s ease-out 2; }
+@keyframes ripple {
+  0%   { opacity: .9; transform: scale(1); }
+  100% { opacity: 0;  transform: scale(1.45); }
+}
+.pill .auto {
+  display: none;
+  font-style: normal;
+  font-family: var(--f-data);
+  font-size: 10px;
+  letter-spacing: .14em;
+  color: var(--radio);
+  border: 1px solid var(--radio);
+  border-radius: 3px;
+  padding: 1px 6px;
+}
+.stage[data-scn="b"]:not([data-phase="0"]):not([data-phase="1"]) .auto { display: inline-block; }
+
+/* ─── SVG 元素 ─────────────────────────────────────────────────────────── */
+.road-edge { stroke: var(--road); stroke-width: 2.5; }
+.lane {
+  stroke: var(--road);
+  stroke-width: 2;
+  stroke-dasharray: 26 22;
+  animation: laneMove 1.05s linear infinite;
+  opacity: .75;
+}
+@keyframes laneMove { to { stroke-dashoffset: -48; } }
+
+.nv-body  { fill: var(--nv-body); stroke: var(--nv-edge); stroke-width: 2; }
+.nv-roof  { fill: var(--nv-roof); stroke: var(--nv-edge); stroke-width: 1.2; }
+.nv-line  { stroke: var(--nv-edge); stroke-width: 1.4; fill: none; }
+.nv-drl   { fill: var(--nv-drl); }
+.nv-tail  { fill: var(--nv-tail); }
+.nv-tire  { fill: var(--nv-tire); stroke: var(--nv-edge); stroke-width: 1.4; }
+.nv-lidar { fill: var(--nv-roof); stroke: var(--nv-edge); stroke-width: 1.4; }
+
+.cloud-shape { fill: var(--panel); stroke: var(--accent-dim); stroke-width: 2; }
+.cloud-label { font-family: var(--f-data); font-size: 10.5px; letter-spacing: .14em; fill: var(--ink-3); }
+
+.env { fill: none; stroke: var(--accent-dim); stroke-width: 1.8; stroke-dasharray: 8 7; opacity: .8; }
+
+.share-pill rect { fill: var(--panel); stroke: var(--accent); stroke-width: 1.5; }
+.share-pill text { font-size: 13px; font-weight: 600; fill: var(--ink); }
+.share-pill circle { fill: var(--accent); }
+
+.border-line { stroke: var(--warn); stroke-width: 2.5; stroke-dasharray: 12 9; opacity: .85; }
+.border-sign rect { fill: var(--panel); stroke: var(--warn); stroke-width: 1.5; }
+.border-sign text { font-family: var(--f-data); font-size: 11px; letter-spacing: .12em; fill: var(--warn); font-weight: 600; }
+.region { font-family: var(--f-data); font-size: 11px; letter-spacing: .14em; fill: var(--ink-3); }
+
+.sig-on rect { fill: var(--accent); }
+.sig-off line { stroke: var(--warn); stroke-width: 3; stroke-linecap: round; }
+
+.wk-bd    { fill: var(--radio-wash); stroke: var(--radio); stroke-width: 1.8; }
+.wk-ant   { stroke: var(--radio); stroke-width: 1.8; stroke-linecap: round; }
+.wk-grill { fill: var(--radio); }
+
+.spk circle { fill: var(--ok-wash); stroke: var(--ok); stroke-width: 1.8; }
+.spk path { fill: var(--ok); }
+
+.link-net { stroke: var(--accent); stroke-width: 2.2; stroke-dasharray: 5 7; stroke-linecap: round; fill: none; }
+.link-radio { stroke: var(--radio); stroke-width: 2.4; stroke-dasharray: 5 7; stroke-linecap: round; fill: none; }
+.dot-net { fill: var(--accent); }
+.dot-radio { fill: var(--radio); }
+
+.fail-x line { stroke: var(--warn); stroke-width: 4; stroke-linecap: round; }
+.fail-x circle { fill: var(--warn-wash); stroke: var(--warn); stroke-width: 1.8; }
+
+.range-ring { fill: none; stroke: var(--radio); stroke-width: 2; stroke-dasharray: 7 8; }
+.range-label { font-family: var(--f-data); font-size: 12px; letter-spacing: .14em; fill: var(--radio); font-weight: 600; }
+
+.bridge-ring { fill: none; stroke: var(--accent); stroke-width: 2.5; }
+.bridge-label { font-size: 12.5px; font-weight: 600; fill: var(--accent); }
+
+.varc {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.varc.d2 { animation-delay: .38s !important; }
+.stage[data-scn="a"][data-phase="2"] #car1 .varc,
+.stage[data-scn="a"][data-phase="3"] #car1 .varc { animation: wpulse 1.15s ease-out infinite; }
+.stage[data-scn="b"][data-phase="3"] .carG.nonet .varc {
+  stroke: var(--radio);
+  animation: wpulse 1.15s ease-out infinite;
+}
+.stage[data-scn="c"][data-phase="3"] #friend .varc { animation: wpulse 1.15s ease-out infinite; }
+@keyframes wpulse {
+  0%   { transform: scale(.5); opacity: .95; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+
+.bridge-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: bpulse 1.5s ease-out infinite;
+  opacity: 0;
+}
+.stage[data-scn="b"][data-phase="3"] .bridge-pulse,
+.stage[data-scn="b"][data-phase="4"] .bridge-pulse { opacity: 1; }
+@keyframes bpulse {
+  0%   { transform: scale(1); opacity: .9; }
+  100% { transform: scale(1.35); opacity: 0; }
+}
+
+.friend-body { fill: var(--fr-body); stroke: var(--fr-edge); stroke-width: 2; }
+.friend-roof { fill: var(--nv-roof); stroke: var(--fr-edge); stroke-width: 1.2; opacity: .9; }
+.friend-label { font-size: 12px; fill: var(--ink-3); }
+
+.phone-shell { fill: var(--panel); stroke: var(--ink-2); stroke-width: 1.8; }
+.phone-screen { fill: var(--accent-wash); }
+.phone-bar-bg { fill: var(--line-soft); }
+.phone-bar { fill: var(--accent); }
+.phone-label { font-size: 11.5px; fill: var(--ink-2); }
+
+.check-bg { fill: var(--panel); stroke: var(--ok); stroke-width: 2.5; }
+.check-mk { fill: none; stroke: var(--ok); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+
+.only-a, .only-b, .only-c { display: none; }
+.stage[data-scn="a"] .only-a { display: inline; }
+.stage[data-scn="b"] .only-b { display: inline; }
+.stage[data-scn="c"] .only-c { display: inline; }
+.stage[data-scn="c"] #car3 { display: none; }
+
+.capbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  min-height: 34px;
+}
+.cap {
+  font-size: clamp(15px, 2.2vw, 19px);
+  font-weight: 600;
+  letter-spacing: .01em;
+}
+.cap[data-done="true"] { color: var(--ok); }
+.dots { display: flex; gap: 7px; }
+.dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--line);
+  transition: background .25s, transform .25s;
+}
+.dot[data-on="true"] { background: var(--accent); transform: scale(1.25); }
+
+@keyframes capIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.notes {
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px;
+}
+.note h3 {
+  margin: 0 0 5px;
+  font-family: var(--f-data);
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+.note p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pill::after, .varc, .bridge-pulse, .lane { animation: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Vehicle HMI · 用户教育动画</p>
+    <h1>对讲机组队 · 车队互联演示</h1>
+    <p>购买对讲机并在车机上完成连接后即可组队（小队上限 50 台）：共享实时定位、车辆信息与导航目的地，按方向盘中键即可全队对讲。跨国进入无网地形时，车载对讲机硬件在 5–8 公里内自动组网，有网车辆作桥接节点，断网队友不失联；朋友的非蔚来车也能靠对讲机 + App 入队。动画自动循环，切换下方场景。</p>
+  </header>
+
+  <div class="chips" role="group" aria-label="场景切换">
+    <button class="chip" type="button" data-scn="a" aria-pressed="true">
+      <b>场景一 · 组队对讲（有网）</b>
+      <span>共享定位/车信息/导航，一键对讲全队同收</span>
+    </button>
+    <button class="chip" type="button" data-scn="b" aria-pressed="false">
+      <b>场景二 · 跨国无网 · 对讲机组网</b>
+      <span>断网车经硬件接力，有网车桥接上云</span>
+    </button>
+    <button class="chip" type="button" data-scn="c" aria-pressed="false">
+      <b>场景三 · 朋友的车 · App 入队</b>
+      <span>递出对讲机，非蔚来车绑定后也入队</span>
+    </button>
+  </div>
+
+  <section class="stage-shell">
+    <div class="stage" id="stage" data-scn="a" data-phase="0">
+      <svg viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid meet"
+           aria-label="对讲机组队动画：四台车组队对讲，跨国无网时经对讲机硬件接力，有网车作桥接节点">
+        <defs>
+          <g id="carTop">
+            <rect class="nv-tire" x="-84" y="-144" width="14" height="52" rx="6" />
+            <rect class="nv-tire" x="70"  y="-144" width="14" height="52" rx="6" />
+            <rect class="nv-tire" x="-84" y="92"   width="14" height="52" rx="6" />
+            <rect class="nv-tire" x="70"  y="92"   width="14" height="52" rx="6" />
+            <rect class="nv-body" x="-75" y="-184" width="150" height="368" rx="30" />
+            <path class="nv-line" d="M-26 -176 C -22 -150, -22 -128, -24 -110" />
+            <path class="nv-line" d="M26 -176 C 22 -150, 22 -128, 24 -110" />
+            <path class="nv-roof" d="M-58 -102 C -30 -122, 30 -122, 58 -102 L 62 148 C 40 162, -40 162, -62 148 Z" />
+            <rect class="nv-lidar" x="-14" y="-114" width="28" height="13" rx="6.5" />
+            <circle class="nv-lidar" cx="-46" cy="-96" r="4.5" />
+            <circle class="nv-lidar" cx="46"  cy="-96" r="4.5" />
+            <rect class="nv-body" x="-94" y="-88" width="20" height="11" rx="5" />
+            <rect class="nv-body" x="74"  y="-88" width="20" height="11" rx="5" />
+            <rect class="nv-drl" x="-62" y="-179" width="34" height="3.6" rx="1.8" />
+            <rect class="nv-drl" x="28"  y="-179" width="34" height="3.6" rx="1.8" />
+            <rect class="nv-tail" x="-56" y="172" width="112" height="5.5" rx="2.7" opacity=".9" />
+          </g>
+          <g id="walkie">
+            <line class="wk-ant" x1="4" y1="-12" x2="8" y2="-21" />
+            <rect class="wk-bd" x="-6" y="-12" width="13" height="22" rx="3.5" />
+            <rect class="wk-grill" x="-3" y="-8" width="7" height="2" rx="1" />
+            <rect class="wk-grill" x="-3" y="-4" width="7" height="2" rx="1" />
+            <rect class="wk-grill" x="-3" y="0"  width="7" height="2" rx="1" />
+          </g>
+        </defs>
+
+        <!-- 公路 -->
+        <line class="road-edge" x1="0" y1="270" x2="1000" y2="270" />
+        <line class="road-edge" x1="0" y1="390" x2="1000" y2="390" />
+        <line class="lane" x1="0" y1="330" x2="1000" y2="330" />
+
+        <!-- 国境线（场景二） -->
+        <g class="only-b">
+          <line class="border-line" x1="560" y1="0" x2="560" y2="560" />
+          <g class="border-sign">
+            <rect x="498" y="24" width="124" height="26" rx="4" />
+            <text x="560" y="41" text-anchor="middle">国境线 BORDER</text>
+          </g>
+          <text class="region" x="260" y="68" text-anchor="middle">境内 · 有网络覆盖</text>
+          <text class="region" x="812" y="68" text-anchor="middle">境外 · 无网地形</text>
+        </g>
+
+        <!-- 云端 -->
+        <g id="cloudG">
+          <circle class="cloud-shape" cx="472" cy="124" r="18" />
+          <circle class="cloud-shape" cx="528" cy="126" r="16" />
+          <circle class="cloud-shape" cx="500" cy="110" r="24" />
+          <rect class="cloud-shape" x="458" y="116" width="84" height="20" rx="10" />
+          <text class="cloud-label" x="500" y="160" text-anchor="middle">云端 · CLOUD</text>
+        </g>
+
+        <!-- 场景一：小队框 + 共享内容 -->
+        <g class="only-a">
+          <rect class="env" x="80" y="256" width="682" height="132" rx="20" />
+          <g class="share-pill" id="share0" opacity="0">
+            <rect x="238" y="206" width="104" height="30" rx="15" />
+            <circle cx="256" cy="221" r="4" />
+            <text x="268" y="226">实时定位</text>
+          </g>
+          <g class="share-pill" id="share1" opacity="0">
+            <rect x="368" y="206" width="104" height="30" rx="15" />
+            <circle cx="386" cy="221" r="4" />
+            <text x="398" y="226">车辆信息</text>
+          </g>
+          <g class="share-pill" id="share2" opacity="0">
+            <rect x="498" y="206" width="130" height="30" rx="15" />
+            <circle cx="516" cy="221" r="4" />
+            <text x="528" y="226">导航目的地</text>
+          </g>
+          <line class="link-net" id="upA" x1="510" y1="266" x2="500" y2="148" opacity="0" />
+          <line class="link-net fanA" id="fanA0" x1="500" y1="148" x2="690" y2="266" opacity="0" />
+          <line class="link-net fanA" id="fanA1" x1="500" y1="148" x2="330" y2="266" opacity="0" />
+          <line class="link-net fanA" id="fanA2" x1="500" y1="148" x2="150" y2="266" opacity="0" />
+          <circle class="dot-net" id="upAdot" r="5" opacity="0" />
+          <circle class="dot-net fanAdot" id="fanAd0" r="5" opacity="0" />
+          <circle class="dot-net fanAdot" id="fanAd1" r="5" opacity="0" />
+          <circle class="dot-net fanAdot" id="fanAd2" r="5" opacity="0" />
+        </g>
+
+        <!-- 场景二：失败消息 / 组网圈 / 接力 / 桥接 -->
+        <g class="only-b">
+          <line class="link-net" id="failLine" x1="506" y1="146" x2="830" y2="266" opacity="0" />
+          <circle class="dot-net" id="failDot" r="5" opacity="0" />
+          <g class="fail-x" id="failX" opacity="0">
+            <circle cx="0" cy="0" r="14" />
+            <line x1="-6" y1="-6" x2="6" y2="6" />
+            <line x1="6" y1="-6" x2="-6" y2="6" />
+          </g>
+          <circle class="range-ring" id="rangeRing" cx="875" cy="330" r="125" opacity="0" />
+          <text class="range-label" id="rangeLabel" x="875" y="188" text-anchor="middle" opacity="0">对讲机组网 · 5–8 KM</text>
+          <path class="link-radio hopL" id="hop0" d="M862 268 Q808 214 753 268" opacity="0" />
+          <path class="link-radio hopL" id="hop1" d="M727 268 Q675 214 623 268" opacity="0" />
+          <path class="link-radio hopL" id="hop2" d="M597 268 Q541 214 498 268" opacity="0" />
+          <circle class="dot-radio hopD" id="hopD0" r="5.5" opacity="0" />
+          <circle class="dot-radio hopD" id="hopD1" r="5.5" opacity="0" />
+          <circle class="dot-radio hopD" id="hopD2" r="5.5" opacity="0" />
+          <g id="bridgeG" opacity="0">
+            <circle class="bridge-ring" cx="485" cy="330" r="48" />
+            <circle class="bridge-ring bridge-pulse" cx="485" cy="330" r="48" />
+            <text class="bridge-label" x="485" y="414" text-anchor="middle">桥接节点 · 有网</text>
+          </g>
+          <line class="link-net" id="upB" x1="485" y1="266" x2="506" y2="148" opacity="0" />
+          <circle class="dot-net" id="upBdot" r="5" opacity="0" />
+        </g>
+
+        <!-- 场景三：朋友的车 / 递对讲机 / 手机绑定 -->
+        <g class="only-c">
+          <rect class="env" id="envC" x="110" y="256" width="460" height="132" rx="20" />
+          <g id="friend" class="carG" transform="translate(780 330)">
+            <g>
+              <rect class="nv-tire" x="-40" y="-27" width="15" height="9" rx="3.5" />
+              <rect class="nv-tire" x="25"  y="-27" width="15" height="9" rx="3.5" />
+              <rect class="nv-tire" x="-40" y="18"  width="15" height="9" rx="3.5" />
+              <rect class="nv-tire" x="25"  y="18"  width="15" height="9" rx="3.5" />
+              <rect class="friend-body" x="-52" y="-22" width="104" height="44" rx="13" />
+              <path class="friend-roof" d="M-18 -16 C 2 -19, 16 -19, 26 -16 L 26 16 C 16 19, 2 19, -18 16 Z" />
+            </g>
+            <g class="talk">
+              <circle class="varc" r="34" />
+              <circle class="varc d2" r="34" />
+            </g>
+            <g class="radio-b" id="friendRadio" opacity="0" transform="translate(10 -46)">
+              <use href="#walkie" />
+            </g>
+            <g class="spk" id="spkF" opacity="0" transform="translate(-30 -48)">
+              <circle r="10" />
+              <path d="M-4.5 -2.5 L-1.5 -2.5 L2.5 -6.5 L2.5 6.5 L-1.5 2.5 L-4.5 2.5 Z" />
+            </g>
+          </g>
+          <text class="friend-label" x="780" y="416" text-anchor="middle">朋友的车 · 非蔚来</text>
+          <g id="flyW" class="radio-b" opacity="0">
+            <use href="#walkie" />
+          </g>
+          <g id="phoneG" opacity="0" transform="translate(872 236)">
+            <rect class="phone-shell" x="-14" y="-26" width="28" height="52" rx="6" />
+            <rect class="phone-screen" x="-10" y="-20" width="20" height="34" rx="3" />
+            <rect class="phone-bar-bg" x="-9" y="6" width="18" height="4" rx="2" />
+            <rect class="phone-bar" id="bindBar" x="-9" y="6" width="0" height="4" rx="2" />
+            <g id="phoneCk" opacity="0">
+              <circle class="check-bg" cx="0" cy="-3" r="8" />
+              <path class="check-mk" d="M-3.6 -3 L-1 -0.4 L3.8 -5.6" stroke-width="2.4" />
+            </g>
+            <text class="phone-label" x="0" y="42" text-anchor="middle">App 绑定</text>
+          </g>
+          <line class="link-net" id="upC" x1="780" y1="266" x2="512" y2="150" opacity="0" />
+          <line class="link-net fanC" id="fanC0" x1="500" y1="148" x2="500" y2="266" opacity="0" />
+          <line class="link-net fanC" id="fanC1" x1="500" y1="148" x2="340" y2="266" opacity="0" />
+          <line class="link-net fanC" id="fanC2" x1="500" y1="148" x2="180" y2="266" opacity="0" />
+          <circle class="dot-net" id="upCdot" r="5" opacity="0" />
+          <circle class="dot-net fanCdot" id="fanCd0" r="5" opacity="0" />
+          <circle class="dot-net fanCdot" id="fanCd1" r="5" opacity="0" />
+          <circle class="dot-net fanCdot" id="fanCd2" r="5" opacity="0" />
+        </g>
+
+        <!-- 四台蔚来车（车头朝右） -->
+        <g class="carG" id="car0" transform="translate(690 330)">
+          <g transform="rotate(90) scale(0.3)"><use href="#carTop" /></g>
+          <g class="talk"><circle class="varc" r="34" /><circle class="varc d2" r="34" /></g>
+          <g class="sig" transform="translate(-18 -58)">
+            <g class="sig-on">
+              <rect x="-8" y="-2" width="4" height="7" rx="1.5" />
+              <rect x="-2" y="-6" width="4" height="11" rx="1.5" />
+              <rect x="4"  y="-10" width="4" height="15" rx="1.5" />
+            </g>
+            <g class="sig-off" opacity="0">
+              <line x1="-7" y1="-9" x2="7" y2="4" />
+              <line x1="7" y1="-9" x2="-7" y2="4" />
+            </g>
+          </g>
+          <g class="radio-b rb" opacity="0" transform="translate(16 -56)"><use href="#walkie" /></g>
+          <g class="spk" opacity="0" transform="translate(46 -50)">
+            <circle r="10" />
+            <path d="M-4.5 -2.5 L-1.5 -2.5 L2.5 -6.5 L2.5 6.5 L-1.5 2.5 L-4.5 2.5 Z" />
+          </g>
+        </g>
+        <g class="carG" id="car1" transform="translate(510 330)">
+          <g transform="rotate(90) scale(0.3)"><use href="#carTop" /></g>
+          <g class="talk"><circle class="varc" r="34" /><circle class="varc d2" r="34" /></g>
+          <g class="sig" transform="translate(-18 -58)">
+            <g class="sig-on">
+              <rect x="-8" y="-2" width="4" height="7" rx="1.5" />
+              <rect x="-2" y="-6" width="4" height="11" rx="1.5" />
+              <rect x="4"  y="-10" width="4" height="15" rx="1.5" />
+            </g>
+            <g class="sig-off" opacity="0">
+              <line x1="-7" y1="-9" x2="7" y2="4" />
+              <line x1="7" y1="-9" x2="-7" y2="4" />
+            </g>
+          </g>
+          <g class="radio-b rb" opacity="0" transform="translate(16 -56)"><use href="#walkie" /></g>
+          <g class="spk" opacity="0" transform="translate(46 -50)">
+            <circle r="10" />
+            <path d="M-4.5 -2.5 L-1.5 -2.5 L2.5 -6.5 L2.5 6.5 L-1.5 2.5 L-4.5 2.5 Z" />
+          </g>
+        </g>
+        <g class="carG" id="car2" transform="translate(330 330)">
+          <g transform="rotate(90) scale(0.3)"><use href="#carTop" /></g>
+          <g class="talk"><circle class="varc" r="34" /><circle class="varc d2" r="34" /></g>
+          <g class="sig" transform="translate(-18 -58)">
+            <g class="sig-on">
+              <rect x="-8" y="-2" width="4" height="7" rx="1.5" />
+              <rect x="-2" y="-6" width="4" height="11" rx="1.5" />
+              <rect x="4"  y="-10" width="4" height="15" rx="1.5" />
+            </g>
+            <g class="sig-off" opacity="0">
+              <line x1="-7" y1="-9" x2="7" y2="4" />
+              <line x1="7" y1="-9" x2="-7" y2="4" />
+            </g>
+          </g>
+          <g class="radio-b rb" opacity="0" transform="translate(16 -56)"><use href="#walkie" /></g>
+          <g class="spk" opacity="0" transform="translate(46 -50)">
+            <circle r="10" />
+            <path d="M-4.5 -2.5 L-1.5 -2.5 L2.5 -6.5 L2.5 6.5 L-1.5 2.5 L-4.5 2.5 Z" />
+          </g>
+        </g>
+        <g class="carG" id="car3" transform="translate(150 330)">
+          <g transform="rotate(90) scale(0.3)"><use href="#carTop" /></g>
+          <g class="talk"><circle class="varc" r="34" /><circle class="varc d2" r="34" /></g>
+          <g class="sig" transform="translate(-18 -58)">
+            <g class="sig-on">
+              <rect x="-8" y="-2" width="4" height="7" rx="1.5" />
+              <rect x="-2" y="-6" width="4" height="11" rx="1.5" />
+              <rect x="4"  y="-10" width="4" height="15" rx="1.5" />
+            </g>
+            <g class="sig-off" opacity="0">
+              <line x1="-7" y1="-9" x2="7" y2="4" />
+              <line x1="7" y1="-9" x2="-7" y2="4" />
+            </g>
+          </g>
+          <g class="radio-b rb" opacity="0" transform="translate(16 -56)"><use href="#walkie" /></g>
+          <g class="spk" opacity="0" transform="translate(46 -50)">
+            <circle r="10" />
+            <path d="M-4.5 -2.5 L-1.5 -2.5 L2.5 -6.5 L2.5 6.5 L-1.5 2.5 L-4.5 2.5 Z" />
+          </g>
+        </g>
+
+        <!-- 完成确认 -->
+        <g id="checkG" opacity="0">
+          <circle class="check-bg" cx="500" cy="210" r="17" />
+          <path class="check-mk" d="M492 210 L498 216 L509 204" />
+        </g>
+      </svg>
+
+      <div class="hud">
+        <span>俯视图 · CONVOY VIEW</span>
+        <span>队伍 <b id="hudTeam">4/50</b> · <b id="hudNet">在线 4/4</b></span>
+      </div>
+
+      <div class="pill" aria-hidden="true"><i></i><span id="pillTxt">方向盘中键 · 按下讲话</span><em class="auto">AUTO</em></div>
+    </div>
+
+    <div class="capbar">
+      <div class="cap" id="cap" data-done="false">四台车结伴出行 · 组队完成</div>
+      <div class="dots" id="dots" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <section class="notes">
+    <div class="note">
+      <h3>组队与对讲</h3>
+      <p>商城购买对讲机 → 车机连接 → 发起组队。小队上限 50 台，共享实时定位、车辆信息、导航目的地；按方向盘中键讲话，再按发送，全队同时收听。</p>
+    </div>
+    <div class="note">
+      <h3>无网组网原理</h3>
+      <p>对讲机硬件基础通信 5–8 公里。范围内只要有一台车有网络，它就是桥接节点——无网车辆经硬件接力收发，形成很长的队伍链。</p>
+    </div>
+    <div class="note">
+      <h3>朋友的车</h3>
+      <p>把车上的对讲机递给朋友，下载 App 绑定新账号后即可与车队组队——非蔚来车也能在有网时远距离对讲。</p>
+    </div>
+    <div class="note">
+      <h3>实现方式</h3>
+      <p>单文件 SVG + JS 时间轴（render(t) 纯函数），统一蔚来车矢量资产，日/夜双主题，支持减弱动态效果降级。</p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var BORDER = 560, ROADY = 330;
+
+  var SCN = {
+    a: {
+      T: 12.4, ph: [1.2, 4.6, 7.0, 10.2, 12.4], tDone: 10.2,
+      carX: [690, 510, 330, 150],
+      caps: [
+        "四台车结伴出行 · 组队完成（小队上限 50 台）",
+        "小队实时共享：定位 · 车辆信息 · 导航目的地",
+        "按下方向盘中间按键，开始讲话",
+        "再按一次发送——全队同时收到并播放",
+        "有网组队对讲 · 全员互联"
+      ]
+    },
+    b: {
+      T: 15.0, ph: [1.4, 4.6, 7.2, 12.6, 15.0], tDone: 12.6,
+      start: [520, 385, 255, 130], delta: 355, moveT: 4.4,
+      caps: [
+        "跨国自驾 · 车队向无网地形行进",
+        "越过国境线，前车陆续断网——云端消息送不到",
+        "车载对讲机自动组网 · 基础通信 5–8 公里",
+        "无网车经对讲机接力，有网车作桥接节点上云",
+        "无网也不掉队 · 全队保持互联"
+      ]
+    },
+    c: {
+      T: 13.2, ph: [1.4, 4.0, 7.0, 11.0, 13.2], tDone: 11.0,
+      carX: [500, 340, 180], friendX: 780,
+      caps: [
+        "朋友的车不是蔚来——没有组队功能",
+        "把车上的对讲机递给朋友",
+        "朋友下载 App · 绑定新账号",
+        "绑定即入队——有网络就能远距离对讲",
+        "混合车队 · 全员互联"
+      ]
+    }
+  };
+
+  var stage  = document.getElementById("stage");
+  var capEl  = document.getElementById("cap");
+  var dotsEl = document.getElementById("dots");
+  var hudTeam = document.getElementById("hudTeam");
+  var hudNet  = document.getElementById("hudNet");
+  var pillTxt = document.getElementById("pillTxt");
+  var checkG  = document.getElementById("checkG");
+
+  var cars = [0, 1, 2, 3].map(function (i) {
+    var g = document.getElementById("car" + i);
+    return {
+      g: g,
+      sigOn: g.querySelector(".sig-on"),
+      sigOff: g.querySelector(".sig-off"),
+      radio: g.querySelector(".rb"),
+      spk: g.querySelector(".spk")
+    };
+  });
+
+  var el = {};
+  ["share0","share1","share2","upA","upAdot","fanAd0","fanAd1","fanAd2",
+   "failLine","failDot","failX","rangeRing","rangeLabel",
+   "hopD0","hopD1","hopD2","bridgeG","upB","upBdot",
+   "envC","friend","friendRadio","spkF","flyW","phoneG","bindBar","phoneCk",
+   "upC","upCdot","fanCd0","fanCd1","fanCd2"].forEach(function (id) {
+    el[id] = document.getElementById(id);
+  });
+  var fanALines = document.querySelectorAll(".fanA");
+  var fanCLines = document.querySelectorAll(".fanC");
+  var hopLines  = document.querySelectorAll(".hopL");
+
+  var PILL = {
+    a: "方向盘中键 · 按下讲话",
+    b: "对讲机硬件 · 自动组网",
+    c: "递出对讲机 · App 入队"
+  };
+
+  for (var i = 0; i < 5; i++) {
+    var dd = document.createElement("span");
+    dd.className = "dot";
+    dotsEl.appendChild(dd);
+  }
+  var dots = dotsEl.children;
+
+  var cur = "a";
+  var t0 = performance.now();
+  var paused = false;
+  var lastKey = "";
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function clamp01(k) { return Math.max(0, Math.min(1, k)); }
+  function easeIO(k) {
+    k = clamp01(k);
+    return k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+  }
+  function easeOutBack(k) {
+    k = clamp01(k);
+    var c = 1.70158;
+    return 1 + (c + 1) * Math.pow(k - 1, 3) + c * Math.pow(k - 1, 2);
+  }
+  function win(t, a, b) { return clamp01((t - a) / (b - a)); }
+  function pop(node, t, at, cx, cy) {
+    var k = win(t, at, at + .45);
+    node.setAttribute("opacity", Math.min(1, k * 2).toFixed(2));
+    node.setAttribute("transform",
+      "translate(" + cx + " " + cy + ") scale(" + easeOutBack(k).toFixed(3) + ") translate(" + (-cx) + " " + (-cy) + ")");
+  }
+  function popAt(node, t, at, x, y) {
+    var k = win(t, at, at + .45);
+    node.setAttribute("opacity", Math.min(1, k * 2).toFixed(2));
+    node.setAttribute("transform", "translate(" + x + " " + y + ") scale(" + easeOutBack(k).toFixed(3) + ")");
+  }
+  function dotOn(node, t, a, b, x1, y1, x2, y2) {
+    if (t < a || t > b) { node.setAttribute("opacity", "0"); return; }
+    var k = win(t, a, b);
+    node.setAttribute("cx", (x1 + (x2 - x1) * k).toFixed(1));
+    node.setAttribute("cy", (y1 + (y2 - y1) * k).toFixed(1));
+    node.setAttribute("opacity", "1");
+  }
+  function dotOnQuad(node, t, a, b, p0, p1, p2) {
+    if (t < a || t > b) { node.setAttribute("opacity", "0"); return; }
+    var u = win(t, a, b), v = 1 - u;
+    node.setAttribute("cx", (v * v * p0[0] + 2 * v * u * p1[0] + u * u * p2[0]).toFixed(1));
+    node.setAttribute("cy", (v * v * p0[1] + 2 * v * u * p1[1] + u * u * p2[1]).toFixed(1));
+    node.setAttribute("opacity", "1");
+  }
+
+  function phaseOf(s, t) {
+    for (var i = 0; i < s.ph.length; i++) if (t < s.ph[i]) return i;
+    return 4;
+  }
+
+  function setCar(i, x, y) {
+    cars[i].g.setAttribute("transform", "translate(" + x.toFixed(1) + " " + (y || ROADY) + ")");
+  }
+  function setNet(i, on) {
+    cars[i].sigOn.setAttribute("opacity", on ? "1" : "0");
+    cars[i].sigOff.setAttribute("opacity", on ? "0" : "1");
+    cars[i].g.classList.toggle("nonet", !on);
+  }
+  function setSpk(i, t, at) {
+    var k = win(t, at, at + .4);
+    cars[i].spk.setAttribute("opacity", Math.min(1, k * 2).toFixed(2));
+  }
+
+  function render(t) {
+    var s = SCN[cur];
+    var ph = phaseOf(s, t);
+    var n, i, k;
+
+    checkG.setAttribute("opacity", "0");
+    checkG.removeAttribute("transform");
+
+    if (cur === "a") {
+      for (i = 0; i < 4; i++) { setCar(i, s.carX[i]); setNet(i, true); cars[i].radio.setAttribute("opacity", "0"); }
+      pop(el.share0, t, 1.5, 290, 221);
+      pop(el.share1, t, 2.3, 420, 221);
+      pop(el.share2, t, 3.1, 563, 221);
+      el.upA.setAttribute("opacity", t >= 7.0 && t < s.ph[3] ? ".9" : "0");
+      dotOn(el.upAdot, t, 7.1, 7.8, 510, 266, 500, 148);
+      var fanOp = t >= 7.9 && t < s.ph[3] ? ".9" : "0";
+      fanALines.forEach(function (l) { l.setAttribute("opacity", fanOp); });
+      var fanT = [[690, 266], [330, 266], [150, 266]];
+      for (i = 0; i < 3; i++) {
+        var d2 = el["fanAd" + i];
+        dotOn(d2, t, 7.9, 8.6, 500, 148, fanT[i][0], fanT[i][1]);
+        if (t >= 8.6 && t < 9.3) dotOn(d2, t, 8.6, 9.3, 500, 148, fanT[i][0], fanT[i][1]);
+      }
+      setSpk(0, t, 8.5); setSpk(2, t, 8.62); setSpk(3, t, 8.74);
+      cars[1].spk.setAttribute("opacity", "0");
+      if (t >= s.tDone + 0.3) pop(checkG, t, s.tDone + 0.3, 500, 210);
+      hudTeam.textContent = "4/50";
+      hudNet.textContent = "在线 4/4";
+    }
+
+    if (cur === "b") {
+      var mk = easeIO(t / s.moveT);
+      var netCount = 0;
+      for (i = 0; i < 4; i++) {
+        var x = s.start[i] + s.delta * mk;
+        setCar(i, x);
+        var on = x < BORDER;
+        setNet(i, on);
+        if (on) netCount++;
+        k = win(t, 4.8 + i * .22, 5.25 + i * .22);
+        cars[i].radio.setAttribute("opacity", Math.min(1, k * 2).toFixed(2));
+        cars[i].spk.setAttribute("opacity", "0");
+      }
+      var showFail = t >= 2.9 && t < 4.6;
+      el.failLine.setAttribute("opacity", showFail ? ".9" : "0");
+      if (showFail) {
+        var c0x = s.start[0] + s.delta * mk;
+        el.failLine.setAttribute("x2", (c0x - 30).toFixed(1));
+        el.failLine.setAttribute("y2", "266");
+        dotOn(el.failDot, t, 3.0, 3.7, 506, 146, 506 + (c0x - 30 - 506) * .62, 146 + (266 - 146) * .62);
+        if (t >= 3.7) {
+          popAt(el.failX, t, 3.7, 506 + (c0x - 30 - 506) * .62, 146 + (266 - 146) * .62);
+        } else el.failX.setAttribute("opacity", "0");
+      } else { el.failDot.setAttribute("opacity", "0"); el.failX.setAttribute("opacity", "0"); }
+      var rk = win(t, 5.5, 6.2);
+      var rOp = t >= 5.5 && t < s.ph[3] ? (rk * .9).toFixed(2) : "0";
+      el.rangeRing.setAttribute("opacity", rOp);
+      el.rangeRing.setAttribute("r", (60 + 65 * easeIO(rk)).toFixed(1));
+      el.rangeLabel.setAttribute("opacity", rOp);
+      var hopOp = t >= 7.3 && t <= s.T ? ".9" : "0";
+      hopLines.forEach(function (l) { l.setAttribute("opacity", hopOp); });
+      dotOnQuad(el.hopD0, t, 7.5, 8.2, [862, 268], [808, 214], [753, 268]);
+      dotOnQuad(el.hopD1, t, 8.2, 8.9, [727, 268], [675, 214], [623, 268]);
+      dotOnQuad(el.hopD2, t, 8.9, 9.6, [597, 268], [541, 214], [498, 268]);
+      pop(el.bridgeG, t, 9.7, 485, 330);
+      el.upB.setAttribute("opacity", t >= 9.9 && t <= s.T ? ".9" : "0");
+      dotOn(el.upBdot, t, 9.9, 10.7, 485, 266, 506, 148);
+      if (t >= 10.9) { setSpk(0, t, 10.9); setSpk(1, t, 11.02); setSpk(2, t, 11.14); setSpk(3, t, 11.26); }
+      if (t >= s.tDone + 0.3) pop(checkG, t, s.tDone + 0.3, 500, 210);
+      hudTeam.textContent = "4/50";
+      hudNet.textContent = ph < 3 ? "有网 " + netCount + "/4" : (ph === 3 ? "桥接接力中" : "全员互联");
+    }
+
+    if (cur === "c") {
+      for (i = 0; i < 3; i++) { setCar(i, s.carX[i]); setNet(i, true); cars[i].radio.setAttribute("opacity", "0"); }
+      var flyVis = t >= 1.5 && t < 3.25;
+      el.flyW.setAttribute("opacity", flyVis ? "1" : "0");
+      if (flyVis) {
+        var u = easeIO(win(t, 1.8, 3.2)), v = 1 - u;
+        var fx = v * v * 500 + 2 * v * u * 640 + u * u * 770;
+        var fy = v * v * 298 + 2 * v * u * 225 + u * u * 296;
+        el.flyW.setAttribute("transform", "translate(" + fx.toFixed(1) + " " + fy.toFixed(1) + ") scale(1.15)");
+      }
+      k = win(t, 3.2, 3.6);
+      el.friendRadio.setAttribute("opacity", Math.min(1, k * 2).toFixed(2));
+      popAt(el.phoneG, t, 4.3, 872, 236);
+      el.bindBar.setAttribute("width", (18 * win(t, 4.6, 6.0)).toFixed(1));
+      el.phoneCk.setAttribute("opacity", t >= 6.2 ? "1" : "0");
+      el.envC.setAttribute("width", (460 + 290 * easeIO(win(t, 7.2, 8.2))).toFixed(0));
+      el.upC.setAttribute("opacity", t >= 8.5 && t <= s.T ? ".9" : "0");
+      dotOn(el.upCdot, t, 8.6, 9.4, 780, 266, 512, 150);
+      var fanCOp = t >= 9.5 && t <= s.T ? ".9" : "0";
+      fanCLines.forEach(function (l) { l.setAttribute("opacity", fanCOp); });
+      var fanCT = [[500, 266], [340, 266], [180, 266]];
+      for (i = 0; i < 3; i++) dotOn(el["fanCd" + i], t, 9.5, 10.2, 500, 148, fanCT[i][0], fanCT[i][1]);
+      setSpk(0, t, 10.3); setSpk(1, t, 10.42); setSpk(2, t, 10.54);
+      el.spkF.setAttribute("opacity", "0");
+      if (t >= s.tDone + 0.3) pop(checkG, t, s.tDone + 0.3, 500, 210);
+      hudTeam.textContent = ph < 3 ? "3/50" : "4/50";
+      hudNet.textContent = ph < 3 ? "在线 3/3" : "在线 4/4";
+    }
+
+    stage.dataset.scn = cur;
+    stage.dataset.phase = String(ph);
+
+    var key = cur + ph;
+    if (key !== lastKey) {
+      lastKey = key;
+      capEl.textContent = s.caps[ph];
+      capEl.dataset.done = String(ph === 4);
+      capEl.style.animation = "none";
+      void capEl.offsetWidth;
+      capEl.style.animation = "capIn .45s ease";
+      for (var m = 0; m < dots.length; m++) dots[m].dataset.on = String(m <= ph);
+      pillTxt.textContent = PILL[cur];
+    }
+  }
+
+  function loop(now) {
+    if (!paused) render(((now - t0) / 1000) % SCN[cur].T);
+    requestAnimationFrame(loop);
+  }
+
+  function setScn(id) {
+    cur = id;
+    t0 = performance.now();
+    lastKey = "";
+    document.querySelectorAll(".chip").forEach(function (c) {
+      c.setAttribute("aria-pressed", String(c.dataset.scn === id));
+    });
+    if (reduced) { paused = true; render(SCN[id].tDone + 1); }
+  }
+
+  document.querySelectorAll(".chip").forEach(function (c) {
+    c.addEventListener("click", function () { setScn(c.dataset.scn); });
+  });
+
+  window.__seek = function (t) { paused = true; render(t); };
+  window.__scn = setScn;
+  window.__play = function () { paused = false; t0 = performance.now(); };
+  window.__info = function () {
+    var s = SCN[cur];
+    return { T: s.T, tDone: s.tDone, scn: cur, cars: cur === "c" ? 4 : 4, border: BORDER, maxTeam: 50 };
+  };
+
+  if (reduced) { paused = true; render(SCN.a.tDone + 1); }
+  requestAnimationFrame(loop);
+})();
+</script>
+
+</body>
+</html>
