@@ -13,7 +13,7 @@ const WheelTire: React.FC = () => (
     <circle r={104} fill="#0B0D10" opacity={0.4} />
     <circle r={100} fill="#141619" />
     <circle r={100} fill="none" stroke="#2A2E33" strokeWidth={3} />
-    <circle r={70} fill="#23272C" />
+    <circle r={84} fill="#23272C" />
   </g>
 );
 
@@ -36,7 +36,7 @@ const SPOKES: Array<[string, string]> = [
 ];
 
 const WheelSpokes: React.FC = () => (
-  <g>
+  <g transform="scale(1.2)">
     {SPOKES.map(([d, fill], i) => (
       <path key={i} d={d} fill={fill} />
     ))}
@@ -164,8 +164,8 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
         style={{position: 'absolute', left: 0, top: 2, width: 1920, height: 1075}}
       >
         <defs>
-          <clipPath id="carClip">
-            <polygon points={CAR_CLIP} />
+          <clipPath id="carClip" clipRule="evenodd">
+            <path clipRule="evenodd" fillRule="evenodd" d={CAR_CLIP} />
           </clipPath>
           <Patterns />
         </defs>
@@ -181,7 +181,7 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
         </g>
 
         {/* 车身照片（抠形 + 镜像 + 微浮动） */}
-        <g transform={`translate(120 ${(192 + bob).toFixed(2)})`}>
+        <g transform={`translate(120 ${(201.7 + bob).toFixed(2)})`}>
           <g transform="scale(0.55)">
             <g transform="translate(1020 0) scale(-1 1)">
               <image
@@ -195,14 +195,18 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
           </g>
         </g>
 
-        {/* 矢量车轮（正圆旋转，接地不随浮动） */}
-        <g transform="translate(550 367) scale(0.523)">
+        {/* 接地阴影 */}
+        <ellipse cx={561} cy={421} rx={50} ry={6} fill="rgba(6,10,10,.42)" />
+        <ellipse cx={254} cy={419} rx={45} ry={6} fill="rgba(6,10,10,.42)" />
+
+        {/* 矢量车轮（与挖孔同心，尺寸取照片实测胎圈） */}
+        <g transform="translate(561.1 371.1) scale(0.4895)">
           <WheelTire />
           <g transform={`rotate(${deg.toFixed(1)})`}>
             <WheelSpokes />
           </g>
         </g>
-        <g transform="translate(255 368) scale(0.52)">
+        <g transform="translate(254.2 371.1) scale(0.4455)">
           <WheelTire />
           <g transform={`rotate(${deg.toFixed(1)})`}>
             <WheelSpokes />
@@ -210,7 +214,7 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
         </g>
 
         {/* 尾部扬尘 */}
-        <g transform="translate(215 408)">
+        <g transform="translate(200 404)">
           {([0, 0.3, 0.6] as const).map((d, i) => {
             const p = sprayDot(d);
             const base = [{r: 4, cx: 0, cy: 0}, {r: 3, cx: 8, cy: 6}, {r: 3.5, cx: -6, cy: 10}][i];
@@ -228,9 +232,9 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
         </g>
 
         {/* 抓地标识 */}
-        <path d="M229 438 q26 9 52 0" stroke={C.accent} strokeWidth={2.5} fill="none"
+        <path d="M228 440 q26 9 52 0" stroke={C.accent} strokeWidth={2.5} fill="none"
           strokeLinecap="round" opacity={gripShow} />
-        <path d="M524 438 q26 9 52 0" stroke={C.accent} strokeWidth={2.5} fill="none"
+        <path d="M535 440 q26 9 52 0" stroke={C.accent} strokeWidth={2.5} fill="none"
           strokeLinecap="round" opacity={gripShow} />
 
         {/* 激光雷达识别脉冲 */}

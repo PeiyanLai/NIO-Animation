@@ -453,16 +453,16 @@ body {
            aria-label="全地形模式动画：驶入雪地系统自动提醒，方向盘按键一键开启，路面切换时主动提醒切换模式">
         <defs>
           <!-- ES9 官方照片侧视轮廓（原图坐标系，车头朝左；整组镜像后车头朝右） -->
-          <clipPath id="carClip">
-            <polygon points="46,200 70,192 110,178 160,166 210,160 255,155 288,152 316,143 350,112 378,97 390,89 394,86 400,82 414,82 418,87 450,85 520,83 600,84 680,87 740,90 785,93 806,73 812,64 826,64 832,72 850,78 878,83 905,89 908,93 891,107 900,118 920,140 945,166 953,173 958,186 961,208 958,250 950,295 944,330 930,348 880,348 872,288 850,250 820,230 785,224 750,230 718,248 696,282 684,320 680,346 336,346 331,302 316,264 289,240 252,230 215,234 185,252 163,284 152,318 146,340 120,344 90,340 60,334 46,320 40,290 40,235" />
+          <clipPath id="carClip" clip-rule="evenodd">
+            <path clip-rule="evenodd" fill-rule="evenodd" d="M40,235L46,200L70,192L110,178L160,166L210,160L255,155L288,152L300,154L305,150L310,147L315,143L320,140L325,137L330,134L335,130L340,127L345,124L350,121L355,117L360,114L365,111L370,108L375,105L380,102L385,100L390,97L395,94L400,92L405,74L410,74L415,74L420,73L425,73L430,73L435,75L440,75L445,76L450,75L455,74L460,73L465,72L470,72L475,71L480,70L485,70L490,69L495,69L500,69L505,68L510,68L515,68L520,67L525,67L530,67L535,67L540,66L545,66L550,66L555,66L560,66L565,66L570,66L575,66L580,66L585,66L590,65L595,65L600,65L605,65L610,66L615,66L620,66L625,66L630,66L635,66L640,66L645,66L650,66L655,66L660,66L665,66L670,67L675,67L680,67L685,67L690,67L695,67L700,68L705,68L710,68L715,68L720,69L725,69L730,69L735,69L740,70L745,70L750,70L755,70L760,71L765,71L770,71L775,71L780,71L785,72L790,65L795,63L800,63L805,63L810,63L815,63L820,63L825,63L830,75L835,76L840,75L845,77L850,78L855,79L860,79L865,80L870,81L875,81L880,82L885,80L890,81L895,82L900,84L905,84L910,127L915,125L920,132L925,136L930,143L935,148L940,154L945,170L945,166L953,173L958,186L961,208L958,250L950,295L944,330L930,350L700,350L350,348L146,344L120,344L90,340L60,334L46,320L40,290ZM132,308a86,86 0 1,0 172,0a86,86 0 1,0 -172,0ZM698,308a78,78 0 1,0 156,0a78,78 0 1,0 -156,0Z" />
           </clipPath>
           <g id="wheelTire">
             <circle r="104" fill="#0B0D10" opacity=".4" />
             <circle r="100" fill="#141619" />
             <circle r="100" fill="none" stroke="#2A2E33" stroke-width="3" />
-            <circle r="70" fill="#23272C" />
+            <circle r="84" fill="#23272C" />
           </g>
-          <g id="wheelSpokes">
+          <g id="wheelSpokes" transform="scale(1.2)">
             <path d="M-6.8 -18.8 L-25.8 -60.8 L-3.5 -65.9 L-2.1 -19.9 Z" fill="#B7BEC6" />
             <path d="M2.1 -19.9 L3.5 -65.9 L25.8 -60.8 L6.8 -18.8 Z" fill="#8D949C" />
             <path d="M16.1 -25.3 L33.0 -54.9 L42.0 -48.3 L19.1 -23.1 Z" fill="#3E444B" />
@@ -558,7 +558,7 @@ body {
         </g>
 
         <!-- 车辆侧视：ES9 官方照片抠形贴图（镜像后车头朝右），行驶感来自地面滚动 + 车身微浮动 -->
-        <g id="carSide" transform="translate(120 192)">
+        <g id="carSide" transform="translate(120 201.7)">
           <g transform="scale(0.55)">
             <g transform="translate(1020 0) scale(-1 1)">
               <use href="#carImg" clip-path="url(#carClip)" />
@@ -573,28 +573,32 @@ body {
           <ellipse cx="255" cy="419" rx="60" ry="8" fill="rgba(12,18,18,.3)" />
         </g>
 
+        <!-- 接地阴影 -->
+        <ellipse cx="561" cy="421" rx="50" ry="6" fill="rgba(6,10,10,.3)" />
+        <ellipse cx="254" cy="419" rx="45" ry="6" fill="rgba(6,10,10,.3)" />
+
         <!-- 矢量车轮：正圆旋转（照片轮有透视，改为按官方轮毂样式精绘） -->
         <g id="vwheels">
-          <g transform="translate(550 367) scale(0.523)">
+          <g transform="translate(561.1 371.1) scale(0.4895)">
             <use href="#wheelTire" />
             <g id="spinF"><use href="#wheelSpokes" /></g>
           </g>
-          <g transform="translate(255 368) scale(0.52)">
+          <g transform="translate(254.2 371.1) scale(0.4455)">
             <use href="#wheelTire" />
             <g id="spinR"><use href="#wheelSpokes" /></g>
           </g>
         </g>
 
         <!-- 尾部扬尘（模式开启时；车尾在左） -->
-        <g class="spray" transform="translate(215 408)">
+        <g class="spray" transform="translate(200 404)">
           <circle r="4" />
           <circle r="3" cx="8" cy="6" />
           <circle r="3.5" cx="-6" cy="10" />
         </g>
 
         <!-- 抓地标识（模式开启时显示，位于前后轮下方） -->
-        <path class="grip" d="M229 438 q26 9 52 0" />
-        <path class="grip" d="M524 438 q26 9 52 0" />
+        <path class="grip" d="M228 440 q26 9 52 0" />
+        <path class="grip" d="M535 440 q26 9 52 0" />
 
         <!-- 激光雷达识别脉冲（探测前方路面） -->
         <path class="scan"    d="M725 305 A 70 70 0 0 1 795 375" />
@@ -667,8 +671,8 @@ body {
   "use strict";
 
   var SPEED = 130;                 // 地面滚动速度 px/s
-  var FW_X = 550;                  // 前轮触地点（舞台坐标，照片贴图）
-  var WHEEL_R = 52.3;              // 轮胎滚动半径（显示坐标）
+  var FW_X = 561;                  // 前轮触地点（舞台坐标，照片贴图）
+  var WHEEL_R = 48.95;              // 轮胎滚动半径（显示坐标）
   var TERR = { asphalt: "柏油", mud: "泥地", sand: "沙地", snow: "雪地", wet: "湿地", gravel: "碎石" };
 
   var SCN = {
@@ -784,7 +788,7 @@ body {
     var dx = SPEED * t;
     scrolls[cur].setAttribute("transform", "translate(" + (-dx).toFixed(1) + " 0)");
     var bob = Math.sin(t * 5) * 1.2;
-    carSide.setAttribute("transform", "translate(120 " + (192 + bob).toFixed(2) + ")");
+    carSide.setAttribute("transform", "translate(120 " + (201.7 + bob).toFixed(2) + ")");
     var deg = (dx / WHEEL_R) * 57.2958 % 360;
     wheelF.setAttribute("transform", "rotate(" + deg.toFixed(1) + ")");
     wheelR.setAttribute("transform", "rotate(" + deg.toFixed(1) + ")");
