@@ -316,10 +316,11 @@ body {
 .share-pill text { font-size: 13px; font-weight: 600; fill: var(--ink); }
 .share-pill circle { fill: var(--accent); }
 
-.border-line { stroke: var(--warn); stroke-width: 2.5; stroke-dasharray: 12 9; opacity: .85; }
-.border-sign rect { fill: var(--panel); stroke: var(--warn); stroke-width: 1.5; }
-.border-sign text { font-family: var(--f-data); font-size: 11px; letter-spacing: .12em; fill: var(--warn); font-weight: 600; }
+.dead-zone { fill: var(--warn-wash); opacity: .38; }
+.zone-edge { stroke: var(--warn); stroke-width: 2.5; stroke-dasharray: 12 9; opacity: .85; }
+.mtn { fill: none; stroke: var(--ink-3); stroke-width: 2; stroke-linejoin: round; opacity: .65; }
 .region { font-family: var(--f-data); font-size: 11px; letter-spacing: .14em; fill: var(--ink-3); }
+.region-warn { fill: var(--warn); }
 
 .sig-on rect { fill: var(--accent); }
 .sig-off line { stroke: var(--warn); stroke-width: 3; stroke-linecap: round; }
@@ -456,7 +457,7 @@ body {
   <header class="masthead">
     <p class="eyebrow">Vehicle HMI · 用户教育动画</p>
     <h1>对讲机组队 · 车队互联演示</h1>
-    <p>购买对讲机并在车机上完成连接后即可组队（小队上限 50 台）：共享实时定位、车辆信息与导航目的地，按方向盘中键即可全队对讲。跨国进入无网地形时，车载对讲机硬件在 5–8 公里内自动组网，有网车辆作桥接节点，断网队友不失联；朋友的非蔚来车也能靠对讲机 + App 入队。动画自动循环，切换下方场景。</p>
+    <p>购买对讲机并在车机上完成连接后即可组队（小队上限 50 台）：共享实时定位、车辆信息与导航目的地，按方向盘中键即可全队对讲。进入网络信号复杂的无网地形时，车载对讲机硬件在 5–8 公里内自动组网，有网车辆作桥接节点，断网队友不失联；朋友的非蔚来车也能靠对讲机 + App 入队。动画自动循环，切换下方场景。</p>
   </header>
 
   <div class="chips" role="group" aria-label="场景切换">
@@ -465,7 +466,7 @@ body {
       <span>共享定位/车信息/导航，一键对讲全队同收</span>
     </button>
     <button class="chip" type="button" data-scn="b" aria-pressed="false">
-      <b>场景二 · 跨国无网 · 对讲机组网</b>
+      <b>场景二 · 无网地形 · 对讲机组网</b>
       <span>断网车经硬件接力，有网车桥接上云</span>
     </button>
     <button class="chip" type="button" data-scn="c" aria-pressed="false">
@@ -477,7 +478,7 @@ body {
   <section class="stage-shell">
     <div class="stage" id="stage" data-scn="a" data-phase="0">
       <svg viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid meet"
-           aria-label="对讲机组队动画：四台车组队对讲，跨国无网时经对讲机硬件接力，有网车作桥接节点">
+           aria-label="对讲机组队动画：四台车组队对讲，无网地形下经对讲机硬件接力，有网车作桥接节点">
         <defs>
           <g id="carTop">
             <rect class="nv-tire" x="-84" y="-144" width="14" height="52" rx="6" />
@@ -511,15 +512,16 @@ body {
         <line class="road-edge" x1="0" y1="390" x2="1000" y2="390" />
         <line class="lane" x1="0" y1="330" x2="1000" y2="330" />
 
-        <!-- 国境线（场景二） -->
+        <!-- 无网区：网络信号复杂的地形（场景二） -->
         <g class="only-b">
-          <line class="border-line" x1="560" y1="0" x2="560" y2="560" />
-          <g class="border-sign">
-            <rect x="498" y="24" width="124" height="26" rx="4" />
-            <text x="560" y="41" text-anchor="middle">国境线 BORDER</text>
+          <rect class="dead-zone" x="560" y="0" width="440" height="560" />
+          <line class="zone-edge" x1="560" y1="0" x2="560" y2="560" />
+          <g class="mtn">
+            <path d="M745 130 L780 86 L815 130" />
+            <path d="M795 130 L838 76 L880 130" />
           </g>
-          <text class="region" x="260" y="68" text-anchor="middle">境内 · 有网络覆盖</text>
-          <text class="region" x="812" y="68" text-anchor="middle">境外 · 无网地形</text>
+          <text class="region" x="260" y="52" text-anchor="middle">网络覆盖区</text>
+          <text class="region region-warn" x="812" y="52" text-anchor="middle">信号复杂地形 · 无网区</text>
         </g>
 
         <!-- 云端 -->
@@ -762,7 +764,7 @@ body {
 (function () {
   "use strict";
 
-  var BORDER = 560, ROADY = 330;
+  var NONET_X = 560, ROADY = 330;   // 无网区起点（信号复杂地形）
 
   var SCN = {
     a: {
@@ -780,8 +782,8 @@ body {
       T: 15.0, ph: [1.4, 4.6, 7.2, 12.6, 15.0], tDone: 12.6,
       start: [520, 385, 255, 130], delta: 355, moveT: 4.4,
       caps: [
-        "跨国自驾 · 车队向无网地形行进",
-        "越过国境线，前车陆续断网——云端消息送不到",
+        "车队驶入网络信号复杂的地形",
+        "进入无网区，前车陆续断网——云端消息送不到",
         "车载对讲机自动组网 · 基础通信 5–8 公里",
         "无网车经对讲机接力，有网车作桥接节点上云",
         "无网也不掉队 · 全队保持互联"
@@ -941,7 +943,7 @@ body {
       for (i = 0; i < 4; i++) {
         var x = s.start[i] + s.delta * mk;
         setCar(i, x);
-        var on = x < BORDER;
+        var on = x < NONET_X;
         setNet(i, on);
         if (on) netCount++;
         k = win(t, 4.8 + i * .22, 5.25 + i * .22);
@@ -1047,7 +1049,7 @@ body {
   window.__play = function () { paused = false; t0 = performance.now(); };
   window.__info = function () {
     var s = SCN[cur];
-    return { T: s.T, tDone: s.tDone, scn: cur, cars: cur === "c" ? 4 : 4, border: BORDER, maxTeam: 50 };
+    return { T: s.T, tDone: s.tDone, scn: cur, cars: 4, nonetX: NONET_X, maxTeam: 50 };
   };
 
   if (reduced) { paused = true; render(SCN.a.tDone + 1); }
