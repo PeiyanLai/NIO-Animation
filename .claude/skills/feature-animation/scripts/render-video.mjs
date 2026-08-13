@@ -1,8 +1,11 @@
-/* 把 feature-animation 动画 HTML 导出为 MP4 视频。
+/* 把 feature-animation 动画 HTML 导出为 MP4 视频（可选同时导出 GIF）。
    用法: node render-video.mjs <file.html> [--out demo.mp4] [--scenes a,b] [--theme dark|light] [--zoom 2]
+                                [--gif] [--gif-width 720] [--gif-fps 12]
    依赖: playwright(全局或本地) + @ffmpeg-installer/ffmpeg(脚本自动 npm 安装，二进制在包内)
    原理: 无头浏览器实时录屏（CSS 动画与 JS 时间轴保持同步），按 __info().T 逐场景播完，
-         再用 ffmpeg 裁切 .stage-shell 区域并转 H.264（yuv420p + faststart，通用播放）。 */
+         再用 ffmpeg 裁切 .stage-shell 区域并转 H.264（yuv420p + faststart，通用播放）。
+   --gif 用调色板两遍法(palettegen/paletteuse)从 MP4 再转一份循环 GIF——
+         GIF 作为图片插入飞书文档/IM 时会自动循环播放，是"动画直接展现在文档里"的载体。 */
 import { pathToFileURL } from "url";
 import { resolve, dirname } from "path";
 import { execSync, spawnSync } from "child_process";
@@ -21,6 +24,9 @@ const out = resolve(opt("out", file.replace(/\.html?$/i, "") + ".mp4"));
 const scenes = opt("scenes", "").split(",").map(s => s.trim()).filter(Boolean);
 const theme = opt("theme", "dark");
 const zoom = parseFloat(opt("zoom", "2"));
+const wantGif = args.includes("--gif");
+const gifWidth = parseInt(opt("gif-width", "720"), 10);
+const gifFps = parseInt(opt("gif-fps", "12"), 10);
 
 let chromium;
 try { ({ chromium } = await import("playwright")); }
@@ -96,4 +102,20 @@ const ff = spawnSync(ffmpeg, [
 if (ff.status !== 0) { console.error("ffmpeg 转码失败"); process.exit(1); }
 
 console.log(`✅ 已导出: ${out}（${playTotal.toFixed(1)}s, ${rect.w}x${rect.h}, H.264）`);
+
+if (wantGif) {
+  // 注意：包内 ffmpeg 版本较老，palettegen 不支持 stat_mode 等新选项，保持基础参数
+  const gifOut = out.replace(/\.mp4$/i, "") + ".gif";
+  const fg = spawnSync(ffmpeg, [
+    "-y", "-hide_banner", "-loglevel", "error", "-i", out,
+    "-filter_complex",
+    `fps=${gifFps},scale=${gifWidth}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse=dither=bayer:bayer_scale=4`,
+    "-loop", "0", gifOut
+  ], { stdio: "inherit" });
+  if (fg.status !== 0) { console.error("GIF 转换失败"); process.exit(1); }
+  const { statSync } = await import("fs");
+  const mb = statSync(gifOut).size / 1048576;
+  console.log(`✅ 已导出: ${gifOut}（${gifWidth}px, ${gifFps}fps, ${mb.toFixed(1)}MB${mb > 10 ? " ⚠️ 超 10MB，飞书内嵌可能失败，建议调小 --gif-width/--gif-fps 或按场景拆分" : ""}）`);
+}
+
 console.log("提醒：抽几帧亲眼检查关键教育画面后再交付。");
