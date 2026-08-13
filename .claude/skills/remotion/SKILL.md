@@ -1,0 +1,322 @@
+---
+name: remotion
+description: 用 Remotion（React 视频框架）以代码方式制作、合成、渲染视频。当用户提到：Remotion、React 做视频、代码生成视频、programmatic video、要多轨道/转场/配乐合成的视频、把 React 组件渲染成 MP4，或要求比单文件 SVG 动画更工程化的视频产线时使用本技能。与 feature-animation 的分工：快速单文件交互动画+录屏走 feature-animation；需要 React 组件化、时间轴合成、转场、音频混合的正式视频产线走本技能。
+---
+
+# remotion · React 代码驱动视频
+
+> 来源：Remotion 官方推荐的 AI 编码规则（安装自 gist.github.com/ThariqS/3d446e7c7aa9eb94f468194deb73028f）。以下技术规则保持原文（英文）。
+>
+> **本环境注意**：渲染需要 Chromium——本环境已预装于 `/opt/pw-browsers/chromium`，渲染时用 `npx remotion render --browser-executable=/opt/pw-browsers/chromium` 指定，不要让 Remotion 自行下载浏览器（外网受限会失败）。npm registry 可用，`npm create video` / 安装 `remotion` 与 `@remotion/*` 包均可正常执行。
+
+---
+
+This is a remotion based video app that uses React to render videos.
+
+Full remotion docs can be found here: https://www.remotion.dev/docs/. Consult these docs often if you're uncertain.
+
+# Project structure
+
+The Root file is usually named "src/Root.tsx" and looks like this:
+
+```tsx
+import {Composition} from 'remotion';
+import {MyComp} from './MyComp';
+
+export const Root: React.FC = () => {
+  return (
+    <>
+      <Composition
+        id="MyComp"
+        component={MyComp}
+        durationInFrames={120}
+        width={1920}
+        height={1080}
+        fps={30}
+        defaultProps={{}}
+      />
+    </>
+  );
+};
+```
+
+A `<Composition>` defines a video that can be rendered. It consists of a React "component", an "id", a "durationInFrames", a "width", a "height" and a frame rate "fps". The default frame rate should be 30. The default height should be 1080 and the default width should be 1920. The default "id" should be "MyComp". The "defaultProps" must be in the shape of the React props the "component" expects.
+
+Inside a React "component", one can use the "useCurrentFrame()" hook to get the current frame number. Frame numbers start at 0.
+
+```tsx
+export const MyComp: React.FC = () => {
+  const frame = useCurrentFrame();
+  return <div>Frame {frame}</div>;
+};
+```
+
+# Component Rules
+
+Inside a component, regular HTML and SVG tags can be returned. There are special tags for video and audio. Those special tags accept regular CSS styles.
+
+If a video is included in the component it should use the `<OffthreadVideo>` tag.
+
+```tsx
+import {OffthreadVideo} from 'remotion';
+
+export const MyComp: React.FC = () => {
+  return (
+    <div>
+      <OffthreadVideo
+        src="https://remotion.dev/bbb.mp4"
+        style={{width: '100%'}}
+      />
+    </div>
+  );
+};
+```
+
+OffthreadVideo has a "startFrom" prop that trims the left side of a video by a number of frames. OffthreadVideo has a "endAt" prop that limits how long a video is shown. OffthreadVideo has a "volume" prop that sets the volume of the video. It accepts values between 0 and 1.
+
+If a non-animated image is included in the component it should use the `<Img>` tag.
+
+```tsx
+import {Img} from 'remotion';
+
+export const MyComp: React.FC = () => {
+  return <Img src="https://remotion.dev/logo.png" style={{width: '100%'}} />;
+};
+```
+
+If an animated GIF is included, the "@remotion/gif" package should be installed and the `<Gif>` tag should be used.
+
+```tsx
+import {Gif} from '@remotion/gif';
+
+export const MyComp: React.FC = () => {
+  return (
+    <Gif
+      src="https://media.giphy.com/media/l0MYd5y8e1t0m/giphy.gif"
+      style={{width: '100%'}}
+    />
+  );
+};
+```
+
+If audio is included, the `<Audio>` tag should be used.
+
+```tsx
+import {Audio} from 'remotion';
+
+export const MyComp: React.FC = () => {
+  return <Audio src="https://remotion.dev/audio.mp3" />;
+};
+```
+
+Asset sources can be specified as either a Remote URL or an asset that is referenced from the "public/" folder of the project. If an asset is referenced from the "public/" folder, it should be specified using the "staticFile" API from Remotion
+
+```tsx
+import {Audio, staticFile} from 'remotion';
+
+export const MyComp: React.FC = () => {
+  return <Audio src={staticFile('audio.mp3')} />;
+};
+```
+
+Audio has a "startFrom" prop that trims the left side of a audio by a number of frames. Audio has a "endAt" prop that limits how long a audio is shown. Audio has a "volume" prop that sets the volume of the audio. It accepts values between 0 and 1.
+
+If two elements should be rendered on top of each other, they should be layered using the "AbsoluteFill" component from "remotion".
+
+```tsx
+import {AbsoluteFill} from 'remotion';
+
+export const MyComp: React.FC = () => {
+  return (
+    <AbsoluteFill>
+      <AbsoluteFill style={{background: 'blue'}}>
+        <div>This is in the back</div>
+      </AbsoluteFill>
+      <AbsoluteFill style={{background: 'blue'}}>
+        <div>This is in front</div>
+      </AbsoluteFill>
+    </AbsoluteFill>
+  );
+};
+```
+
+Any Element can be wrapped in a "Sequence" component from "remotion" to place the element later in the video.
+
+```tsx
+import {Sequence} from 'remotion';
+
+export const MyComp: React.FC = () => {
+  return (
+    <Sequence from={10} durationInFrames={20}>
+      <div>This only appears after 10 frames</div>
+    </Sequence>
+  );
+};
+```
+
+A Sequence has a "from" prop that specifies the frame number where the element should appear. The "from" prop can be negative, in which case the Sequence will start immediately but cut off the first "from" frames.
+
+A Sequence has a "durationInFrames" prop that specifies how long the element should appear.
+
+For displaying multiple elements after another, the "Series" component from "remotion" can be used.
+
+```tsx
+import {Series} from 'remotion';
+
+export const MyComp: React.FC = () => {
+  return (
+    <Series>
+      <Series.Sequence durationInFrames={20}>
+        <div>This only appears immediately</div>
+      </Series.Sequence>
+      <Series.Sequence durationInFrames={30}>
+        <div>This only appears after 20 frames</div>
+      </Series.Sequence>
+    </Series>
+  );
+};
+```
+
+For displaying multiple elements after another and having a transition inbetween, the "TransitionSeries" component from "@remotion/transitions" can be used.
+
+```tsx
+import {linearTiming, springTiming, TransitionSeries} from '@remotion/transitions';
+import {fade} from '@remotion/transitions/fade';
+import {wipe} from '@remotion/transitions/wipe';
+
+export const MyComp: React.FC = () => {
+  return (
+    <TransitionSeries>
+      <TransitionSeries.Sequence durationInFrames={60}>
+        <Fill color="blue" />
+      </TransitionSeries.Sequence>
+      <TransitionSeries.Transition
+        timing={springTiming({config: {damping: 200}})}
+        presentation={fade()}
+      />
+      <TransitionSeries.Sequence durationInFrames={60}>
+        <Fill color="black" />
+      </TransitionSeries.Sequence>
+    </TransitionSeries>
+  );
+};
+```
+
+Remotion needs all of the React code to be deterministic. Therefore, it is forbidden to use the Math.random() API. If randomness is requested, the "random()" function from "remotion" should be used and a static seed should be passed to it.
+
+```tsx
+import {random} from 'remotion';
+
+export const MyComp: React.FC = () => {
+  return <div>Random number: {random('my-seed')}</div>;
+};
+```
+
+# Animating with interpolate() and spring()
+
+Remotion includes an interpolate() helper that can animate values over time.
+
+```tsx
+import {interpolate} from 'remotion';
+
+export const MyComp: React.FC = () => {
+  const frame = useCurrentFrame();
+  const value = interpolate(frame, [0, 100], [0, 1], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  });
+  return (
+    <div>
+      Frame {frame}: {value}
+    </div>
+  );
+};
+```
+
+The "interpolate()" function accepts a number and two arrays of numbers. The first argument is the value to animate. The first array is the input range, the second array is the output range. The fourth argument is optional but code should add "extrapolateLeft: 'clamp'" and "extrapolateRight: 'clamp'" by default.
+
+Remotion includes a "spring()" helper that can animate values over time. Below is the suggested default usage.
+
+```tsx
+import {spring} from 'remotion';
+
+export const MyComp: React.FC = () => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+
+  const value = spring({
+    fps,
+    frame,
+    config: {
+      damping: 200,
+    },
+  });
+  return (
+    <div>
+      Frame {frame}: {value}
+    </div>
+  );
+};
+```
+
+# Making UI components
+
+Remotion components are rendered frame-by-frame to create videos and cannot have user interactions. Normal React components handle real-time interactivity. Key differences in implementation:
+
+- **State management**: Remotion uses `useCurrentFrame()` to drive animation; interactive React uses `useState()`.
+- **Animation approach**: Remotion relies on frame-based calculations via `interpolate()` or `spring()`; interactive React animates via CSS transitions or effect hooks.
+- **User input**: Remotion components have none — remove all event handlers; interactive React handles clicks and forms.
+
+## Example Comparison
+
+Button in Normal React:
+
+```tsx
+const Button = () => {
+  const [clicked, setClicked] = useState(false);
+
+  return (
+    <button
+      onClick={() => setClicked(true)}
+      style={{ background: clicked ? 'blue' : 'gray' }}
+    >
+      Click me!
+    </button>
+  );
+};
+```
+
+Animated Button in Remotion:
+
+```tsx
+import { useCurrentFrame, interpolate } from 'remotion';
+
+const AnimatedButton = () => {
+  const frame = useCurrentFrame();
+
+  // Animate scale over 30 frames
+  const scale = interpolate(frame, [0, 30], [1, 1.2], {
+    extrapolateRight: 'clamp'
+  });
+
+  return (
+    <div style={{
+      transform: `scale(${scale})`,
+      background: 'blue',
+      padding: '10px 20px',
+      display: 'inline-block'
+    }}>
+      Click me!
+    </div>
+  );
+};
+```
+
+## Best Practices for Remotion Components
+
+1. Always use frame-based animations — never rely on time-based effects
+2. Keep components pure — no side effects or external data fetching
+3. Use Remotion's hooks (useCurrentFrame(), useVideoConfig(), etc.)
+4. Leverage Sequences for timing different elements
+5. No interactive elements — remove all event handlers from UI components
+6. Deterministic rendering — ensure consistent output for video rendering
