@@ -1,0 +1,159 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 430" font-family="sans-serif">
+<!-- 统一「蔚来车」矢量三视图 · 依据官方照片观察绘制（references/nio-vehicle-design-notes.md）
+     使用原则：不区分具体车型，动画一律用这一套形象。
+     用法：把需要的 <g id="nio-top|nio-side|nio-cabin"> 整组复制进舞台 SVG，
+     通过 CSS 变量换色（默认值即照片色系：沙丘金车身 + 悬浮黑顶 + 米白行政舱）。
+     标志元素：细长 DRL 光带 + 竖向主灯的分体灯组、悬浮式黑顶、瞭望塔激光雷达、
+     贯穿式尾灯、翼子板气刃、隐藏门把手、天空岛中轴、NOMI、椅背娱乐屏、迎宾光毯。 -->
+  <style>
+    .nv-body  { fill: var(--nv-body, #C8A57B); stroke: var(--nv-edge, #8C7355); stroke-width: 2; }
+    .nv-roof  { fill: var(--nv-roof, #1A1A1E); stroke: var(--nv-edge, #8C7355); stroke-width: 1.2; }
+    .nv-line  { stroke: var(--nv-edge, #8C7355); stroke-width: 1.4; fill: none; }
+    .nv-chrome{ stroke: var(--nv-chrome, #C9CDD2); stroke-width: 2; fill: none; }
+    .nv-drl   { fill: var(--nv-drl, #EAF4FF); }
+    .nv-tail  { fill: var(--nv-tail, #D8322A); }
+    .nv-tire  { fill: var(--nv-tire, #14161A); stroke: var(--nv-edge, #8C7355); stroke-width: 1.4; }
+    .nv-spoke { stroke: var(--nv-chrome, #C9CDD2); stroke-width: 3; }
+    .nv-lidar { fill: var(--nv-roof, #1A1A1E); stroke: var(--nv-edge, #8C7355); stroke-width: 1.4; }
+    .nv-seat  { fill: var(--nv-seat, #E8E2D6); stroke: var(--nv-trim, #8A6D52); stroke-width: 1.4; }
+    .nv-trim  { fill: var(--nv-trim, #5C3A2E); }
+    .nv-amber { fill: var(--nv-amber, #D9A96A); }
+    .nv-screen{ fill: var(--nv-screen, #1A2430); stroke: var(--nv-chrome, #C9CDD2); stroke-width: 1; }
+    .nv-accent{ fill: var(--nv-accent, #00D4D4); }
+  </style>
+
+  <!-- ═══ 顶视图（车头朝上，长宽比≈2.45:1）：泊车/灯光/车外位置类演示 ═══ -->
+  <g id="nio-top" transform="translate(112 214)">
+    <!-- 车轮（微凸出车身） -->
+    <rect class="nv-tire" x="-84" y="-144" width="14" height="52" rx="6" />
+    <rect class="nv-tire" x="70"  y="-144" width="14" height="52" rx="6" />
+    <rect class="nv-tire" x="-84" y="92"   width="14" height="52" rx="6" />
+    <rect class="nv-tire" x="70"  y="92"   width="14" height="52" rx="6" />
+    <!-- 方正 SUV 车身 -->
+    <rect class="nv-body" x="-75" y="-184" width="150" height="368" rx="30" />
+    <!-- 机盖筋线 -->
+    <path class="nv-line" d="M-26 -176 C -22 -150, -22 -128, -24 -110" />
+    <path class="nv-line" d="M26 -176 C 22 -150, 22 -128, 24 -110" />
+    <!-- 悬浮式黑顶：风挡上沿一直包到尾窗（一整块黑区） -->
+    <path class="nv-roof" d="M-58 -102 C -30 -122, 30 -122, 58 -102
+                             L 62 148 C 40 162, -40 162, -62 148 Z" />
+    <!-- 瞭望塔激光雷达（黑顶前端中央）+ 车顶摄像头 -->
+    <rect class="nv-lidar" x="-14" y="-114" width="28" height="13" rx="6.5" />
+    <circle class="nv-lidar" cx="-46" cy="-96" r="4.5" />
+    <circle class="nv-lidar" cx="46"  cy="-96" r="4.5" />
+    <!-- 外后视镜 -->
+    <rect class="nv-body" x="-94" y="-88" width="20" height="11" rx="5" />
+    <rect class="nv-body" x="74"  y="-88" width="20" height="11" rx="5" />
+    <!-- 细长 DRL 光带（前角高位，向中央延伸） -->
+    <rect class="nv-drl" x="-62" y="-179" width="34" height="3.6" rx="1.8" />
+    <rect class="nv-drl" x="28"  y="-179" width="34" height="3.6" rx="1.8" />
+    <!-- 翼子板气刃（前门前方两侧） -->
+    <rect class="nv-chrome" x="-77" y="-74" width="4" height="24" rx="2" fill="none" />
+    <rect class="nv-chrome" x="73"  y="-74" width="4" height="24" rx="2" fill="none" />
+    <!-- 贯穿式尾灯 -->
+    <rect class="nv-tail" x="-56" y="172" width="112" height="5.5" rx="2.7" opacity=".9" />
+  </g>
+
+  <!-- ═══ 侧视图（车头朝右，方正三排 SUV）：充电/开门/迎宾/悬架类演示 ═══ -->
+  <g id="nio-side" transform="translate(240 150)">
+    <!-- 车身轮廓：平直车顶 + 尾部扰流 + 高鼻端 -->
+    <path class="nv-body" d="M30 112 C 24 106, 22 96, 24 84 L 26 60
+                             C 26 52, 30 47, 40 45 L 30 42 L 44 38 L 204 33
+                             C 242 36, 262 48, 282 60 C 312 67, 338 73, 352 79
+                             C 362 83, 366 90, 366 98 L 364 112 L 338 112
+                             A 32 32 0 0 0 274 112 L 128 112
+                             A 32 32 0 0 0 64 112 L 30 112 Z" />
+    <!-- 悬浮黑顶 + 玻璃带（A 柱到 D 柱） -->
+    <path class="nv-roof" d="M46 46 L 204 37 C 238 40, 256 50, 272 60
+                             L 254 65 C 170 71, 88 72, 52 66 C 45 62, 43 52, 46 46 Z" />
+    <!-- 瞭望塔激光雷达（车顶前端） -->
+    <rect class="nv-lidar" x="212" y="26" width="27" height="10" rx="5" />
+    <!-- 分体灯组：上层细长 DRL 光带 + 下层竖向主灯 -->
+    <rect class="nv-drl" x="332" y="72" width="27" height="3.6" rx="1.8" />
+    <rect class="nv-lidar" x="346" y="84" width="8" height="19" rx="3.5" />
+    <rect class="nv-drl" x="348" y="87" width="4" height="3" rx="1" />
+    <rect class="nv-drl" x="348" y="93" width="4" height="3" rx="1" />
+    <rect class="nv-drl" x="348" y="99" width="4" height="2.5" rx="1" />
+    <!-- 贯穿尾灯（尾部立面 + 侧包角） -->
+    <rect class="nv-tail" x="23" y="63" width="6" height="15" rx="2.5" opacity=".92" />
+    <rect class="nv-tail" x="26" y="66" width="20" height="4" rx="2" opacity=".8" />
+    <!-- 翼子板气刃（前轮后方竖刃 + 横向格栅） -->
+    <rect class="nv-chrome" x="258" y="70" width="8" height="28" rx="3.5" fill="none" />
+    <path class="nv-line" d="M260 76 h4 M260 82 h4 M260 88 h4" />
+    <!-- 隐藏式门把手 + 门缝 -->
+    <rect class="nv-chrome" x="150" y="74" width="16" height="3" rx="1.5" fill="none" />
+    <rect class="nv-chrome" x="214" y="71" width="16" height="3" rx="1.5" fill="none" />
+    <path class="nv-line" d="M176 40 L 184 110" />
+    <path class="nv-line" d="M244 62 L 248 110" />
+    <!-- 黑侧裙 + 银饰条 -->
+    <rect class="nv-roof" x="44" y="103" width="298" height="9" rx="4.5" opacity=".92" />
+    <path class="nv-chrome" d="M46 101 L 340 101" stroke-width="1.5" />
+    <!-- 充电口盖（左后翼子板） -->
+    <rect class="nv-line" x="46" y="72" width="13" height="9" rx="3" />
+    <!-- 车轮：V 形交错切削轮毂 -->
+    <g>
+      <circle class="nv-tire" cx="96" cy="112" r="27" />
+      <circle class="nv-lidar" cx="96" cy="112" r="14" />
+      <g class="nv-spoke">
+        <path d="M96 100 L 90 122 M96 100 L 102 122 M84 108 L 108 116 M108 108 L 84 116" />
+      </g>
+    </g>
+    <g>
+      <circle class="nv-tire" cx="306" cy="112" r="27" />
+      <circle class="nv-lidar" cx="306" cy="112" r="14" />
+      <g class="nv-spoke">
+        <path d="M306 100 L 300 122 M306 100 L 312 122 M294 108 L 318 116 M318 108 L 294 116" />
+      </g>
+    </g>
+    <!-- 迎宾光毯（可选图层：接近感应类演示时显示，默认隐藏由动画控制 opacity） -->
+    <g id="nio-welcome-mat" opacity="0">
+      <rect class="nv-amber" x="120" y="142" width="170" height="26" rx="8" opacity=".35" />
+      <rect class="nv-chrome" x="126" y="146" width="158" height="18" rx="6" fill="none" opacity=".6" />
+      <text x="205" y="159" text-anchor="middle" font-size="10" letter-spacing="4"
+            fill="var(--nv-amber, #D9A96A)">NIO</text>
+    </g>
+  </g>
+
+  <!-- ═══ 座舱顶视图（车头朝上，2+2+2 六座 + 天空岛中轴）：空调/座椅/宠物/声学类演示 ═══ -->
+  <g id="nio-cabin" transform="translate(800 214)">
+    <!-- 车身外壳 -->
+    <rect class="nv-body" x="-78" y="-150" width="156" height="300" rx="32" />
+    <path class="nv-roof" d="M-60 -112 C -32 -130, 32 -130, 60 -112 Z" opacity=".85" />
+    <path class="nv-roof" d="M-60 116 C -32 132, 32 132, 60 116 Z" opacity=".85" />
+    <!-- 仪表台 + 横向中控宽屏 + NOMI（居中站立） -->
+    <rect class="nv-trim" x="-62" y="-116" width="124" height="15" rx="7" opacity=".6" />
+    <rect class="nv-screen" x="-24" y="-110" width="48" height="11" rx="3" />
+    <circle class="nv-body" cx="0" cy="-121" r="7.5" />
+    <circle class="nv-accent" cx="-2.6" cy="-122" r="1.5" />
+    <circle class="nv-accent" cx="2.6"  cy="-122" r="1.5" />
+    <!-- 方向盘 -->
+    <circle class="nv-line" cx="-40" cy="-86" r="13" />
+    <circle class="nv-trim" cx="-40" cy="-86" r="3.6" />
+    <!-- 天空岛：贯穿前后的中轴岛（一排到二排） -->
+    <rect class="nv-seat" x="-11" y="-96" width="22" height="140" rx="9" />
+    <rect class="nv-screen" x="-7" y="22" width="14" height="16" rx="3" />
+    <!-- 一排双座 -->
+    <rect class="nv-seat" x="-62" y="-68" width="44" height="52" rx="11" />
+    <rect class="nv-seat" x="18"  y="-68" width="44" height="52" rx="11" />
+    <!-- 椅背娱乐屏 ×2 -->
+    <rect class="nv-screen" x="-53" y="-12" width="27" height="6" rx="2" />
+    <rect class="nv-screen" x="26"  y="-12" width="27" height="6" rx="2" />
+    <!-- 行政二排：独立双座 + 外侧扶手 -->
+    <rect class="nv-seat" x="-62" y="6" width="44" height="56" rx="11" />
+    <rect class="nv-seat" x="18"  y="6" width="44" height="56" rx="11" />
+    <rect class="nv-seat" x="-70" y="16" width="8" height="34" rx="4" />
+    <rect class="nv-seat" x="62"  y="16" width="8" height="34" rx="4" />
+    <!-- 三排长椅 -->
+    <rect class="nv-seat" x="-62" y="82" width="124" height="52" rx="12" />
+    <!-- 氛围灯带（沿两侧门板） -->
+    <path d="M-70 -100 L -70 120" stroke="var(--nv-amber, #D9A96A)" stroke-width="2.2" stroke-linecap="round" opacity=".8" />
+    <path d="M70 -100 L 70 120"  stroke="var(--nv-amber, #D9A96A)" stroke-width="2.2" stroke-linecap="round" opacity=".8" />
+    <!-- 扬声器点位（声学类演示时对这些位置加发光环即可）：A/B/C 柱与门板 -->
+    <g fill="var(--nv-amber, #D9A96A)" opacity=".55">
+      <circle cx="-66" cy="-104" r="2.6" /><circle cx="66" cy="-104" r="2.6" />
+      <circle cx="-72" cy="-30" r="2.6" /><circle cx="72" cy="-30" r="2.6" />
+      <circle cx="-72" cy="34"  r="2.6" /><circle cx="72" cy="34"  r="2.6" />
+      <circle cx="-66" cy="104" r="2.6" /><circle cx="66" cy="104" r="2.6" />
+    </g>
+  </g>
+</svg>
