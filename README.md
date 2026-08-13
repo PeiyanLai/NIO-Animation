@@ -42,4 +42,8 @@
 2. **行驶中场景切换** 13.6s —— 雪地模式行驶中 → 路面切为沙地、主动识别 → 气泡「已驶入沙地，是否为您切换到沙地模式？」→ 一键切换 → 完成
 3. **五种地形一览** 14.0s —— 柏油 → 泥地 → 沙地 → 雪地 → 湿地 → 碎石逐段驶过，模式徽标与 HUD 逐段跟随
 
+## Remotion 重制版
+
+`remotion-terrain/` + `terrain-remotion.mp4`（42.2s，1080p30）—— 同一动画的 **Remotion（React）产线**重制：片头字卡 + 三场景经 TransitionSeries 淡入淡出串成一条成片；所有动画均为 `useCurrentFrame()` 帧驱动纯函数（几何与时序常量与 HTML 版完全一致），真车照片经 `staticFile` + SVG clipPath 抠形，矢量轮随地面速度旋转。渲染：`cd remotion-terrain && npm i && npm run render`（使用预装 Chromium，`--chrome-mode=chrome-for-testing`）。
+
 各场景自动循环、chips 切换；测试钩子 `__seek/__scn/__play/__info`。
