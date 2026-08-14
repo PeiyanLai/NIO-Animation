@@ -1,13 +1,68 @@
 ---
 name: remotion
-description: 用 Remotion（React 视频框架）以代码方式制作、合成、渲染视频。当用户提到：Remotion、React 做视频、代码生成视频、programmatic video、要多轨道/转场/配乐合成的视频、把 React 组件渲染成 MP4，或要求比单文件 SVG 动画更工程化的视频产线时使用本技能。与 feature-animation 的分工：快速单文件交互动画+录屏走 feature-animation；需要 React 组件化、时间轴合成、转场、音频混合的正式视频产线走本技能。
+description: 用 Remotion（React 帧驱动框架）以代码方式制作动画，默认交付可发链接的交互 HTML（@remotion/player 单文件打包），仅在用户明确要求时才导出 MP4。当用户提到：Remotion、React 做动画/视频、代码生成动画、programmatic video、要多段落/转场/配乐合成的成片、把 React 组件变成可播放页面或 MP4，或要求比单文件 SVG 动画更工程化的产线时使用本技能。与 feature-animation 的分工：一次性单文件 SVG 动画走 feature-animation；需要 React 组件化、时间轴合成、转场、参数化多版本的产线走本技能。
 ---
 
-# remotion · React 代码驱动视频
+# remotion · React 代码驱动动画
 
 > 来源：Remotion 官方推荐的 AI 编码规则（安装自 gist.github.com/ThariqS/3d446e7c7aa9eb94f468194deb73028f）。以下技术规则保持原文（英文）。
->
-> **本环境注意**：渲染需要 Chromium——本环境已预装于 `/opt/pw-browsers/chromium`，渲染时用 `npx remotion render --browser-executable=/opt/pw-browsers/chromium` 指定，不要让 Remotion 自行下载浏览器（外网受限会失败）。npm registry 可用，`npm create video` / 安装 `remotion` 与 `@remotion/*` 包均可正常执行。
+
+## 交付策略：默认 HTML，不默认出 MP4（成本约束）
+
+**默认只产出交互 HTML**（`@remotion/player`），发 Artifact 链接给用户自己看。**不要主动渲染 MP4**——只有用户明确说"要视频/要 MP4/要发微信飞书"时才渲，且必须在 HTML 定稿之后渲**一次**，绝不在视频上做迭代。
+
+原因（真实成本来源）：渲染命令本身只输出几行日志，不贵；贵的是**"渲染 → 抽帧读图 → 修 → 重渲"的视觉验证循环**——每张 1080p 截图都是实打实的图像 token，来回十几张就很可观。交互 HTML 把这个验证环节交还给用户（他打开链接就能看、能暂停、能拖拽逐帧），成本直接归零。
+
+配套的省钱纪律：
+- 校验优先用**无图断言**（DOM/数值检查、页面零报错），而不是截图目检
+- 确实要看图时，只在关键节点看 **1 张**，并裁切/缩小到必要区域，不要整帧 1080p 连看多张
+- 让用户当验收人：先发链接，等他指出问题再改，不要自己反复猜
+
+### HTML 交付做法（已验证）
+
+`<Player>` 把 composition 直接嵌进网页播放，不需要渲染：
+
+```tsx
+import {Player} from '@remotion/player';
+
+<Player
+  component={Stage}
+  inputProps={{scene: 'a'}}
+  durationInFrames={408}
+  fps={30}
+  compositionWidth={1920}
+  compositionHeight={1080}
+  style={{width: '100%'}}
+  controls loop autoPlay clickToPlay={false}
+/>
+```
+
+打包成**单文件 HTML**（Artifact 要求自包含、禁外链）：
+
+```bash
+npm i @remotion/player esbuild
+npx esbuild src/player-entry.tsx --bundle --minify --format=iife --target=es2020 \
+  --define:process.env.NODE_ENV='"production"' --outfile=bundle.js
+```
+
+然后把 `bundle.js` 内联进 `<script>`（发布前 `grep -c "</script" bundle.js` 必须为 0）。要点：
+- **图片素材必须 base64 内联**，不能用 `staticFile()`——单文件 HTML 里没有 public 目录。做法：把图片转 base64 写成 `src/photo.ts` 导出常量，组件里引用它；这样 HTML 与 MP4 两条路都能用
+- 外层包装组件（场景切换 chips、说明文字）是**普通交互 React**，可以用 `useState`；只有 `<Player>` 里的 composition 必须遵守帧驱动、无事件、确定性的规则
+- 切换场景时给 `<Player key={scn}>` 加 key，强制重挂载以重置播放头
+- 参考实现：本仓库 `remotion-terrain/src/player-entry.tsx`
+
+### MP4 导出（仅在用户要求时）
+
+```bash
+npx remotion render <CompId> out.mp4 \
+  --browser-executable=/opt/pw-browsers/chromium --chrome-mode=chrome-for-testing
+```
+
+**本环境两个坑**（已踩）：
+1. 必须指定预装的 `/opt/pw-browsers/chromium`，外网受限，别让 Remotion 自己下载浏览器
+2. 新版 Chromium 移除了旧 headless 模式，**必须加 `--chrome-mode=chrome-for-testing`**；该参数需要 Remotion **4.0.5xx 及以上**，4.0.246 会报 "Old Headless mode has been removed" 且无此参数——先 `npm i remotion@latest @remotion/cli@latest`
+
+npm registry 可用，`npm create video` / 安装 `remotion` 与 `@remotion/*` 均正常。
 
 ---
 

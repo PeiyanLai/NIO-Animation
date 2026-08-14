@@ -44,6 +44,8 @@
 
 ## Remotion 重制版
 
-`remotion-terrain/` + `terrain-remotion.mp4`（42.2s，1080p30）—— 同一动画的 **Remotion（React）产线**重制：片头字卡 + 三场景经 TransitionSeries 淡入淡出串成一条成片；所有动画均为 `useCurrentFrame()` 帧驱动纯函数（几何与时序常量与 HTML 版完全一致），真车照片经 `staticFile` + SVG clipPath 抠形，矢量轮随地面速度旋转。渲染：`cd remotion-terrain && npm i && npm run render`（使用预装 Chromium，`--chrome-mode=chrome-for-testing`）。
+`remotion-terrain/` + `terrain-remotion.mp4`（42.2s，1080p30）—— 同一动画的 **Remotion（React）产线**重制：片头字卡 + 三场景经 TransitionSeries 淡入淡出串成一条成片；所有动画均为 `useCurrentFrame()` 帧驱动纯函数（几何与时序常量与 HTML 版完全一致），真车照片经 `staticFile` + SVG clipPath 抠形，矢量轮随地面速度旋转。**默认交付 HTML**：`terrain-player.html`（`@remotion/player` + esbuild 打包的单文件交互页，可暂停/拖拽逐帧、三场景切换）——
+`npx esbuild src/player-entry.tsx --bundle --minify --format=iife --outfile=bundle.js` 后内联进 HTML。
+MP4 仅在需要时导出：`npx remotion render TerrainMode out.mp4 --browser-executable=/opt/pw-browsers/chromium --chrome-mode=chrome-for-testing`（需 Remotion ≥ 4.0.5xx）。
 
 各场景自动循环、chips 切换；测试钩子 `__seek/__scn/__play/__info`。

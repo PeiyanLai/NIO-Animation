@@ -1,11 +1,13 @@
 import React from 'react';
-import {AbsoluteFill, Img, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
+import {AbsoluteFill, Img, useCurrentFrame, useVideoConfig} from 'remotion';
 import {
   CAR_CLIP, F_DATA, F_UI, SCENES, SPEED, T_COLORS as C, TERRA, WHEEL_R,
   easeOutBack, frac, modeAt, phaseOf, terrAt, win,
 } from './data';
 
-const PHOTO = staticFile('es9-side.jpg');
+import {PHOTO_URI} from './photo';
+
+const PHOTO = PHOTO_URI;
 
 // ─── 车轮（胎圈静态 + 辐条随滚动旋转） ───────────────────────────────────
 const WheelTire: React.FC = () => (
