@@ -1,33 +1,34 @@
 // 全地形动画 · 常量与场景配置（自 terrain-mode.html 移植，几何/时序完全一致）
 
 export const T_COLORS = {
-  // NIOFlow 暗色 token（见 .claude/skills/feature-animation/references/nio-colors.md）
-  // 主色 #00D4D4 仅做强调；背景纯色，禁止网格/纹理线条
-  ground: '#0A0A0A',
-  panel: '#121A1A',
-  line: '#243737',
-  lineSoft: '#1B2A2A',
-  ink: '#E4F0F0',
-  ink2: '#90A9A9',
-  ink3: '#5F7878',
-  accent: '#00D4D4',
-  accentDim: '#1D6F6F',
-  accentWash: '#0E3232',
-  ok: '#4FD1A0',
-  okWash: '#0D2B22',
-  warn: '#E8B947',
-  stageBg: '#0A0A0A',
-  nvRoof: '#101014',
+  // NIOFlow 浅色 token（见 .claude/skills/feature-animation/references/nio-colors.md）
+  // 大面积背景仅限 #FFFFFF / #F0FAFA / #E8FAFA；主色 #00bebe 只做强调；背景纯色无网格
+  ground: '#F0FAFA',
+  panel: '#FFFFFF',
+  line: '#D8EEEE',
+  lineSoft: '#E8FAFA',
+  ink: '#1A1F1F',
+  ink2: '#2E3D3D',
+  ink3: '#5C7070',
+  ink4: '#8AABAB',
+  accent: '#00bebe',
+  accentDim: '#B8DEDE',
+  accentWash: '#D0F5F5',
+  ok: '#00AAAA',
+  okWash: '#D0F5F5',
+  warn: '#D49922',
+  stageBg: '#E8FAFA',
+  nvRoof: '#1A1F1F',
 };
 
 export const TERRA = {
-  asphalt: { base: '#252D33', dk: '#39444C', label: '柏油' },
-  mud: { base: '#4A3722', dk: '#62492E', label: '泥地' },
-  sand: { base: '#6E5B33', dk: '#8A7444', label: '沙地' },
-  snow: { base: '#B9CBD9', dk: '#90A9BE', label: '雪地' },
-  wet: { base: '#274F63', dk: '#3A697F', label: '湿地' },
-  gravel: { base: '#413E37', dk: '#59544A', label: '碎石' },
-} as const;
+  asphalt: { base: '#AEB9C2', dk: '#96A3AD', label: '柏油' },
+  mud: { base: '#A5794F', dk: '#876140', label: '泥地' },
+  sand: { base: '#E3CE9C', dk: '#C4A96E', label: '沙地' },
+  snow: { base: '#EEF4F9', dk: '#BFD3E2', label: '雪地' },
+  wet: { base: '#9FC9DD', dk: '#7BADC6', label: '湿地' },
+  gravel: { base: '#C6C0B4', dk: '#A39C8C', label: '碎石' },
+} as const;;
 
 export type TerrKey = keyof typeof TERRA;
 

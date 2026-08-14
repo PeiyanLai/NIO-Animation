@@ -191,7 +191,6 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
                 width={1020}
                 height={460}
                 clipPath="url(#carClip)"
-                style={{filter: 'brightness(.84) saturate(.96)'}}
               />
             </g>
           </g>
@@ -200,6 +199,10 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
         {/* 接地阴影 */}
         <ellipse cx={561} cy={421} rx={50} ry={6} fill="rgba(6,10,10,.42)" />
         <ellipse cx={254} cy={419} rx={45} ry={6} fill="rgba(6,10,10,.42)" />
+
+        {/* 接地投影（浅色底需要，否则车像浮着） */}
+        <ellipse cx={253} cy={419} rx={62} ry={9} fill="#5C7070" opacity={0.16} />
+        <ellipse cx={559} cy={419} rx={62} ry={9} fill="#5C7070" opacity={0.16} />
 
         {/* 矢量车轮（与挖孔同心，尺寸取照片实测胎圈） */}
         <g transform="translate(561.1 371.1) scale(0.4895)">
