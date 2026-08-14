@@ -1,6 +1,6 @@
-import React, {useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {createRoot} from 'react-dom/client';
-import {Player} from '@remotion/player';
+import {Player, type PlayerRef} from '@remotion/player';
 import {Stage} from './Stage';
 import {SCENES, F_DATA, F_UI, T_COLORS as C} from './data';
 
@@ -21,8 +21,24 @@ const NOTES: [string, string][] = [
 
 const App: React.FC = () => {
   const [scn, setScn] = useState<ScnKey>('a');
+  const [paused, setPaused] = useState(false);
+  const playerRef = useRef<PlayerRef>(null);
   const s = SCENES[scn];
   const dur = Math.round(s.T * 30);
+
+  // 点击主画面暂停/继续（评审需要停在某一帧细看）
+  useEffect(() => {
+    const p = playerRef.current;
+    if (!p) return;
+    const onPlay = () => setPaused(false);
+    const onPause = () => setPaused(true);
+    p.addEventListener('play', onPlay);
+    p.addEventListener('pause', onPause);
+    return () => {
+      p.removeEventListener('play', onPlay);
+      p.removeEventListener('pause', onPause);
+    };
+  }, [scn]);
 
   return (
     <div style={{
@@ -69,8 +85,10 @@ const App: React.FC = () => {
 
       <div style={{
         background: C.panel, border: `1px solid ${C.line}`, borderRadius: 6, padding: 12,
+        position: 'relative',
       }}>
         <Player
+          ref={playerRef}
           key={scn}
           component={Stage}
           inputProps={{scene: scn}}
@@ -82,8 +100,16 @@ const App: React.FC = () => {
           controls
           loop
           autoPlay
-          clickToPlay={false}
+          clickToPlay
         />
+        {paused && (
+          <div style={{
+            position: 'absolute', left: 24, top: 24,
+            background: C.panel, border: `1.5px solid ${C.accent}`, color: C.accent,
+            borderRadius: 999, padding: '6px 14px', fontSize: 12.5, fontWeight: 600,
+            pointerEvents: 'none',
+          }}>已暂停 · 点击画面继续</div>
+        )}
       </div>
 
       <section style={{

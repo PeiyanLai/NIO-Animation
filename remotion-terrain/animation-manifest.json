@@ -1,0 +1,8 @@
+{"title":"全地形模式","vehicle":"ES9","scope":"vehicle-environment",
+ "mechanism":["automatic-detection","state-transition","user-action"],
+ "conceptualItems":["方向盘快捷键位未定义"],
+ "chapters":[
+  {"id":"a","claim":"驶入雪地会被自动识别并主动提醒","scene":"车外侧视·行驶","startState":"柏油/标准模式","endState":"雪地/雪地模式已开启"},
+  {"id":"b","claim":"行驶中路面切换同样会主动提醒并可一键切换","scene":"车外侧视·行驶","startState":"雪地/雪地模式","endState":"沙地/沙地模式"},
+  {"id":"c","claim":"全地形模式覆盖五种地形并逐段自动跟随","scene":"车外侧视·连续地形","startState":"柏油/标准模式","endState":"碎石/碎石模式"}],
+ "assets":["es9-side-crop"],"acceptance":["地形边界与 HUD 路面读数同帧一致","模式徽标仅在确认后点亮"]}

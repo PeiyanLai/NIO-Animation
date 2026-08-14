@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "1.0",
+  "vehicle": "NIO ES9",
+  "assets": [
+    {
+      "id": "es9-side-crop",
+      "path": "es9-side-crop.jpg",
+      "view": "side",
+      "source": "用户上传《ES9 官方图集》PDF（本目录 ES9官方图集.pdf）第 3 页嵌入原图裁切",
+      "copyrightClearance": "internal-official-material",
+      "watermarkChecked": true,
+      "marketingOverlayChecked": true,
+      "reviewedBy": "peiyanl@umich.edu",
+      "reviewedAt": "2026-08-14",
+      "anchorsFile": "anchors.json",
+      "visualFidelity": "official-photo",
+      "usageNote": "内部演示用。对外发布前需重新确认授权；不得裁切修图去除任何标识。"
+    }
+  ],
+  "conceptualItems": [
+    "方向盘「全地形模式」快捷键位——需求文档未定义具体物理按键，动画中以概念交互提示表现",
+    "车机提醒卡片视觉——按 NIOFlow 规范绘制的概念状态卡，非已上线 UI"
+  ]
+}

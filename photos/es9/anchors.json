@@ -1,0 +1,30 @@
+{
+  "coordinateSystem": "normalized-0-to-1-per-asset-view",
+  "note": "坐标基于 es9-side-crop.jpg（1020×460 裁切）。功能只绑定语义 key，不要每次重测像素。",
+  "assetViews": {
+    "side": {
+      "assetId": "es9-side-crop",
+      "sourcePx": {"w": 1020, "h": 460},
+      "renderTransform": "scaleX(-1)",
+      "renderNote": "原图车头朝左；镜像后统一为「车头向右」的叙事方向",
+      "renderWidthCapPx": 1020,
+      "anchors": {
+        "vehicle.center":  {"x": 0.490, "y": 0.457},
+        "wheel.front":     {"x": 0.192, "y": 0.691, "rTire": 0.0735, "rArch": 0.0833},
+        "wheel.rear":      {"x": 0.755, "y": 0.691, "rTire": 0.0755, "rArch": 0.0843},
+        "ground.contact":  {"y": 0.854},
+        "light.front":     {"x": 0.059, "y": 0.446},
+        "light.rear":      {"x": 0.863, "y": 0.511},
+        "roof.sensor":     {"x": 0.407, "y": 0.143},
+        "mirror.side":     {"x": 0.310, "y": 0.390},
+        "airblade.front":  {"x": 0.255, "y": 0.554},
+        "rocker.skirt":    {"x": 0.500, "y": 0.750},
+        "spoiler.rear":    {"x": 0.800, "y": 0.137}
+      }
+    }
+  },
+  "measurement": {
+    "method": "4–5 倍放大网格逐点目视读取（颜色启发式扫描在明暗混杂处不可信）",
+    "verified": ["长/高=2.89 对官方 2.87", "轮辋/胎圈=0.747 对 HL275/40R23 的 0.727"]
+  }
+}

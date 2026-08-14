@@ -18,6 +18,34 @@ description: 用 Remotion（React 帧驱动框架）以代码方式制作动画�
 - 确实要看图时，只在关键节点看 **1 张**，并裁切/缩小到必要区域，不要整帧 1080p 连看多张
 - 让用户当验收人：先发链接，等他指出问题再改，不要自己反复猜
 
+## 第 0 步：先做动画决策卡，再写代码
+
+**最容易犯的错是把所有功能都套成「车在路上行驶」**。动手前先分类，把结论写成 `animation-manifest.json`：
+
+```json
+{ "title": "功能名", "vehicle": "ES9", "scope": "vehicle-environment",
+  "mechanism": ["automatic-detection", "state-transition"],
+  "conceptualItems": ["尚未定义的方向盘快捷键"],
+  "chapters": [{"id":"c1","claim":"驶入雪地会被自动识别","scene":"车外侧视","startState":"柏油/标准模式","endState":"雪地/待确认"}],
+  "assets": [], "acceptance": [] }
+```
+
+用 `node scripts/validate-animation-manifest.mjs animation-manifest.json` 校验。完整路由规则见 `references/animation-routing.md`，要点：
+
+**演示空间（scope）决定主画面**：`vehicle-exterior` 外观特写 · `cockpit` 座舱+HMI 覆盖层 · `vehicle-environment` 车外→座舱→车外 · `vehicle-ecosystem` 外设→车→自动结果 · `vehicle-system`（热管理等不可见系统）概念示意+状态卡 · `fleet-topology`（组队/无网通信）地图节点+链路。
+
+**机制（mechanism）可多选**：`user-action` / `automatic-detection` / `state-transition` / `device-pairing` / `data-sync` / `relay-network` / `exception-handling`。
+
+**输出形式按复杂度选**：单条路径且状态 ≤3 → 一段线性演示；自动触发且切换座舱/外观 → 3–5 章叙事；有状态机/多端同步/冲突规则 → 主叙事 + 可点击状态探索；多节点关系 → 拓扑动画 + 场景切换。**有复杂状态机时不要硬压成一条线性短片**。
+
+**每一章的叙事顺序**：触发 → 判断/交互 → 执行 → 可感知结果。**一章只讲一个用户能听懂的结论（claim）**，并写明 startState/endState。
+
+## 需求缺口：标注概念化，不要臆造
+
+文档没写的东西一律不许当成既定设计：缺车型 → 追问，只用中性概念车；缺物理键位 → 显示「方向盘确认」这类概念交互，不绑定具体按键；缺正式 UI → 画品牌视觉一致的概念状态卡；缺硬件外观 → 中性图标 + 中性命名；异常分支太多 → 主动画只走代表性 happy path，其余进状态探索。
+
+所有这类内容登记进 `conceptualItems`，并在页面的「演示说明」里列为待确认——但**不要在主画面上贴「非真实 UI」水印**破坏观感。
+
 ## 配色与背景（强制）
 
 **一律用 NIO（NIOFlow）配色**，完整 token 见 `.claude/skills/feature-animation/references/nio-colors.md`；用户未指定其他品牌时不得自选配色。要点：
@@ -31,6 +59,19 @@ description: 用 Remotion（React 帧驱动框架）以代码方式制作动画�
 - 浅色底上的主体（照片/矢量）要给**接地投影**（如 `#5C7070` opacity .16 的扁椭圆），否则像浮在空中
 
 **背景必须纯色**——`AbsoluteFill` 直接填一个背景 token。**禁止任何网格线、格纹、参考线、纹理底**（`linear-gradient` 网格、`backgroundSize` 棋盘、坐标网格一律不要）。舞台上只允许出现内容本身：主体、地面/环境色块、UI 层。
+
+## 素材合规与溯源（用真实照片必读）
+
+- 只用**已批准、无水印、无营销叠字**的原图；**不得靠裁切/修图去掉第三方水印**，不得把网络截图直接嵌进交付页
+- 图源索引只用于挑选溯源，**绝不能成为最终 HTML 的外链依赖**——所有图片必须 base64 内联
+- 每张进入资产库的图登记 `approved-asset-manifest.json`：来源、授权状态、水印检查、营销文案检查、审核人、日期
+- 保真度降级要如实标注：用比例化插画代替照片时写 `visualFidelity: "proportional-concept"`，**不得暗示是实拍或 CAD**；隐藏结构（电池包/热管理/通信链路）一律概念示意，不宣称是实车结构图
+
+## 语义锚点：位置只测一次
+
+功能只绑定**语义锚点**（`wheel.front` / `screen.center` / `battery.pack` / `charge.port` / `roof.sensor`），不要每次生成时临时猜像素位置——反复重测是返工的主要来源。
+
+锚点存 `anchors.json`，用**归一化 0–1 坐标**（随资产缩放自动生效），并登记该视角的 `renderTransform`（如侧视原图车头朝左，统一镜像为「车头向右」的叙事方向）与 `renderWidthCapPx`（避免放大糊掉）。换资产时保持 key 语义不变，只更新坐标。
 
 ## 素材贴图规范（照片抠形）
 
@@ -102,10 +143,18 @@ npx esbuild src/player-entry.tsx --bundle --minify --format=iife --target=es2020
   --define:process.env.NODE_ENV='"production"' --outfile=bundle.js
 ```
 
-然后把 `bundle.js` 内联进 `<script>`（发布前 `grep -c "</script" bundle.js` 必须为 0）。要点：
+然后把 `bundle.js` 内联进 `<script>`，并跑自包含硬校验：
+
+```bash
+node scripts/assert-self-contained-html.mjs page.html --fragment   # Artifact 片段加 --fragment
+```
+
+要点：
 - **图片素材必须 base64 内联**，不能用 `staticFile()`——单文件 HTML 里没有 public 目录。做法：把图片转 base64 写成 `src/photo.ts` 导出常量，组件里引用它；这样 HTML 与 MP4 两条路都能用
 - 外层包装组件（场景切换 chips、说明文字）是**普通交互 React**，可以用 `useState`；只有 `<Player>` 里的 composition 必须遵守帧驱动、无事件、确定性的规则
 - 切换场景时给 `<Player key={scn}>` 加 key，强制重挂载以重置播放头
+- **主画面必须能点击暂停/继续**（`clickToPlay`），暂停时时间轴、车辆位移、地面纹理、CSS 动画要一起冻结，并给一个简短的「已暂停 · 点击继续」反馈。只在页面底部放播放条是不够的——评审时需要停在某一帧细看
+- 讲「行驶中地形/场景切换」时，**不要用静态换图代替过程**：车辆要有可感知的横向位移、路面纹理反向流动，再在识别时刻过渡背景，最后给提醒
 - 参考实现：本仓库 `remotion-terrain/src/player-entry.tsx`
 
 ### MP4 导出（仅在用户要求时）
@@ -432,3 +481,14 @@ const AnimatedButton = () => {
 4. Leverage Sequences for timing different elements
 5. No interactive elements — remove all event handlers from UI components
 6. Deterministic rendering — ensure consistent output for video rendering
+
+---
+
+## 资源
+
+- `references/animation-routing.md` — 演示空间/机制/输出形式/分镜模板的完整选择规则
+- `scripts/validate-animation-manifest.mjs` — 校验动画决策卡（scope、mechanism、每章 claim/startState/endState）
+- `scripts/assert-self-contained-html.mjs` — 交付前拦截外链依赖（`--fragment` 用于 Artifact 片段）
+
+> 决策卡路由、分镜模板、缺口标注（conceptualItems）、素材合规溯源、语义锚点这几套方法，
+> 吸收自内部 `vehicle-feature-animation` skill；两个校验脚本在其基础上改编。
