@@ -2,13 +2,16 @@ import React from 'react';
 import {AbsoluteFill, spring, useCurrentFrame, useVideoConfig} from 'remotion';
 import {F_DATA, F_UI, T_COLORS as C} from './data';
 
-export const TitleCard: React.FC = () => {
+export const TitleCard: React.FC<{title?: string; sub?: string}> = ({
+  title = '全地形模式',
+  sub = '泥地 · 沙地 · 雪地 · 湿地 · 碎石',
+}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
 
   const enter = spring({fps, frame, config: {damping: 200}});
   const lineW = spring({fps, frame: frame - 8, config: {damping: 200}});
-  const sub = spring({fps, frame: frame - 14, config: {damping: 200}});
+  const subK = spring({fps, frame: frame - 14, config: {damping: 200}});
 
   return (
     <AbsoluteFill
@@ -41,7 +44,7 @@ export const TitleCard: React.FC = () => {
           transform: `translateY(${(1 - enter) * 40}px)`,
         }}
       >
-        全地形模式
+        {title}
       </div>
       <div
         style={{
@@ -57,11 +60,11 @@ export const TitleCard: React.FC = () => {
           fontSize: 30,
           color: C.ink2,
           letterSpacing: '0.18em',
-          opacity: sub,
-          transform: `translateY(${(1 - sub) * 24}px)`,
+          opacity: subK,
+          transform: `translateY(${(1 - subK) * 24}px)`,
         }}
       >
-        泥地 · 沙地 · 雪地 · 湿地 · 碎石
+        {sub}
       </div>
     </AbsoluteFill>
   );

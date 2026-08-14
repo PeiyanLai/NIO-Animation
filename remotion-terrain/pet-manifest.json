@@ -1,0 +1,28 @@
+{
+  "title": "宠物模式",
+  "vehicle": "ES9",
+  "scope": "vehicle-ecosystem",
+  "mechanism": ["device-pairing", "automatic-detection", "state-transition", "user-action"],
+  "conceptualItems": [
+    "宠物定位硬件外观未定义——以中性项圈+信号图标表现，不臆造品牌硬件细节",
+    "车机宠物模式卡片 UI 未定义——按 NIOFlow 规范绘制概念状态卡",
+    "座舱为比例化概念平面图（visualFidelity: proportional-concept）：官方座舱图带第三方水印与营销叠字，按素材准入规则不可用，且平视角无法表达舱内分布"
+  ],
+  "chapters": [
+    {"id": "a", "claim": "商城购买定位硬件后，给宠物佩戴即可与车机连接",
+     "scene": "硬件特写 + 宠物 + 车机", "startState": "硬件未绑定", "endState": "车机已连接定位硬件"},
+    {"id": "b", "claim": "连接后车机能自动检测宠物是否在车内",
+     "scene": "座舱平面图", "startState": "宠物在二排，系统未确认", "endState": "已识别「宠物在车内」"},
+    {"id": "c", "claim": "车主离车锁车后自动开启宠物模式，保持稳定舒适温度",
+     "scene": "座舱平面图 + 车外锁车", "startState": "车主在车内，空调常规", "endState": "已锁车，宠物模式恒温守护中"},
+    {"id": "d", "claim": "宠物离车并锁车后，空调自动完成一轮除味净化",
+     "scene": "座舱平面图", "startState": "宠物已离车，车内有异味", "endState": "净化完成，空气清新"}
+  ],
+  "assets": ["proportional-concept-cabin"],
+  "acceptance": [
+    "四章相位齐全且顺序为 触发→判断→执行→结果",
+    "温度读数全程恒定在舒适区间且与字幕一致",
+    "宠物模式仅在锁车后点亮，未锁车前不得点亮",
+    "除味净化仅在宠物离车后触发"
+  ]
+}
