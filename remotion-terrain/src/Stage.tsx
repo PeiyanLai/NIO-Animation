@@ -1,7 +1,7 @@
 import React from 'react';
 import {AbsoluteFill, Img, useCurrentFrame, useVideoConfig} from 'remotion';
 import {
-  CAR_CLIP, F_DATA, F_UI, SCENES, SPEED, T_COLORS as C, TERRA, WHEEL_R,
+  CAR_BODY, ARCHES, F_DATA, F_UI, SCENES, SPEED, T_COLORS as C, TERRA, WHEEL_R,
   easeOutBack, frac, modeAt, phaseOf, terrAt, win,
 } from './data';
 
@@ -166,9 +166,12 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
         style={{position: 'absolute', left: 0, top: 2, width: 1920, height: 1075}}
       >
         <defs>
-          <clipPath id="carClip" clipRule="evenodd">
-            <path clipRule="evenodd" fillRule="evenodd" d={CAR_CLIP} />
-          </clipPath>
+          <mask id="carMask">
+            <path d={CAR_BODY} fill="#fff" />
+            {ARCHES.map((a, i) => (
+              <circle key={i} cx={a.cx} cy={a.cy} r={a.r} fill="#000" />
+            ))}
+          </mask>
           <Patterns />
         </defs>
 
@@ -182,7 +185,30 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
           ))}
         </g>
 
-        {/* 车身照片（抠形 + 镜像 + 微浮动） */}
+        {/* 接地阴影（浅色底：轮下压暗 + 整车软投影） */}
+        <ellipse cx={563.3} cy={420} rx={52} ry={7} fill="#2E3D3D" opacity={0.34} />
+        <ellipse cx={254.8} cy={420} rx={50} ry={7} fill="#2E3D3D" opacity={0.34} />
+        <ellipse cx={409} cy={421} rx={210} ry={8} fill="#5C7070" opacity={0.14} />
+
+        {/* 轮腔（暗底）：填满轮拱开口，使轮胎与轮眉之间留出机械缝隙 */}
+        <circle cx={563.3} cy={368.9} r={51.7} fill="#151A1A" />
+        <circle cx={254.8} cy={368.9} r={49.5} fill="#151A1A" />
+
+        {/* 矢量车轮：画在车身下层，上沿被翼子板遮挡，尺寸取照片实测胎圈 */}
+        <g transform="translate(563.3 368.9) scale(0.484)">
+          <WheelTire />
+          <g transform={`rotate(${deg.toFixed(1)})`}>
+            <WheelSpokes />
+          </g>
+        </g>
+        <g transform="translate(254.8 368.9) scale(0.473)">
+          <WheelTire />
+          <g transform={`rotate(${deg.toFixed(1)})`}>
+            <WheelSpokes />
+          </g>
+        </g>
+
+        {/* 车身照片（抠形 + 镜像 + 微浮动）——最后绘制，覆盖轮子上沿 */}
         <g transform={`translate(120 ${(201.7 + bob).toFixed(2)})`}>
           <g transform="scale(0.55)">
             <g transform="translate(1020 0) scale(-1 1)">
@@ -190,31 +216,9 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
                 href={PHOTO}
                 width={1020}
                 height={460}
-                clipPath="url(#carClip)"
+                mask="url(#carMask)"
               />
             </g>
-          </g>
-        </g>
-
-        {/* 接地阴影 */}
-        <ellipse cx={561} cy={421} rx={50} ry={6} fill="rgba(6,10,10,.42)" />
-        <ellipse cx={254} cy={419} rx={45} ry={6} fill="rgba(6,10,10,.42)" />
-
-        {/* 接地投影（浅色底需要，否则车像浮着） */}
-        <ellipse cx={253} cy={419} rx={62} ry={9} fill="#5C7070" opacity={0.16} />
-        <ellipse cx={559} cy={419} rx={62} ry={9} fill="#5C7070" opacity={0.16} />
-
-        {/* 矢量车轮（与挖孔同心，尺寸取照片实测胎圈） */}
-        <g transform="translate(561.1 371.1) scale(0.4895)">
-          <WheelTire />
-          <g transform={`rotate(${deg.toFixed(1)})`}>
-            <WheelSpokes />
-          </g>
-        </g>
-        <g transform="translate(254.2 371.1) scale(0.4455)">
-          <WheelTire />
-          <g transform={`rotate(${deg.toFixed(1)})`}>
-            <WheelSpokes />
           </g>
         </g>
 
