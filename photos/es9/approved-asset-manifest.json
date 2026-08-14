@@ -15,10 +15,26 @@
       "anchorsFile": "anchors.json",
       "visualFidelity": "official-photo",
       "usageNote": "内部演示用。对外发布前需重新确认授权；不得裁切修图去除任何标识。"
+    },
+    {
+      "id": "et9-topdown-crop",
+      "path": "et9-topdown-crop.jpg",
+      "view": "top-down-high-angle",
+      "source": "用户上传《ET9 俯拍》PDF 提取原图裁切；原片带摄影师签名「Edouard.」（位于车身下方路面，抠形后不在使用区域内）",
+      "copyrightClearance": "pending-third-party-photographer",
+      "watermarkChecked": true,
+      "watermarkNote": "第三方摄影师签名，未做任何去除/涂抹处理；仅内部演示使用",
+      "marketingOverlayChecked": true,
+      "reviewedBy": "peiyanl@umich.edu",
+      "reviewedAt": "2026-08-14",
+      "anchorsFile": "anchors.json",
+      "visualFidelity": "official-photo-high-angle",
+      "usageNote": "⚠️ 高位斜俯视，非正投影俯视（长宽比 1.77 vs 实车约 2.67，透视压缩）；对外发布前必须取得摄影师授权或替换为官方正俯视素材。"
     }
   ],
   "conceptualItems": [
     "方向盘「全地形模式」快捷键位——需求文档未定义具体物理按键，动画中以概念交互提示表现",
-    "车机提醒卡片视觉——按 NIOFlow 规范绘制的概念状态卡，非已上线 UI"
+    "车机提醒卡片视觉——按 NIOFlow 规范绘制的概念状态卡，非已上线 UI",
+    "俯视照片看不到车轮，四个转向指示为 HMI 示意层，非实车轮位渲染"
   ]
 }
