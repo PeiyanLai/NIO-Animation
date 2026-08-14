@@ -15,7 +15,7 @@ const WheelTire: React.FC = () => (
     <circle r={104} fill="#0B0D10" opacity={0.4} />
     <circle r={100} fill="#141619" />
     <circle r={100} fill="none" stroke="#2A2E33" strokeWidth={3} />
-    <circle r={70} fill="#23272C" />
+    <circle r={73} fill="#23272C" />
   </g>
 );
 
@@ -38,7 +38,7 @@ const SPOKES: Array<[string, string]> = [
 ];
 
 const WheelSpokes: React.FC = () => (
-  <g>
+  <g transform="scale(1.043)">
     {SPOKES.map(([d, fill], i) => (
       <path key={i} d={d} fill={fill} />
     ))}
@@ -186,22 +186,22 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
         </g>
 
         {/* 接地阴影（浅色底：轮下压暗 + 整车软投影） */}
-        <ellipse cx={563.3} cy={420} rx={52} ry={7} fill="#2E3D3D" opacity={0.34} />
-        <ellipse cx={254.8} cy={420} rx={50} ry={7} fill="#2E3D3D" opacity={0.34} />
-        <ellipse cx={409} cy={421} rx={210} ry={8} fill="#5C7070" opacity={0.14} />
+        <ellipse cx={573.2} cy={420} rx={48} ry={7} fill="#2E3D3D" opacity={0.34} />
+        <ellipse cx={257.5} cy={420} rx={49} ry={7} fill="#2E3D3D" opacity={0.34} />
+        <ellipse cx={415} cy={421} rx={215} ry={8} fill="#5C7070" opacity={0.14} />
 
         {/* 轮腔（暗底）：填满轮拱开口，使轮胎与轮眉之间留出机械缝隙 */}
-        <circle cx={563.3} cy={368.9} r={51.7} fill="#151A1A" />
-        <circle cx={254.8} cy={368.9} r={49.5} fill="#151A1A" />
+        <circle cx={573.2} cy={376.6} r={46.8} fill="#151A1A" />
+        <circle cx={257.5} cy={376.6} r={47.3} fill="#151A1A" />
 
-        {/* 矢量车轮：画在车身下层，上沿被翼子板遮挡，尺寸取照片实测胎圈 */}
-        <g transform="translate(563.3 368.9) scale(0.44)">
+        {/* 矢量车轮：画在车身下层；位置/尺寸取放大网格实测（前 196,318 r74；后 770,318 r76） */}
+        <g transform="translate(573.2 376.6) scale(0.407)">
           <WheelTire />
           <g transform={`rotate(${deg.toFixed(1)})`}>
             <WheelSpokes />
           </g>
         </g>
-        <g transform="translate(254.8 368.9) scale(0.429)">
+        <g transform="translate(257.5 376.6) scale(0.418)">
           <WheelTire />
           <g transform={`rotate(${deg.toFixed(1)})`}>
             <WheelSpokes />
