@@ -15,7 +15,7 @@ const WheelTire: React.FC = () => (
     <circle r={104} fill="#0B0D10" opacity={0.4} />
     <circle r={100} fill="#141619" />
     <circle r={100} fill="none" stroke="#2A2E33" strokeWidth={3} />
-    <circle r={84} fill="#23272C" />
+    <circle r={70} fill="#23272C" />
   </g>
 );
 
@@ -38,7 +38,7 @@ const SPOKES: Array<[string, string]> = [
 ];
 
 const WheelSpokes: React.FC = () => (
-  <g transform="scale(1.2)">
+  <g>
     {SPOKES.map(([d, fill], i) => (
       <path key={i} d={d} fill={fill} />
     ))}
@@ -195,13 +195,13 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
         <circle cx={254.8} cy={368.9} r={49.5} fill="#151A1A" />
 
         {/* 矢量车轮：画在车身下层，上沿被翼子板遮挡，尺寸取照片实测胎圈 */}
-        <g transform="translate(563.3 368.9) scale(0.484)">
+        <g transform="translate(563.3 368.9) scale(0.44)">
           <WheelTire />
           <g transform={`rotate(${deg.toFixed(1)})`}>
             <WheelSpokes />
           </g>
         </g>
-        <g transform="translate(254.8 368.9) scale(0.473)">
+        <g transform="translate(254.8 368.9) scale(0.429)">
           <WheelTire />
           <g transform={`rotate(${deg.toFixed(1)})`}>
             <WheelSpokes />
