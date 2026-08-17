@@ -29,12 +29,41 @@
       "reviewedAt": "2026-08-14",
       "anchorsFile": "anchors.json",
       "visualFidelity": "official-photo-high-angle",
-      "usageNote": "⚠️ 高位斜俯视，非正投影俯视（长宽比 1.77 vs 实车约 2.67，透视压缩）；对外发布前必须取得摄影师授权或替换为官方正俯视素材。"
+      "usageNote": "⚠️ 高位斜俯视，非正投影俯视（长宽比 1.77 vs 实车约 2.67）。已被 es9-topdown-true 取代，泊车动画不再使用；保留仅作记录。",
+      "status": "superseded"
+    },
+    {
+      "id": "es9-topdown-true",
+      "path": "es9-topdown-true.jpg",
+      "view": "top-down",
+      "source": "用户上传 PDF（2026-08-17）第 2 页嵌入原图 · ES9 正俯视视频截帧",
+      "copyrightClearance": "internal-official-material",
+      "watermarkChecked": true,
+      "marketingOverlayChecked": true,
+      "reviewedBy": "peiyanl@umich.edu",
+      "reviewedAt": "2026-08-17",
+      "visualFidelity": "official-photo",
+      "processing": "裁切 (268,118)-(610,856) → 纵向 ×0.9459 归正；实测车体 256 × 671px，长宽比 2.62 ≈ 实车 5365/2029 = 2.64；提亮 gamma 0.46，未做任何内容修改",
+      "usageNote": "泊车俯视场景专用。夜间视频截帧，车身近黑，仅可用于浅底舞台。内部演示用。"
+    },
+    {
+      "id": "es9-wheel-dabing",
+      "path": "es9-wheel-dabing.jpg",
+      "view": "wheel-closeup",
+      "source": "用户上传 PDF（2026-08-17）第 1 页嵌入原图 · 实拍轮毂特写；原片右下角带小红书水印与账号号码",
+      "copyrightClearance": "pending-third-party",
+      "watermarkChecked": true,
+      "watermarkNote": "小红书水印 + 账号号码，未做任何去除/涂抹；仅作绘制参考，不直接贴图使用",
+      "marketingOverlayChecked": true,
+      "reviewedBy": "peiyanl@umich.edu",
+      "reviewedAt": "2026-08-17",
+      "visualFidelity": "reference-only",
+      "usageNote": "仅作「大饼轮毂」造型参考（9 孔实心抛光盘 + 中心盖）。照片为 275/45 R22，动画按 ES9 的 275/40 R23 尺寸绘制矢量轮毂，不使用照片本身。"
     }
   ],
   "conceptualItems": [
     "方向盘「全地形模式」快捷键位——需求文档未定义具体物理按键，动画中以概念交互提示表现",
     "车机提醒卡片视觉——按 NIOFlow 规范绘制的概念状态卡，非已上线 UI",
-    "俯视照片看不到车轮，四个转向指示为 HMI 示意层，非实车轮位渲染"
+    "俯视照片看不到车轮，四个转向指示为 HMI 示意层（尺寸按实车 275/40R23 等比：12 × 35px），非实车轮位渲染"
   ]
 }

@@ -1,6 +1,6 @@
 {
   "title": "平移泊入",
-  "vehicle": "ET9(俯视素材) / 统一蔚来车形象",
+  "vehicle": "ES9 正俯视实拍（统一蔚来车形象）",
   "scope": "vehicle-environment",
   "mechanism": [
     "user-action",
@@ -28,7 +28,7 @@
     }
   ],
   "assets": [
-    "et9-topdown-crop"
+    "es9-topdown-true"
   ],
   "acceptance": [
     "前轮转角全程 ≤40°",

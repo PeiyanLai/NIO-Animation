@@ -1,7 +1,7 @@
 import React from 'react';
 import {AbsoluteFill, Img, useCurrentFrame, useVideoConfig} from 'remotion';
 import {
-  CAR_BODY, ARCHES, F_DATA, F_UI, SCENES, SPEED, T_COLORS as C, TERRA, WHEEL_R,
+  Band, CAR_BODY, ARCHES, F_DATA, F_UI, SCENES, SPEED, T_COLORS as C, TERRA, TerrKey, WHEEL_R,
   easeOutBack, frac, modeAt, phaseOf, terrAt, win,
 } from './data';
 
@@ -9,46 +9,96 @@ import {PHOTO_URI} from './photo';
 
 const PHOTO = PHOTO_URI;
 
-// ─── 车轮（胎圈静态 + 辐条随滚动旋转） ───────────────────────────────────
+const WHITE = '#FFFFFF';
+const GY = 420; // 地面线（地形带上沿 = 轮胎接地线）
+
+// 固定种子伪随机（纯函数，无 Math.random）
+const rnd = (i: number) => frac(Math.sin(i * 127.1 + 311.7) * 43758.5453);
+const f1 = (n: number) => n.toFixed(1);
+
+// ─── 车轮 ────────────────────────────────────────────────────────────────
+// ES9「大饼轮毂」：整块高抛光实心盘面 + 9 个等分 40° 的水滴形镂空。
+// 外径不变：WheelTire 外圈 r=100（275/40R23 胎面）、内圈 r=73（23" 轮辋，0.727）。
+const R_FACE = 69;    // 盘面外缘（r=73 轮辋内，留 4 单位暗色轮辋唇）
+const R_HOLE_O = 63;  // 孔外端 ≈ 0.91 R
+const R_HOLE_I = 39;  // 孔内端 ≈ 0.57 R（中央留出大片抛光盘面）
+const A_HOLE_O = 9.2; // 外端半角（40° 一个孔 → 18.4° 镂空 / 21.6° 盘面桥）
+const A_HOLE_I = 4.8; // 内端半角
+const HOLE_TWIST = 5; // 内端相对外端的切向扭转，形成涡轮感
+
+const pol = (r: number, d: number): [number, number] => {
+  const a = ((d - 90) * Math.PI) / 180;
+  return [r * Math.cos(a), r * Math.sin(a)];
+};
+const P = (r: number, d: number) => {
+  const [x, y] = pol(r, d);
+  return `${x.toFixed(2)} ${y.toFixed(2)}`;
+};
+
+// 单个孔：外端沿轮辋方向的宽圆头 → 两侧内收 → 内端小圆头
+const holePath = (deg: number) => {
+  const oA = deg - A_HOLE_O;
+  const oB = deg + A_HOLE_O;
+  const iA = deg + HOLE_TWIST - A_HOLE_I;
+  const iB = deg + HOLE_TWIST + A_HOLE_I;
+  const rm = (R_HOLE_O + R_HOLE_I) / 2;
+  return (
+    `M${P(R_HOLE_O, oA)}` +
+    ` A${R_HOLE_O} ${R_HOLE_O} 0 0 1 ${P(R_HOLE_O, oB)}` +
+    ` Q${P(rm, oB + 1.5)} ${P(R_HOLE_I, iB)}` +
+    ` A${R_HOLE_I} ${R_HOLE_I} 0 0 0 ${P(R_HOLE_I, iA)}` +
+    ` Q${P(rm, oA - 1.5)} ${P(R_HOLE_O, oA)} Z`
+  );
+};
+const RIM_HOLES = Array.from({length: 9}, (_, i) => holePath(i * 40));
+
+// 静态层：胎圈 + 暗色轮辋唇 + 孔内可见的轮腔 / 制动盘 / 卡钳
 const WheelTire: React.FC = () => (
   <g>
     <circle r={104} fill="#0B0D10" opacity={0.4} />
     <circle r={100} fill="#141619" />
     <circle r={100} fill="none" stroke="#2A2E33" strokeWidth={3} />
-    <circle r={73} fill="#23272C" />
+    <circle r={73} fill="#1B2222" />
+    <circle r={70} fill={C.ink} />
+    <circle r={51} fill="none" stroke="#2B3838" strokeWidth={24} />
+    <circle r={51} fill="none" stroke="#41595A" strokeWidth={1.4} opacity={0.75} />
+    <path d="M-50 16 A52 52 0 0 0 -16 50" fill="none" stroke="#54696B"
+      strokeWidth={17} strokeLinecap="round" />
+    <circle r={26} fill="#202B2A" />
   </g>
 );
 
-const SPOKES: Array<[string, string]> = [
-  ['M-6.8 -18.8 L-25.8 -60.8 L-3.5 -65.9 L-2.1 -19.9 Z', '#B7BEC6'],
-  ['M2.1 -19.9 L3.5 -65.9 L25.8 -60.8 L6.8 -18.8 Z', '#8D949C'],
-  ['M16.1 -25.3 L33.0 -54.9 L42.0 -48.3 L19.1 -23.1 Z', '#3E444B'],
-  ['M15.8 -12.3 L49.8 -43.3 L61.6 -23.7 L18.3 -8.1 Z', '#B7BEC6'],
-  ['M19.6 -4.2 L63.8 -17.1 L65.7 5.8 L20.0 0.7 Z', '#8D949C'],
-  ['M29.0 7.5 L62.4 14.4 L58.9 25.0 L27.9 11.0 Z', '#3E444B'],
-  ['M16.6 11.2 L56.6 34.0 L41.5 51.3 L13.4 14.9 Z', '#B7BEC6'],
-  ['M10.0 17.3 L35.9 55.4 L14.8 64.3 L5.5 19.2 Z', '#8D949C'],
-  ['M1.8 29.9 L5.6 63.8 L-5.6 63.8 L-1.8 29.9 Z', '#3E444B'],
-  ['M-5.5 19.2 L-14.8 64.3 L-35.9 55.4 L-10.0 17.3 Z', '#B7BEC6'],
-  ['M-13.4 14.9 L-41.5 51.3 L-56.6 34.0 L-16.6 11.2 Z', '#8D949C'],
-  ['M-27.9 11.0 L-58.9 25.0 L-62.4 14.4 L-29.0 7.5 Z', '#3E444B'],
-  ['M-20.0 0.7 L-65.7 5.8 L-63.8 -17.1 L-19.6 -4.2 Z', '#B7BEC6'],
-  ['M-18.3 -8.1 L-61.6 -23.7 L-49.8 -43.3 L-15.8 -12.3 Z', '#8D949C'],
-  ['M-19.1 -23.1 L-42.0 -48.3 L-33.0 -54.9 L-16.1 -25.3 Z', '#3E444B'],
-];
-
+// 旋转层：抛光盘面（被 9 孔 mask 镂空）+ 孔缘倒角 + 中心盖
 const WheelSpokes: React.FC = () => (
-  <g transform="scale(1.043)">
-    {SPOKES.map(([d, fill], i) => (
-      <path key={i} d={d} fill={fill} />
+  <g>
+    <g mask="url(#rimHoles)">
+      <circle r={R_FACE} fill="url(#rimFace)" />
+      <circle r={R_FACE - 1.8} fill="none" stroke="#F4FCFC" strokeWidth={2.2} opacity={0.9} />
+      <circle r={R_HOLE_I - 4} fill="none" stroke={WHITE} strokeWidth={1.3} opacity={0.45} />
+    </g>
+    {/* 孔缘：暗色凹陷 + 亮银倒角高光 */}
+    {RIM_HOLES.map((d, i) => (
+      <g key={i}>
+        <path d={d} fill="none" stroke={C.ink2} strokeWidth={3} opacity={0.55} />
+        <path d={d} fill="none" stroke="#F4FCFC" strokeWidth={1.2} opacity={0.85} />
+      </g>
     ))}
-    <circle r={70} fill="none" stroke="#A8AFB7" strokeWidth={5} />
-    <circle r={19} fill="#1B1E22" stroke="#5E656D" strokeWidth={3} />
-    <circle r={6} fill="#C9CDD2" />
+    {/* 中心盖：细暗环 + 浅色盘底 + 简化 NIO logo */}
+    <circle r={20} fill="none" stroke={C.ink2} strokeWidth={1.3} opacity={0.75} />
+    <circle r={17} fill="url(#rimFace)" opacity={0.9} />
+    <circle r={9.6} fill={C.ink} stroke="#A9C4C4" strokeWidth={0.9} />
+    <path d="M-4.6 -0.6 A5.2 5.2 0 0 1 4.6 -0.6" fill="none" stroke="#F4FCFC"
+      strokeWidth={1.7} strokeLinecap="round" />
+    <path d="M-4 2.2 L4 2.2 L1.7 6.2 L-1.7 6.2 Z" fill="#F4FCFC" />
   </g>
 );
 
-// ─── 地形纹理 pattern（夜间色） ───────────────────────────────────────────
+// 静态高光：抛光盘的穹面反射（不随轮转动，保持光源固定）
+const WheelGloss: React.FC = () => (
+  <circle r={R_FACE} fill="url(#rimDome)" />
+);
+
+// ─── 地形纹理 pattern（底纹） ─────────────────────────────────────────────
 const Patterns: React.FC = () => (
   <>
     <pattern id="pat-asphalt" patternUnits="userSpaceOnUse" width={140} height={140} y={420}>
@@ -92,6 +142,453 @@ const Patterns: React.FC = () => (
   </>
 );
 
+// ─── 具象地形道具（全部在地形带的 translate(-dx) 组内，随地面横向滚动） ──
+// 立式道具经过车身时淡出：侧视里车底与车轮之间有缝，背景树/仙人掌会从车底「长」出来
+const CAR_L = 190, CAR_R = 640, FADE = 46;
+const behindCar = (x: number, dx: number) => {
+  const sx = x - dx;
+  if (sx <= CAR_L - FADE || sx >= CAR_R + FADE) return 1;
+  if (sx >= CAR_L && sx <= CAR_R) return 0;
+  return sx < CAR_L ? (CAR_L - sx) / FADE : (sx - CAR_R) / FADE;
+};
+type Spot = {x: number; a: number; b: number; c: number; i: number};
+const spots = (bd: Band, step: number, sd: number): Spot[] => {
+  const n = Math.max(1, Math.round(bd.w / step));
+  const out: Spot[] = [];
+  for (let i = 0; i < n; i++) {
+    const a = rnd(sd + i * 3.13);
+    const b = rnd(sd + i * 7.77 + 1.7);
+    const c = rnd(sd + i * 5.31 + 4.3);
+    out.push({x: bd.x + step * (i + 0.5) + (a - 0.5) * step * 0.5, a, b, c, i});
+  }
+  return out;
+};
+
+// 沿地面线起伏的轮廓（雪丘 / 沙丘 / 石堆边缘）
+const crest = (bd: Band, amp: number, sd: number, step: number, depth: number) => {
+  const n = Math.max(2, Math.ceil(bd.w / step));
+  let py = GY - 2 - rnd(sd) * amp;
+  let d = `M${f1(bd.x)} ${GY + depth} L${f1(bd.x)} ${f1(py)}`;
+  for (let i = 1; i <= n; i++) {
+    const x = bd.x + (bd.w * i) / n;
+    const px = bd.x + (bd.w * (i - 1)) / n;
+    const y = GY - 2 - rnd(sd + i * 2.93) * amp;
+    d += ` Q${f1((px + x) / 2)} ${f1(Math.min(py, y) - amp * 0.5)} ${f1(x)} ${f1(y)}`;
+    py = y;
+  }
+  return `${d} L${f1(bd.x + bd.w)} ${GY + depth} Z`;
+};
+
+// 缓起伏的横向线（车辙 / 沙纹 / 水线）
+const wavy = (bd: Band, y: number, amp: number, sd: number, step = 150) => {
+  const n = Math.max(2, Math.ceil(bd.w / step));
+  let d = `M${f1(bd.x)} ${f1(y)}`;
+  for (let i = 1; i <= n; i++) {
+    const x = bd.x + (bd.w * i) / n;
+    const px = bd.x + (bd.w * (i - 1)) / n;
+    const yy = y + (rnd(sd + i * 1.7) - 0.5) * amp;
+    d += ` Q${f1((px + x) / 2)} ${f1(yy + (rnd(sd + i * 3.1) - 0.5) * amp)} ${f1(x)} ${f1(yy)}`;
+  }
+  return d;
+};
+
+// —— 雪地：雪人 / 松树 / 雪堆 ——
+const Snowman: React.FC<{x: number; s: number}> = ({x, s}) => (
+  <g transform={`translate(${f1(x)} ${GY}) scale(${s.toFixed(2)})`}>
+    <ellipse cy={1.5} rx={21} ry={4} fill={TERRA.snow.dk} opacity={0.55} />
+    <circle cy={-15} r={16} fill={WHITE} stroke={TERRA.snow.dk} strokeWidth={1.5} />
+    <circle cy={-38} r={11.5} fill={WHITE} stroke={TERRA.snow.dk} strokeWidth={1.5} />
+    <circle cy={-56} r={8.6} fill={WHITE} stroke={TERRA.snow.dk} strokeWidth={1.5} />
+    {/* 树枝手臂 */}
+    <path d="M-11 -40 L-26 -50 M-19.5 -45.5 L-27 -44.5 M-21.5 -46.8 L-24.5 -53"
+      stroke={TERRA.mud.dk} strokeWidth={1.8} fill="none" strokeLinecap="round" />
+    <path d="M11 -40 L27 -49 M20 -44.5 L28 -43.5 M22 -45.8 L25.5 -52"
+      stroke={TERRA.mud.dk} strokeWidth={1.8} fill="none" strokeLinecap="round" />
+    {/* 围巾 */}
+    <path d="M-9.5 -47.5 q9.5 4.5 19 0 l0 4.6 q-9.5 4.5 -19 0 Z" fill={C.accentDim} />
+    <path d="M6.5 -44 l4.6 12.5 l-4.2 1.2 l-3.4 -12.6 Z" fill={C.accentDim} />
+    {/* 胡萝卜鼻 + 眼 + 嘴 */}
+    <path d="M2 -56.5 L14.5 -54.6 L2 -52.6 Z" fill={C.warn} />
+    <circle cx={-2.6} cy={-58.6} r={1.5} fill={C.ink2} />
+    <circle cx={3.4} cy={-58.9} r={1.5} fill={C.ink2} />
+    <path d="M-3.4 -50.6 q4.2 2.6 8 -0.4" stroke={C.ink2} strokeWidth={1.1}
+      fill="none" strokeLinecap="round" />
+    {/* 纽扣 + 帽子 */}
+    <circle cy={-19} r={1.7} fill={C.ink3} />
+    <circle cy={-12} r={1.7} fill={C.ink3} />
+    <path d="M-10.5 -63 L10.5 -63 L9 -65.6 L-9 -65.6 Z" fill={C.ink2} />
+    <rect x={-6.4} y={-74} width={12.8} height={9} rx={1.6} fill={C.ink2} />
+  </g>
+);
+
+const Pine: React.FC<{x: number; h: number}> = ({x, h}) => {
+  const w = h * 0.44;
+  return (
+    <g transform={`translate(${f1(x)} ${GY})`}>
+      <ellipse cy={1.5} rx={w * 0.5} ry={3.5} fill={TERRA.snow.dk} opacity={0.5} />
+      <rect x={-w * 0.06} y={-h * 0.13} width={w * 0.12} height={h * 0.13} fill={TERRA.mud.dk} />
+      {[0, 1, 2].map((k) => {
+        const yb = -h * (0.1 + k * 0.26);
+        const ww = (w / 2) * (1 - k * 0.25);
+        const ht = h * 0.38;
+        return (
+          <g key={k}>
+            <path d={`M0 ${f1(yb - ht)} L${f1(ww)} ${f1(yb)} L${f1(-ww)} ${f1(yb)} Z`} fill={C.ink3} />
+            <path
+              d={`M0 ${f1(yb - ht)} L${f1(ww * 0.52)} ${f1(yb - ht * 0.46)} q${f1(-ww * 0.52)} ${f1(ht * 0.2)} ${f1(-ww * 1.04)} 0 Z`}
+              fill={WHITE}
+              opacity={0.94}
+            />
+          </g>
+        );
+      })}
+    </g>
+  );
+};
+
+const SnowDecor: React.FC<{bd: Band; sd: number; dx: number}> = ({bd, sd, dx}) => {
+  const edge = crest(bd, 15, sd, 92, 140);
+  return (
+    <g>
+      <path d={edge} fill={WHITE} opacity={0.9} />
+      <path d={edge} fill="none" stroke={TERRA.snow.dk} strokeWidth={1.3} opacity={0.7} />
+      {/* 地面雪痕 */}
+      <path d={wavy(bd, 505, 12, sd + 5)} fill="none" stroke={TERRA.snow.dk}
+        strokeWidth={2.4} opacity={0.55} strokeDasharray="26 34" />
+      {spots(bd, 165, sd + 40).map((p) => {
+        const k = (p.i + 1) % 3;
+        if (k === 1) return <g key={p.i} opacity={behindCar(p.x, dx)}><Snowman x={p.x} s={1.24 + p.b * 0.34} /></g>;
+        if (k === 2) return <g key={p.i} opacity={behindCar(p.x, dx)}><Pine x={p.x} h={112 + p.b * 56} /></g>;
+        return (
+          <g key={p.i} opacity={behindCar(p.x, dx)}>
+            <Pine x={p.x - 22} h={64 + p.c * 30} />
+            <path
+              d={`M${f1(p.x + 18)} ${GY} q${f1(8 + p.c * 5)} ${f1(-13 - p.b * 8)} ${f1(24 + p.c * 12)} 0 Z`}
+              fill={WHITE}
+              stroke={TERRA.snow.dk}
+              strokeWidth={1.2}
+            />
+          </g>
+        );
+      })}
+    </g>
+  );
+};
+
+// —— 泥地：车辙 / 泥坑 / 飞溅泥点 ——
+const MudDecor: React.FC<{bd: Band; sd: number}> = ({bd, sd}) => (
+  <g>
+    {/* 两道深陷车辙（虚线 = 胎纹） */}
+    {[{y: 452, w: 10}, {y: 512, w: 12}].map((r, i) => (
+      <g key={i}>
+        <path d={wavy(bd, r.y, 9, sd + i * 3)} fill="none" stroke={TERRA.mud.dk}
+          strokeWidth={r.w + 8} opacity={0.55} strokeLinecap="round" />
+        <path d={wavy(bd, r.y, 9, sd + i * 3)} fill="none" stroke={C.ink2}
+          strokeWidth={r.w} opacity={0.3} strokeDasharray="7 12" />
+      </g>
+    ))}
+    {spots(bd, 132, sd + 60).map((p) => {
+      const py = 440 + p.c * 96;
+      return (
+        <g key={p.i}>
+          {/* 泥坑：多椭圆叠加成不规则水洼 */}
+          <ellipse cx={p.x} cy={py} rx={22 + p.b * 12} ry={7 + p.b * 3} fill={C.ink2} opacity={0.44} />
+          <ellipse cx={p.x + 15} cy={py + 3} rx={13} ry={5} fill={C.ink2} opacity={0.44} />
+          <ellipse cx={p.x - 13} cy={py - 2.5} rx={11} ry={4.5} fill={C.ink2} opacity={0.44} />
+          <ellipse cx={p.x - 5} cy={py - 2.5} rx={10 + p.b * 4} ry={1.8} fill={WHITE} opacity={0.3} />
+          {/* 飞溅泥点 */}
+          {[0, 1, 2, 3, 4].map((j) => (
+            <circle
+              key={j}
+              cx={p.x + (rnd(sd + p.i * 9 + j) - 0.5) * 84}
+              cy={py - 14 - rnd(sd + p.i * 5 + j * 2) * 20}
+              r={1.4 + rnd(sd + p.i * 3 + j) * 2.2}
+              fill={TERRA.mud.dk}
+              opacity={0.85}
+            />
+          ))}
+          {/* 泥埂（地面线以上的隆起） */}
+          <path
+            d={`M${f1(p.x - 34)} ${GY} q${f1(10)} ${f1(-8 - p.b * 6)} ${f1(24)} 0 Z`}
+            fill={TERRA.mud.dk}
+          />
+        </g>
+      );
+    })}
+  </g>
+);
+
+// —— 沙地：连绵沙丘 / 仙人掌 / 枯木 / 风纹 ——
+const Cactus: React.FC<{x: number; h: number; fx: number}> = ({x, h, fx}) => (
+  <g transform={`translate(${f1(x)} ${GY}) scale(${fx} 1)`}>
+    <ellipse cy={1.5} rx={17} ry={3.5} fill={TERRA.sand.dk} opacity={0.6} />
+    <path d={`M0 0 L0 ${f1(-h)}`} stroke={C.ink3} strokeWidth={15} strokeLinecap="round" fill="none" />
+    <path d={`M-2 ${f1(-h * 0.46)} L-19 ${f1(-h * 0.46)} L-19 ${f1(-h * 0.74)}`}
+      stroke={C.ink3} strokeWidth={10} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    <path d={`M2 ${f1(-h * 0.62)} L20 ${f1(-h * 0.62)} L20 ${f1(-h * 0.88)}`}
+      stroke={C.ink3} strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+    <path d={`M0 ${f1(-h * 0.08)} L0 ${f1(-h * 0.93)}`} stroke={C.ink4}
+      strokeWidth={1.4} opacity={0.6} fill="none" />
+  </g>
+);
+
+const SandDecor: React.FC<{bd: Band; sd: number; dx: number}> = ({bd, sd, dx}) => (
+  <g>
+    {/* 远近两层沙丘轮廓 */}
+    <path d={crest(bd, 52, sd + 11, 210, 30)} fill={TERRA.sand.dk} opacity={0.28} />
+    <path d={crest(bd, 27, sd + 29, 150, 34)} fill={TERRA.sand.dk} opacity={0.45} />
+    <path d={crest(bd, 27, sd + 29, 150, 34)} fill="none" stroke={TERRA.sand.dk}
+      strokeWidth={1.4} opacity={0.8} />
+    {/* 沙面风纹 */}
+    {[456, 496, 534].map((y, i) => (
+      <path key={i} d={wavy(bd, y, 16, sd + i * 7, 120)} fill="none"
+        stroke={TERRA.sand.dk} strokeWidth={1.8} opacity={0.6} />
+    ))}
+    {spots(bd, 195, sd + 80).map((p) => {
+      const k = p.i % 3;
+      if (k === 0) return <g key={p.i} opacity={behindCar(p.x, dx)}><Cactus x={p.x} h={92 + p.b * 40} fx={p.c > 0.5 ? 1 : -1} /></g>;
+      if (k === 1) {
+        return (
+          <g key={p.i} opacity={behindCar(p.x, dx)} transform={`translate(${f1(p.x)} ${GY})`}>
+            {/* 枯木 */}
+            <path d="M-20 0 L2 -24 M2 -24 L15 -37 M2 -24 L-9 -36 M-9 -36 L-18 -43 M15 -37 L24 -42"
+              stroke={TERRA.mud.dk} strokeWidth={3} strokeLinecap="round" fill="none" opacity={0.85} />
+            <ellipse cy={1} rx={16} ry={3} fill={TERRA.sand.dk} opacity={0.55} />
+          </g>
+        );
+      }
+      return (
+        <g key={p.i} transform={`translate(${f1(p.x)} ${GY})`}>
+          {/* 小灌木 / 干草簇 */}
+          {[0, 1, 2, 3, 4].map((j) => (
+            <path
+              key={j}
+              d={`M${f1((j - 2) * 4)} 0 q${f1((rnd(sd + p.i + j) - 0.5) * 10)} ${f1(-9 - rnd(sd + j * 3) * 8)} ${f1((rnd(sd + p.i * 2 + j) - 0.5) * 22)} ${f1(-16 - rnd(sd + j) * 12)}`}
+              stroke={C.ink4}
+              strokeWidth={1.5}
+              fill="none"
+              strokeLinecap="round"
+            />
+          ))}
+        </g>
+      );
+    })}
+  </g>
+);
+
+// —— 湿地：水洼倒影 / 涟漪 / 芦苇 ——
+const Reeds: React.FC<{x: number; h: number; sd: number}> = ({x, h, sd}) => (
+  <g transform={`translate(${f1(x)} ${GY})`}>
+    <ellipse cy={1.5} rx={26} ry={4} fill={TERRA.wet.dk} opacity={0.55} />
+    {[0, 1, 2, 3, 4, 5].map((j) => {
+      const o = (rnd(sd + j * 2.3) - 0.5) * 34;
+      const hh = h * (0.62 + rnd(sd + j * 4.1) * 0.55);
+      const bd2 = (rnd(sd + j * 6.7) - 0.5) * 26;
+      return (
+        <g key={j}>
+          <path d={`M${f1(o)} 0 Q${f1(o + bd2 * 0.4)} ${f1(-hh * 0.6)} ${f1(o + bd2)} ${f1(-hh)}`}
+            stroke={C.ink3} strokeWidth={2.4} fill="none" strokeLinecap="round" />
+          {/* 叶片 */}
+          <path d={`M${f1(o + bd2 * 0.25)} ${f1(-hh * 0.4)} q${f1(9 + bd2 * 0.3)} ${f1(-hh * 0.18)} ${f1(13 + bd2 * 0.4)} ${f1(-hh * 0.5)}`}
+            stroke={C.ink3} strokeWidth={1.6} fill="none" strokeLinecap="round" opacity={0.8} />
+          {j % 2 === 0 && (
+            <ellipse cx={o + bd2} cy={-hh - 8} rx={3.4} ry={9.5} fill={TERRA.mud.dk} />
+          )}
+        </g>
+      );
+    })}
+  </g>
+);
+
+const WetDecor: React.FC<{bd: Band; sd: number; dx: number; t: number}> = ({bd, sd, dx, t}) => (
+  <g>
+    {/* 水面反光带 */}
+    <rect x={bd.x} y={GY} width={bd.w} height={30} fill={WHITE} opacity={0.2} />
+    <path d={wavy(bd, 470, 10, sd + 4)} fill="none" stroke={WHITE} strokeWidth={2.6} opacity={0.45} />
+    <path d={wavy(bd, 532, 10, sd + 9)} fill="none" stroke={WHITE} strokeWidth={2.2} opacity={0.35} />
+    {spots(bd, 180, sd + 100).map((p) => {
+      const py = 448 + p.c * 88;
+      const rx = 30 + p.b * 20;
+      return (
+        <g key={p.i}>
+          {/* 水洼 + 倒影高光 */}
+          <ellipse cx={p.x} cy={py} rx={rx} ry={rx * 0.3} fill={TERRA.wet.dk} opacity={0.7} />
+          <ellipse cx={p.x} cy={py} rx={rx - 4} ry={rx * 0.3 - 3} fill={WHITE} opacity={0.42} />
+          <path d={`M${f1(p.x - rx * 0.6)} ${f1(py - 2)} L${f1(p.x + rx * 0.2)} ${f1(py - 2)}`}
+            stroke={WHITE} strokeWidth={1.8} opacity={0.85} />
+          <path d={`M${f1(p.x - rx * 0.3)} ${f1(py + 4)} L${f1(p.x + rx * 0.5)} ${f1(py + 4)}`}
+            stroke={WHITE} strokeWidth={1.4} opacity={0.6} />
+          {/* 扩散涟漪圈 */}
+          {[0, 1, 2].map((j) => {
+            const k = frac(t / 2.1 + j / 3 + p.a);
+            return (
+              <ellipse
+                key={j}
+                cx={p.x}
+                cy={py}
+                rx={5 + k * (rx - 6)}
+                ry={(5 + k * (rx - 6)) * 0.3}
+                fill="none"
+                stroke={WHITE}
+                strokeWidth={2}
+                opacity={0.9 * (1 - k)}
+              />
+            );
+          })}
+        </g>
+      );
+    })}
+    {spots(bd, 148, sd + 140).map((p) => (
+      <g key={p.i} opacity={behindCar(p.x, dx)}><Reeds x={p.x} h={78 + p.b * 46} sd={sd + p.i * 13} /></g>
+    ))}
+  </g>
+);
+
+// —— 碎石：大小不一的石块 / 路肩碎石堆 ——
+const Stone: React.FC<{x: number; y: number; r: number; sd: number}> = ({x, y, r, sd}) => {
+  const pts: string[] = [];
+  for (let i = 0; i < 6; i++) {
+    const th = (i / 6) * Math.PI * 2 + rnd(sd + i) * 0.55;
+    const rr = r * (0.72 + rnd(sd + i * 2.2) * 0.5);
+    pts.push(`${(x + Math.cos(th) * rr).toFixed(1)} ${(y + Math.sin(th) * rr * 0.84).toFixed(1)}`);
+  }
+  return (
+    <g>
+      <path d={`M${pts.join(' L')} Z`} fill={TERRA.gravel.dk} stroke={C.ink3}
+        strokeWidth={0.9} strokeLinejoin="round" />
+      <ellipse cx={x - r * 0.24} cy={y - r * 0.3} rx={r * 0.42} ry={r * 0.2}
+        fill={WHITE} opacity={0.45} />
+    </g>
+  );
+};
+
+const GravelDecor: React.FC<{bd: Band; sd: number; dx: number}> = ({bd, sd, dx}) => (
+  <g>
+    <path d={crest(bd, 11, sd + 3, 70, 26)} fill={TERRA.gravel.dk} opacity={0.5} />
+    {spots(bd, 150, sd + 170).map((p) => (
+      <g key={p.i}>
+        {/* 路肩碎石堆（地面线以上） */}
+        {p.i % 2 === 0 && (
+        <g opacity={behindCar(p.x, dx)}>
+          {Array.from({length: 9}, (_, j) => {
+            const a = rnd(sd + p.i * 13 + j * 3.7);
+            const b = rnd(sd + p.i * 7 + j * 5.3);
+            const px = p.x + (a - 0.5) * 52;
+            const py = GY - 3 - (1 - Math.abs(px - p.x) / 30) * (11 + b * 14);
+            return <Stone key={j} x={px} y={py} r={4 + b * 5.5} sd={sd + p.i * 11 + j * 2.3} />;
+          })}
+        </g>
+        )}
+        {/* 路面散落石块 */}
+        {Array.from({length: 5}, (_, j) => (
+          <Stone
+            key={`s${j}`}
+            x={p.x + (rnd(sd + p.i * 4 + j * 2.1) - 0.5) * 130}
+            y={434 + rnd(sd + p.i * 6 + j * 3.3) * 110}
+            r={3.5 + rnd(sd + p.i * 8 + j) * 8}
+            sd={sd + p.i * 17 + j * 5.1}
+          />
+        ))}
+      </g>
+    ))}
+  </g>
+);
+
+// —— 柏油：对照组，仅车道标线 ——
+const AsphaltDecor: React.FC<{bd: Band}> = ({bd}) => (
+  <g>
+    <path d={`M${bd.x} 434 L${bd.x + bd.w} 434`} stroke={WHITE} strokeWidth={3} opacity={0.5} />
+    <path d={`M${bd.x} 492 L${bd.x + bd.w} 492`} stroke={WHITE} strokeWidth={5.5}
+      opacity={0.8} strokeDasharray="60 46" />
+    <path d={`M${bd.x} 548 L${bd.x + bd.w} 548`} stroke={WHITE} strokeWidth={3} opacity={0.4} />
+  </g>
+);
+
+const BandDecor: React.FC<{bd: Band; i: number; t: number; dx: number}> = ({bd, i, t, dx}) => {
+  const sd = i * 97 + 13;
+  switch (bd.terr) {
+    case 'snow':
+      return <SnowDecor bd={bd} sd={sd} dx={dx} />;
+    case 'mud':
+      return <MudDecor bd={bd} sd={sd} />;
+    case 'sand':
+      return <SandDecor bd={bd} sd={sd} dx={dx} />;
+    case 'wet':
+      return <WetDecor bd={bd} sd={sd} t={t} dx={dx} />;
+    case 'gravel':
+      return <GravelDecor bd={bd} sd={sd} dx={dx} />;
+    default:
+      return <AsphaltDecor bd={bd} />;
+  }
+};
+
+// ─── 空中粒子（不随地形滚动，独立循环，纯 frame 函数） ───────────────────
+const Snowfall: React.FC<{t: number; op: number; n: number; sd: number; big: boolean}> = ({
+  t, op, n, sd, big,
+}) => {
+  if (op <= 0.01) return null;
+  return (
+    <g>
+      {Array.from({length: n}, (_, i) => {
+        const a = rnd(sd + i * 1.7);
+        const b = rnd(sd + i * 2.9 + 5.1);
+        const c = rnd(sd + i * 4.1 + 9.7);
+        const per = 4.2 + b * 4.6;
+        const k = frac(t / per + c);
+        const y = -30 + k * 630;
+        const x = a * 1050 - 25 + Math.sin(t * (0.7 + b * 0.8) + i) * (7 + c * 13);
+        const r = (big ? 2.2 : 1.4) + c * (big ? 2.6 : 1.6);
+        const o = op * (0.4 + b * 0.5);
+        if (big && c > 0.62) {
+          return (
+            <g key={i} transform={`translate(${f1(x)} ${f1(y)}) rotate(${((t * 46 + i * 27) % 360).toFixed(1)})`}
+              opacity={o}>
+              <path
+                d={`M0 ${f1(-r * 1.7)} L0 ${f1(r * 1.7)} M${f1(-r * 1.47)} ${f1(-r * 0.85)} L${f1(r * 1.47)} ${f1(r * 0.85)} M${f1(-r * 1.47)} ${f1(r * 0.85)} L${f1(r * 1.47)} ${f1(-r * 0.85)}`}
+                stroke="#8FB6CE"
+                strokeWidth={1.2}
+                strokeLinecap="round"
+              />
+            </g>
+          );
+        }
+        return (
+          <circle key={i} cx={x} cy={y} r={r} fill={WHITE} stroke="#9BBDD2"
+            strokeWidth={0.7} opacity={o} />
+        );
+      })}
+    </g>
+  );
+};
+
+const SandWind: React.FC<{t: number; op: number}> = ({t, op}) => {
+  if (op <= 0.01) return null;
+  return (
+    <g>
+      {Array.from({length: 24}, (_, i) => {
+        const a = rnd(i * 3.3 + 2.2);
+        const b = rnd(i * 5.7 + 7.9);
+        const c = rnd(i * 2.1 + 13.3);
+        const per = 1.5 + b * 1.7;
+        const k = frac(t / per + c);
+        const x = 1050 - k * 1110;
+        const y = 296 + a * 148 + Math.sin(t * 2.3 + i) * (3 + c * 9);
+        const len = 16 + c * 30;
+        return (
+          <path
+            key={i}
+            d={`M${f1(x)} ${f1(y)} l${len.toFixed(0)} ${f1(-2 + c * 4)}`}
+            stroke={TERRA.sand.dk}
+            strokeWidth={1.3 + c}
+            strokeLinecap="round"
+            opacity={op * (0.3 + b * 0.45)}
+          />
+        );
+      })}
+    </g>
+  );
+};
+
 // ─── 场景舞台：一切皆为 t 的纯函数 ────────────────────────────────────────
 export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
   const frame = useCurrentFrame();
@@ -107,6 +604,18 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
   const dx = SPEED * t;
   const bob = Math.sin(t * 5) * 1.2;
   const deg = ((dx / WHEEL_R) * 57.2958) % 360;
+
+  // 当前地形的进出淡入淡出（用于空中粒子层）
+  const terrFade = (key: TerrKey) => {
+    if (terr !== key) return 0;
+    let start = 0;
+    for (const b of s.bounds) if (t >= b.t) start = b.t;
+    const nx = s.bounds.find((b) => b.t > t);
+    const end = nx ? nx.t : s.T;
+    return Math.min(win(t, start, start + 0.7), 1 - win(t, end - 0.5, end));
+  };
+  const snowOp = terrFade('snow');
+  const sandOp = terrFade('sand');
 
   // 气泡（场景 a/b）
   let bk = 0;
@@ -156,6 +665,10 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
 
   const capDone = ph === 4;
 
+  // 模式徽标：移到车头上方（不再占画面左上角）
+  const BX = 640;
+  const BY = 150;
+
   return (
     <AbsoluteFill style={{background: C.stageBg, fontFamily: F_UI}}>
       {/* 预载真车照片（Img 阻塞渲染直至加载完成，确保 SVG image 同帧就绪） */}
@@ -172,10 +685,28 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
               <circle key={i} cx={a.cx} cy={a.cy} r={a.r} fill="#000" />
             ))}
           </mask>
+          {/* 大饼轮毂：抛光盘面渐变 + 9 孔镂空 mask + 静态穹面高光 */}
+          <radialGradient id="rimFace" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#F4FCFC" />
+            <stop offset="50%" stopColor="#E8FAFA" />
+            <stop offset="82%" stopColor="#B8DEDE" />
+            <stop offset="100%" stopColor="#8AABAB" />
+          </radialGradient>
+          <radialGradient id="rimDome" cx="36%" cy="28%" r="80%">
+            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.42" />
+            <stop offset="46%" stopColor="#FFFFFF" stopOpacity="0.04" />
+            <stop offset="100%" stopColor="#2E3D3D" stopOpacity="0.26" />
+          </radialGradient>
+          <mask id="rimHoles" maskUnits="userSpaceOnUse" x={-90} y={-90} width={180} height={180}>
+            <circle r={R_FACE + 1} fill="#fff" />
+            {RIM_HOLES.map((d, i) => (
+              <path key={i} d={d} fill="#000" />
+            ))}
+          </mask>
           <Patterns />
         </defs>
 
-        {/* 地形带（滚动） */}
+        {/* 地形带（滚动）：底色 + 底纹 + 具象道具 */}
         <g transform={`translate(${-dx} 0)`}>
           {s.bands.map((b, i) => (
             <g key={i}>
@@ -183,7 +714,14 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
               <rect fill={`url(#pat-${b.terr})`} x={b.x} y={420} width={b.w} height={140} />
             </g>
           ))}
+          {s.bands.map((b, i) => (
+            <BandDecor key={`d${i}`} bd={b} i={i} t={t} dx={dx} />
+          ))}
         </g>
+
+        {/* 远景飘雪 / 扬沙（车后） */}
+        <Snowfall t={t} op={snowOp * 0.7} n={16} sd={5} big={false} />
+        <SandWind t={t} op={sandOp * 0.6} />
 
         {/* 接地阴影（浅色底：轮下压暗 + 整车软投影） */}
         <ellipse cx={573.2} cy={420} rx={48} ry={7} fill="#2E3D3D" opacity={0.34} />
@@ -200,12 +738,14 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
           <g transform={`rotate(${deg.toFixed(1)})`}>
             <WheelSpokes />
           </g>
+          <WheelGloss />
         </g>
         <g transform="translate(257.5 376.6) scale(0.418)">
           <WheelTire />
           <g transform={`rotate(${deg.toFixed(1)})`}>
             <WheelSpokes />
           </g>
+          <WheelGloss />
         </g>
 
         {/* 车身照片（抠形 + 镜像 + 微浮动）——最后绘制，覆盖轮子上沿 */}
@@ -221,6 +761,10 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
             </g>
           </g>
         </g>
+
+        {/* 近景飘雪 / 扬沙（车前） */}
+        <Snowfall t={t} op={snowOp} n={26} sd={91} big />
+        <SandWind t={t} op={sandOp} />
 
         {/* 尾部扬尘 */}
         <g transform="translate(200 404)">
@@ -251,31 +795,34 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
         <path d="M725 305 A 105 105 0 0 1 830 410" stroke={C.accent} strokeWidth={2.5} fill="none" opacity={scanOp(0.3)} />
         <path d="M725 305 A 140 140 0 0 1 865 445" stroke={C.accent} strokeWidth={2.5} fill="none" opacity={scanOp(0.6)} />
 
-        {/* 模式徽标 */}
+        {/* 模式徽标：贴在车头上方 */}
         {modeOn && ringK > 0 && (
           <rect
-            x={56} y={60} width={228} height={40} rx={20}
+            x={BX - 4} y={BY - 4} width={228} height={40} rx={20}
             fill="none" stroke={C.accent} strokeWidth={2}
             opacity={0.6 * (1 - ringK)}
-            transform={`translate(${170 * (1 - (1 + 0.18 * ringK))} ${80 * (1 - (1 + 0.18 * ringK))}) scale(${1 + 0.18 * ringK})`}
+            transform={`translate(${(BX + 110) * (1 - (1 + 0.18 * ringK))} ${(BY + 16) * (1 - (1 + 0.18 * ringK))}) scale(${1 + 0.18 * ringK})`}
           />
         )}
-        <rect x={60} y={64} width={220} height={32} rx={16}
+        <rect x={BX} y={BY} width={220} height={32} rx={16}
           fill={modeOn ? C.accentWash : C.panel}
           stroke={modeOn ? C.accent : C.line} strokeWidth={1.5} />
-        <circle cx={80} cy={80} r={6} fill={badgeDot} />
-        <text x={96} y={85} fontSize={14.5} fontWeight={600} fill={modeOn ? C.accent : C.ink2}>
+        <circle cx={BX + 20} cy={BY + 16} r={6} fill={badgeDot} />
+        <text x={BX + 36} y={BY + 21} fontSize={14.5} fontWeight={600} fill={modeOn ? C.accent : C.ink2}>
           {badgeTxt}
         </text>
 
-        {/* NOMI 提醒气泡 */}
+        {/* NOMI 提醒气泡：贴在车顶上方，带指向车身的小尾巴 */}
         {s.bub && bk > 0 && (
           <g
             opacity={Math.min(1, bk * 2)}
-            transform={`translate(500 170) scale(${easeOutBack(bk).toFixed(3)})`}
+            transform={`translate(360 174) scale(${easeOutBack(bk).toFixed(3)})`}
           >
             <rect x={-240} y={-42} width={480} height={84} rx={14}
               fill={C.panel} stroke={C.accent} strokeWidth={2} />
+            <path d="M-42 41 L-20 66 L2 41 Z" fill={C.panel} />
+            <path d="M-42 41 L-20 66 L2 41" fill="none" stroke={C.accent}
+              strokeWidth={2} strokeLinejoin="round" />
             <circle cx={-206} cy={0} r={15} fill={C.nvRoof} />
             <circle cx={-211} cy={-3} r={3} fill={C.accent} />
             <circle cx={-201} cy={-3} r={3} fill={C.accent} />
@@ -324,15 +871,47 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
         }}>{s.chip}</span>
       </div>
 
-      {/* 方向盘按键 pill + 涟漪 */}
-      <div style={{position: 'absolute', left: 32, bottom: 120}}>
+      {/* 字幕卡：紧贴车身下方（不再是底部通栏） */}
+      <div style={{
+        position: 'absolute', left: 292, top: 856,
+        display: 'inline-flex', alignItems: 'center', gap: 20,
+        background: 'rgba(255,255,255,.94)',
+        border: `1.5px solid ${capDone ? C.ok : C.line}`,
+        borderRadius: 14, padding: '13px 24px',
+        boxShadow: '0 8px 26px rgba(26,31,31,.12)',
+        opacity: capK, transform: `translateY(${(1 - capK) * 10}px)`,
+      }}>
+        <i style={{
+          width: 6, height: 32, borderRadius: 3,
+          background: capDone ? C.ok : C.accent, flex: 'none',
+        }} />
+        <span style={{
+          fontSize: 30, fontWeight: 700, letterSpacing: '0.01em', whiteSpace: 'nowrap',
+          color: capDone ? C.ok : C.ink,
+        }}>
+          {s.caps[ph]}
+        </span>
+        <span style={{display: 'flex', gap: 10, marginLeft: 4}}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <span key={i} style={{
+              width: 12, height: 12, borderRadius: '50%',
+              background: i <= ph ? C.accent : C.line,
+              transform: i === ph ? 'scale(1.3)' : 'none',
+            }} />
+          ))}
+        </span>
+      </div>
+
+      {/* 方向盘按键 pill + 涟漪：紧跟字幕卡，贴在车身下方 */}
+      <div style={{position: 'absolute', left: 292, top: 946}}>
         <div style={{
           position: 'relative',
-          display: 'flex', alignItems: 'center', gap: 14,
-          padding: '16px 26px', borderRadius: 999,
-          background: C.panel,
+          display: 'inline-flex', alignItems: 'center', gap: 14,
+          padding: '14px 26px', borderRadius: 999,
+          background: 'rgba(255,255,255,.94)',
           border: `1.5px solid ${ph > 0 ? C.accent : C.line}`,
-          fontSize: 23, color: ph > 0 ? C.ink : C.ink2,
+          boxShadow: '0 8px 26px rgba(26,31,31,.12)',
+          fontSize: 22, color: ph > 0 ? C.ink : C.ink2,
         }}>
           {rippleK >= 0 && (
             <div style={{
@@ -348,31 +927,6 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
             boxShadow: ph > 0 ? `0 0 0 5px ${C.accentWash}` : 'none',
           }} />
           {s.pill}
-        </div>
-      </div>
-
-      {/* 底部字幕 + 进度点 */}
-      <div style={{
-        position: 'absolute', left: 0, right: 0, bottom: 30,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 36px',
-      }}>
-        <div style={{
-          fontSize: 34, fontWeight: 700, letterSpacing: '0.01em',
-          color: capDone ? C.ok : C.ink,
-          opacity: capK, transform: `translateY(${(1 - capK) * 10}px)`,
-          textShadow: '0 2px 12px rgba(0,0,0,.55)',
-        }}>
-          {s.caps[ph]}
-        </div>
-        <div style={{display: 'flex', gap: 12}}>
-          {[0, 1, 2, 3, 4].map((i) => (
-            <span key={i} style={{
-              width: 13, height: 13, borderRadius: '50%',
-              background: i <= ph ? C.accent : C.line,
-              transform: i === ph ? 'scale(1.25)' : 'none',
-            }} />
-          ))}
         </div>
       </div>
     </AbsoluteFill>

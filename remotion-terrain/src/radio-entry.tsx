@@ -1,23 +1,23 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {createRoot} from 'react-dom/client';
 import {Player, type PlayerRef} from '@remotion/player';
-import {ParkingStage} from './ParkingStage';
-import {PK_SCENES, buildPark, F_DATA, F_UI, T_COLORS as C} from './parking-data';
+import {RadioStage} from './RadioStage';
+import {RADIO_SCENES, type RadioKey, F_DATA, F_UI, T_COLORS as C} from './radio-data';
 
-type K = 'a' | 'b';
+const KEYS: RadioKey[] = ['a', 'b', 'c', 'd'];
 
 const NOTES: [string, string][] = [
-  ['运动原理', '前轮最大 40°、后轮同向最大 8° 打角，车身不旋转、始终摆正；斜向前挪与反向后挪交替，纵向位移相互抵消，净效果是每步横移一小段。'],
-  ['为什么是碎步', '前后邻车限死了每步的纵向余量——全程只能小幅匀步蹭移，这正是该功能在狭小车位的核心价值。'],
-  ['视角说明', '车辆为 ES9 实拍正俯视照片抠形贴图，已按实车 5365 × 2029mm 归正比例（1px ≈ 22.7mm），车位取 2546mm 标准位。俯视看不到车轮，四个转向指示为 HMI 示意层，用于表达转角，非实车轮位渲染。'],
-  ['实现方式', 'Remotion（React）帧驱动，useCurrentFrame() 纯函数时间轴；全时间轴断言校验转角上限、终点精度与邻车间距。'],
+  ['组队与共享', '在商城购买对讲机、在车机上完成连接后即可组队，一个小队最多 50 台车；组队后实时共享定位、车辆信息与导航目的地。有网时按方向盘中间按键讲话，全队同时收到。'],
+  ['无网地形', '进入网络信号复杂的无网地形后，车载对讲机硬件自动组网，基础通信距离 5–8 公里；仍在网络覆盖区的车辆作为桥接节点把消息转发上云，远处的队友照样收得到。'],
+  ['混合车队队形', '把对讲机交给朋友的非蔚来车后，让「有对讲机的两台车」分别守住队首与队尾，只有 App 的车夹在中间——中间的车即使弱网也在硬件对讲的覆盖里，不会走丢。'],
+  ['演示说明（待确认）', '① 场景二按需求只在第 1、2 台显示对讲机图标，第 3、4 台不显示；但第 3 台要接收第 2 台的硬件对讲信号才能桥接，物理上仍需对讲机硬件在位——图标显示规则待产品确认。② 5–8 km 为文档给出的基础通信距离，动画中的车距、分界线位置均为示意，非按比例尺绘制。③ 车辆、车机卡片、App 界面均为概念矢量示意，非实拍或最终 UI。'],
 ];
 
 const App: React.FC = () => {
-  const [scn, setScn] = useState<K>('a');
+  const [scn, setScn] = useState<RadioKey>('a');
   const [paused, setPaused] = useState(false);
   const ref = useRef<PlayerRef>(null);
-  const built = buildPark(PK_SCENES[scn]);
+  const s = RADIO_SCENES[scn];
 
   useEffect(() => {
     const p = ref.current;
@@ -36,25 +36,26 @@ const App: React.FC = () => {
         <p style={{fontFamily: F_DATA, fontSize: 11, letterSpacing: '.16em',
           textTransform: 'uppercase', color: C.ink3, margin: '0 0 6px'}}>Vehicle HMI · 用户教育动画</p>
         <h1 style={{fontSize: 'clamp(23px, 3.4vw, 32px)', lineHeight: 1.15, margin: 0,
-          color: C.ink, letterSpacing: '-.01em'}}>平移泊入 · 功能演示</h1>
+          color: C.ink, letterSpacing: '-.01em'}}>对讲机组队 · 车队互联演示</h1>
         <p style={{margin: '8px 0 0', maxWidth: '68ch', color: C.ink2, fontSize: 14}}>
-          具备后轮转向的车型，可在前后停满的车位旁「横向平移」入位：前轮最大打角 40°、后轮同向最大 8°，
-          车身始终保持摆正，以小幅「斜向前挪 → 反向后挪」全程匀步蹭移。点击画面可暂停逐帧查看。
+          购买对讲机并在车机完成连接后即可组队（小队上限 50 台）：共享实时定位、车辆信息与导航目的地，按方向盘中键即可全队对讲。
+          进入无网地形时，车载对讲机硬件在 5–8 公里内组网接力，有网车辆作桥接节点上云；朋友的非蔚来车也能靠对讲机 + App 入队。
+          四个场景可切换，点击画面可暂停逐帧查看。
         </p>
       </header>
 
       <div style={{display: 'flex', flexWrap: 'wrap', gap: 8}}>
-        {(['a', 'b'] as K[]).map((k) => {
+        {KEYS.map((k) => {
           const on = k === scn;
           return (
             <button key={k} type="button" onClick={() => setScn(k)}
-              style={{flex: '1 1 260px', textAlign: 'left', cursor: 'pointer',
+              style={{flex: '1 1 230px', textAlign: 'left', cursor: 'pointer',
                 background: on ? C.accentWash : C.panel,
                 border: `1px solid ${on ? C.accent : C.line}`,
                 borderRadius: 4, padding: '10px 14px', fontFamily: 'inherit',
                 display: 'flex', flexDirection: 'column', gap: 2}}>
-              <b style={{fontSize: 13.5, fontWeight: 600, color: C.ink}}>{PK_SCENES[k].chip}</b>
-              <span style={{fontSize: 12, color: on ? C.accent : C.ink3}}>{PK_SCENES[k].sub}</span>
+              <b style={{fontSize: 13.5, fontWeight: 600, color: C.ink}}>{RADIO_SCENES[k].chip}</b>
+              <span style={{fontSize: 12, color: on ? C.accent : C.ink3}}>{RADIO_SCENES[k].sub}</span>
             </button>
           );
         })}
@@ -62,8 +63,8 @@ const App: React.FC = () => {
 
       <div style={{background: C.panel, border: `1px solid ${C.line}`, borderRadius: 6,
         padding: 12, position: 'relative'}}>
-        <Player ref={ref} key={scn} component={ParkingStage} inputProps={{scene: scn}}
-          durationInFrames={Math.round(built.T * 30)} fps={30}
+        <Player ref={ref} key={scn} component={RadioStage} inputProps={{scene: scn}}
+          durationInFrames={Math.round(s.T * 30)} fps={30}
           compositionWidth={1920} compositionHeight={1080}
           style={{width: '100%', borderRadius: 3, overflow: 'hidden'}}
           controls loop autoPlay clickToPlay />

@@ -1,12 +1,12 @@
 import React from 'react';
 import {AbsoluteFill, Img, useCurrentFrame, useVideoConfig} from 'remotion';
-import {ET9_URI} from './et9-photo';
+import {ES9_TOP_URI} from './es9-top-photo';
 import {
   CAR_BBOX, CAR_SRC, CAR_TOP_BODY, F_DATA, F_MAX, F_UI, NEIGHBORS, PK_SCENES, R_MAX,
   SLOT, T_COLORS as C, TOP_ANCHORS, buildPark, easeOutBack, win,
 } from './parking-data';
 
-// 车身在舞台上的显示尺寸：车长 250px（与车位 h=250 匹配，车位比车略长）
+// 车身显示尺寸：车长 236px ↔ 5365mm（22.73 mm/px），车宽由 CAR_BBOX 等比推出 ≈ 90px ↔ 2046mm
 const CAR_H = 236;
 const SCALE = CAR_H / (CAR_BBOX.y1 - CAR_BBOX.y0);
 const CAR_W = (CAR_BBOX.x1 - CAR_BBOX.x0) * SCALE;
@@ -17,18 +17,18 @@ const CarTop: React.FC<{opacity?: number}> = ({opacity = 1}) => (
     opacity={opacity}
     transform={`scale(${SCALE}) translate(${-(CAR_BBOX.x0 + CAR_BBOX.x1) / 2} ${-(CAR_BBOX.y0 + CAR_BBOX.y1) / 2})`}
   >
-    <image href={ET9_URI} width={CAR_SRC.w} height={CAR_SRC.h} mask="url(#carTopMask)" />
+    <image href={ES9_TOP_URI} width={CAR_SRC.w} height={CAR_SRC.h} mask="url(#carTopMask)" />
   </g>
 );
 
-/** 转向示意轮：俯拍照片看不到车轮，用 HMI 风格示意层表现转角 */
+/** 转向示意轮：俯视照片看不到车轮，用 HMI 示意层表现转角；尺寸按实车 275/40R23（12 × 35px） */
 const SteerWheel: React.FC<{ax: number; ay: number; deg: number}> = ({ax, ay, deg}) => {
   const x = (ax - 0.5) * CAR_W;
   const y = (ay - 0.5) * CAR_H;
   return (
     <g transform={`translate(${x} ${y}) rotate(${deg.toFixed(2)})`}>
-      <rect x={-5} y={-13} width={10} height={26} rx={5} fill="#151A1A" opacity={0.9} />
-      <rect x={-5} y={-13} width={10} height={26} rx={5} fill="none" stroke={C.accent} strokeWidth={2} />
+      <rect x={-6} y={-17.5} width={12} height={35} rx={6} fill="#151A1A" opacity={0.92} />
+      <rect x={-6} y={-17.5} width={12} height={35} rx={6} fill="none" stroke={C.accent} strokeWidth={2} />
     </g>
   );
 };
@@ -68,9 +68,19 @@ export const ParkingStage: React.FC<{scene: 'a' | 'b'}> = ({scene}) => {
   const capK = win(t, phStart, phStart + 0.45);
   const slotState = t < built.tTap ? 'idle' : t < built.tDone ? 'active' : 'done';
 
+  // 信息卡贴车左下方，随车移动（禁止放画面边角）；stage(1000×560) → css(1920×1075)
+  const KX = 1.92, KY = 1075 / 560;
+  const CARD_W = 274, CARD_H = 176;
+  const cardRight = Math.min(Math.max(x - CAR_W / 2 - 28, 202), 500);
+  const cardCY = Math.min(Math.max(y + 140, 130), 466);
+  const cardTop = cardCY - CARD_H / 2;
+  const tipY = cardTop + 36;
+  const leadX = x - CAR_W / 2 - 8;
+  const leadY = y + CAR_H * 0.22;
+
   return (
     <AbsoluteFill style={{background: C.stageBg, fontFamily: F_UI}}>
-      <Img src={ET9_URI} style={{position: 'absolute', width: 1, height: 1, opacity: 0}} />
+      <Img src={ES9_TOP_URI} style={{position: 'absolute', width: 1, height: 1, opacity: 0}} />
       <svg viewBox="0 0 1000 560" style={{position: 'absolute', inset: 0, width: 1920, height: 1075}}>
         <defs>
           <mask id="carTopMask">
@@ -122,18 +132,15 @@ export const ParkingStage: React.FC<{scene: 'a' | 'b'}> = ({scene}) => {
           <SteerWheel ax={TOP_ANCHORS['wheel.rl'].x} ay={TOP_ANCHORS['wheel.rl'].y} deg={rearA} />
           <SteerWheel ax={TOP_ANCHORS['wheel.rr'].x} ay={TOP_ANCHORS['wheel.rr'].y} deg={rearA} />
 
-          {/* 转角标注（动作阶段显示） */}
-          {ph >= 2 && ph <= 3 && (
-            <g opacity={0.95}>
-              <line x1={-CAR_W / 2 - 92} y1={-CAR_H * 0.245} x2={-CAR_W / 2 - 10} y2={-CAR_H * 0.245}
-                stroke={C.ink2} strokeWidth={1.5} />
-              <text x={-CAR_W / 2 - 98} y={-CAR_H * 0.245 - 6} textAnchor="end" fontSize={15} fontWeight={700} fill={C.ink}>前轮 40°</text>
-              <line x1={-CAR_W / 2 - 92} y1={CAR_H * 0.26} x2={-CAR_W / 2 - 10} y2={CAR_H * 0.26}
-                stroke={C.ink2} strokeWidth={1.5} />
-              <text x={-CAR_W / 2 - 98} y={CAR_H * 0.26 - 6} textAnchor="end" fontSize={15} fontWeight={700} fill={C.ink}>后轮 8°</text>
-              <text x={-CAR_W / 2 - 98} y={CAR_H * 0.26 + 14} textAnchor="end" fontSize={12} fill={C.ink3}>同向 · 车身保持摆正</text>
-            </g>
-          )}
+        </g>
+
+        {/* 信息卡指引线：卡片 → 车身左下角 */}
+        <g opacity={0.9}>
+          <path d={`M${cardRight} ${tipY} L${leadX} ${leadY}`} stroke={ph === 4 ? C.ok : C.accent}
+            strokeWidth={1.6} strokeDasharray="5 5" fill="none" />
+          <circle cx={leadX} cy={leadY} r={3.5} fill={ph === 4 ? C.ok : C.accent} />
+          <path d={`M${cardRight} ${tipY - 9} L${cardRight + 13} ${tipY} L${cardRight} ${tipY + 9} Z`}
+            fill={ph === 4 ? C.ok : C.accent} />
         </g>
 
         {/* 完成确认 */}
@@ -147,22 +154,11 @@ export const ParkingStage: React.FC<{scene: 'a' | 'b'}> = ({scene}) => {
         )}
       </svg>
 
-      {/* HUD */}
+      {/* 视图标签（非信息展示，仅标注这是俯视图） */}
       <div style={{
-        position: 'absolute', top: 24, left: 32, right: 32, display: 'flex',
-        justifyContent: 'space-between', fontFamily: F_DATA, fontSize: 21,
+        position: 'absolute', top: 24, left: 32, fontFamily: F_DATA, fontSize: 21,
         letterSpacing: '0.12em', color: C.ink3,
-      }}>
-        <span>俯视图 · TOP VIEW</span>
-        <span>
-          前轮 <b style={{color: C.accent, fontWeight: 600, fontVariantNumeric: 'tabular-nums'}}>
-            {(a > 0 ? '+' : '') + a.toFixed(0)}°
-          </b>
-          {' · '}后轮 <b style={{color: C.accent, fontWeight: 600, fontVariantNumeric: 'tabular-nums'}}>
-            {(a > 0 ? '+' : '') + rearA.toFixed(1)}°
-          </b>
-        </span>
-      </div>
+      }}>俯视图 · TOP VIEW</div>
 
       {/* 场景标签 */}
       <div style={{
@@ -175,45 +171,62 @@ export const ParkingStage: React.FC<{scene: 'a' | 'b'}> = ({scene}) => {
         }}>{s.chip}</span>
       </div>
 
-      {/* 一键泊入 pill */}
-      <div style={{position: 'absolute', left: 32, bottom: 120}}>
-        <div style={{
-          position: 'relative', display: 'flex', alignItems: 'center', gap: 14,
-          padding: '16px 26px', borderRadius: 999, background: C.panel,
-          border: `1.5px solid ${ph > 0 ? C.accent : C.line}`,
-          fontSize: 23, color: ph > 0 ? C.ink : C.ink2,
-        }}>
-          {tapK >= 0 && (
-            <div style={{
-              position: 'absolute', inset: -5, borderRadius: 999,
-              border: `3px solid ${C.accent}`,
-              opacity: 0.9 * (1 - (tapK % 0.5) / 0.5),
-              transform: `scale(${1 + 0.45 * ((tapK % 0.5) / 0.5)})`,
-            }} />
-          )}
-          <i style={{
-            width: 14, height: 14, borderRadius: '50%',
-            background: ph > 0 ? C.accent : C.ink3,
-            boxShadow: ph > 0 ? `0 0 0 5px ${C.accentWash}` : 'none',
-          }} />
-          一键平移泊入
-        </div>
-      </div>
-
-      {/* 字幕 + 进度点 */}
+      {/* 贴车信息卡（跟随车身，像弹窗一样从车旁弹出） */}
       <div style={{
-        position: 'absolute', left: 0, right: 0, bottom: 30, display: 'flex',
-        alignItems: 'center', justifyContent: 'space-between', padding: '0 36px',
+        position: 'absolute',
+        left: (cardRight - CARD_W) * KX, top: cardTop * KY,
+        width: CARD_W * KX, boxSizing: 'border-box',
+        background: C.panel, border: `1.5px solid ${ph === 4 ? C.ok : C.accent}`,
+        borderRadius: 20, padding: '20px 26px 22px',
+        boxShadow: '0 10px 28px rgba(92,112,112,0.16)',
       }}>
+        {/* 头部：一键泊入状态 + 步骤号 */}
+        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+          <div style={{position: 'relative', display: 'flex', alignItems: 'center', gap: 12}}>
+            {tapK >= 0 && (
+              <div style={{
+                position: 'absolute', left: -6, top: -6, width: 26, height: 26, borderRadius: '50%',
+                border: `3px solid ${C.accent}`,
+                opacity: 0.9 * (1 - (tapK % 0.5) / 0.5),
+                transform: `scale(${1 + 0.9 * ((tapK % 0.5) / 0.5)})`,
+              }} />
+            )}
+            <i style={{
+              width: 14, height: 14, borderRadius: '50%', flex: 'none',
+              background: ph > 0 ? (ph === 4 ? C.ok : C.accent) : C.ink3,
+              boxShadow: ph > 0 ? `0 0 0 5px ${ph === 4 ? C.okWash : C.accentWash}` : 'none',
+            }} />
+            <span style={{fontSize: 21, color: ph > 0 ? C.ink : C.ink2}}>一键平移泊入</span>
+          </div>
+          <span style={{fontFamily: F_DATA, fontSize: 17, color: C.ink3, letterSpacing: '0.08em'}}>
+            {String(ph + 1).padStart(2, '0')} / 05
+          </span>
+        </div>
+
+        <div style={{height: 1, background: C.line, margin: '15px 0 16px'}} />
+
+        {/* 字幕 */}
         <div style={{
-          fontSize: 34, fontWeight: 700, color: ph === 4 ? C.ok : C.ink,
-          opacity: capK, transform: `translateY(${(1 - capK) * 10}px)`,
+          fontSize: 26, lineHeight: 1.35, fontWeight: 700,
+          color: ph === 4 ? C.ok : C.ink,
+          opacity: capK, transform: `translateY(${(1 - capK) * 8}px)`,
         }}>{s.caps[ph]}</div>
-        <div style={{display: 'flex', gap: 12}}>
+
+        {/* 转角读数 */}
+        <div style={{
+          display: 'flex', gap: 22, marginTop: 16, fontFamily: F_DATA, fontSize: 20,
+          color: C.ink2, fontVariantNumeric: 'tabular-nums',
+        }}>
+          <span>前轮 <b style={{color: C.accent, fontWeight: 600}}>{(a > 0 ? '+' : '') + a.toFixed(0)}°</b></span>
+          <span>后轮 <b style={{color: C.accent, fontWeight: 600}}>{(a > 0 ? '+' : '') + rearA.toFixed(1)}°</b></span>
+        </div>
+
+        {/* 进度点 */}
+        <div style={{display: 'flex', gap: 11, marginTop: 18}}>
           {[0, 1, 2, 3, 4].map((i) => (
             <span key={i} style={{
-              width: 13, height: 13, borderRadius: '50%',
-              background: i <= ph ? C.accent : C.line,
+              width: 12, height: 12, borderRadius: '50%',
+              background: i <= ph ? (ph === 4 ? C.ok : C.accent) : C.line,
               transform: i === ph ? 'scale(1.25)' : 'none',
             }} />
           ))}

@@ -105,6 +105,9 @@ export const PetStage: React.FC<{scene: PetKey}> = ({scene}) => {
   const ph = petState(scene, t).ph;
 
   const CX = 500, CY = 280;
+  // 座舱外接框（局部 ±150 × ±232）→ 绝对：x 350–650、y 48–512
+  // 信息块统一贴主体两侧：右侧状态卡中心 (822,338) 对齐二排右座宠物位；左侧步骤块贴左边缘
+  const CARD_X = 822, CARD_Y = 338;
   const capK = win(t, ph === 0 ? 0 : s.ph[ph - 1], (ph === 0 ? 0 : s.ph[ph - 1]) + 0.45);
   const breathe = Math.sin(t * 2.2);
 
@@ -201,34 +204,40 @@ export const PetStage: React.FC<{scene: PetKey}> = ({scene}) => {
           )}
         </g>
 
-        {/* 第 1 章：硬件配对特写 */}
+        {/* 第 1 章：硬件配对特写（贴座舱右侧，与其余章节的状态卡同一信息位） */}
         {scene === 'a' && (
           <g>
-            <Collar x={200} y={190} scale={1.5} pulse={ph >= 2 ? t * 0.7 : 0} />
-            <text x={200} y={268} textAnchor="middle" fontSize={16} fill={C.ink2}>宠物定位硬件</text>
-            <text x={200} y={288} textAnchor="middle" fontSize={12} fill={C.ink3}>概念示意 · 外观待定义</text>
+            <Collar x={818} y={236} scale={1.5} pulse={ph >= 2 ? t * 0.7 : 0} />
+            <text x={818} y={314} textAnchor="middle" fontSize={16} fill={C.ink2}>宠物定位硬件</text>
+            <text x={818} y={334} textAnchor="middle" fontSize={12} fill={C.ink3}>概念示意 · 外观待定义</text>
             {ph >= 2 && (
-              <path d={`M240 190 Q330 190 ${CX - 160} 130`} fill="none" stroke={C.accent} strokeWidth={2.4}
+              <path d={`M778 236 Q690 236 ${CX + 160} 150`} fill="none" stroke={C.accent} strokeWidth={2.4}
                 strokeDasharray="6 8" strokeDashoffset={-frac(t * 0.8) * 28} opacity={0.9} />
             )}
             {paired && (
               <g opacity={Math.min(1, win(t, s.ph[2], s.ph[2] + 0.5) * 2)}>
-                <rect x={150} y={330} width={200} height={44} rx={10} fill={C.panel} stroke={C.ok} strokeWidth={2} />
-                <circle cx={176} cy={352} r={11} fill={C.okWash} stroke={C.ok} strokeWidth={2} />
-                <path d="M171 352 L175 356 L182 347" fill="none" stroke={C.ok} strokeWidth={2.6}
+                <rect x={718} y={356} width={200} height={44} rx={10} fill={C.panel} stroke={C.ok} strokeWidth={2} />
+                <circle cx={744} cy={378} r={11} fill={C.okWash} stroke={C.ok} strokeWidth={2} />
+                <path d="M739 378 L743 382 L750 373" fill="none" stroke={C.ok} strokeWidth={2.6}
                   strokeLinecap="round" strokeLinejoin="round" />
-                <text x={196} y={358} fontSize={16} fontWeight={600} fill={C.ink}>已连接</text>
+                <text x={764} y={384} fontSize={16} fontWeight={600} fill={C.ink}>已连接</text>
               </g>
             )}
           </g>
         )}
 
-        {/* 车机状态卡（概念 UI） */}
+        {/* 车机状态卡（概念 UI）：紧贴座舱右边缘（x=650）外 32px，垂直对齐二排右座宠物位 */}
         {(scene === 'b' || scene === 'c' || scene === 'd') && ph >= 2 && (
           <g opacity={Math.min(1, win(t, s.ph[2], s.ph[2] + 0.45) * 2)}
-            transform={`translate(196 250) scale(${easeOutBack(win(t, s.ph[2], s.ph[2] + 0.45)).toFixed(3)})`}>
+            transform={`translate(${CARD_X} ${CARD_Y}) scale(${easeOutBack(win(t, s.ph[2], s.ph[2] + 0.45)).toFixed(3)})`}>
+            {/* 指引线：卡片 → 座舱内二排右座（宠物所在） */}
+            <path d="M-157 0 H-200" fill="none" stroke={purify ? C.ok : C.accent} strokeWidth={1.6}
+              strokeDasharray="5 6" opacity={0.75} />
+            <circle cx={-204} cy={0} r={3.8} fill={purify ? C.ok : C.accent} opacity={0.9} />
             <rect x={-140} y={-46} width={280} height={92} rx={14} fill={C.panel}
               stroke={purify ? C.ok : C.accent} strokeWidth={2} />
+            {/* 小三角尖角（压在卡片左边框上，指向座舱） */}
+            <path d="M-141 -10 L-157 0 L-141 10 Z" fill={purify ? C.ok : C.accent} />
             <circle cx={-108} cy={-12} r={13} fill={C.ink} />
             <circle cx={-112.6} cy={-14} r={2.6} fill={purify ? C.ok : C.accent} />
             <circle cx={-103.4} cy={-14} r={2.6} fill={purify ? C.ok : C.accent} />
@@ -280,8 +289,11 @@ export const PetStage: React.FC<{scene: PetKey}> = ({scene}) => {
         }}>{s.chip}</span>
       </div>
 
-      {/* 状态 pill：自动触发 → AUTO 徽标 */}
-      <div style={{position: 'absolute', left: 32, bottom: 120}}>
+      {/* 状态 pill：自动触发 → AUTO 徽标（贴座舱左上角，右边缘距座舱左边缘 32svg≈62px） */}
+      <div style={{
+        position: 'absolute', left: 46, right: 1310, top: 100,
+        display: 'flex', justifyContent: 'flex-end',
+      }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 14, padding: '16px 26px', borderRadius: 999,
           background: C.panel, border: `1.5px solid ${ph > 1 ? C.accent : C.line}`,
@@ -302,23 +314,40 @@ export const PetStage: React.FC<{scene: PetKey}> = ({scene}) => {
         </div>
       </div>
 
-      {/* 字幕 + 进度点 */}
+      {/* 字幕 + 进度点：竖排步骤说明块，贴座舱左边缘（座舱左缘 350svg≈672px，块右缘 610px） */}
       <div style={{
-        position: 'absolute', left: 0, right: 0, bottom: 30, display: 'flex',
-        alignItems: 'center', justifyContent: 'space-between', padding: '0 36px',
+        position: 'absolute', left: 46, width: 564, top: '54%', transform: 'translateY(-50%)',
       }}>
         <div style={{
-          fontSize: 34, fontWeight: 700, color: ph === 4 ? C.ok : C.ink,
-          opacity: capK, transform: `translateY(${(1 - capK) * 10}px)`,
-        }}>{s.caps[ph]}</div>
-        <div style={{display: 'flex', gap: 12}}>
-          {[0, 1, 2, 3, 4].map((i) => (
-            <span key={i} style={{
-              width: 13, height: 13, borderRadius: '50%',
-              background: i <= ph ? C.accent : C.line,
-              transform: i === ph ? 'scale(1.25)' : 'none',
-            }} />
-          ))}
+          display: 'flex', alignItems: 'center', gap: 22,
+          background: C.panel, border: `1.5px solid ${C.line}`, borderRadius: 18,
+          padding: '24px 26px',
+        }}>
+          {/* 竖排进度圆点 */}
+          <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <React.Fragment key={i}>
+                {i > 0 && (
+                  <i style={{width: 2, height: 16, background: i <= ph ? C.accent : C.line}} />
+                )}
+                <span style={{
+                  width: 13, height: 13, borderRadius: '50%',
+                  background: i <= ph ? C.accent : C.line,
+                  transform: i === ph ? 'scale(1.25)' : 'none',
+                }} />
+              </React.Fragment>
+            ))}
+          </div>
+          <div style={{flex: 1, minWidth: 0}}>
+            <div style={{
+              fontFamily: F_DATA, fontSize: 15, letterSpacing: '0.14em',
+              color: C.ink3, marginBottom: 10,
+            }}>{`步骤 ${String(ph + 1).padStart(2, '0')} / 05`}</div>
+            <div style={{
+              fontSize: 29, fontWeight: 700, lineHeight: 1.32, color: ph === 4 ? C.ok : C.ink,
+              opacity: capK, transform: `translateY(${(1 - capK) * 10}px)`,
+            }}>{s.caps[ph]}</div>
+          </div>
         </div>
       </div>
     </AbsoluteFill>
