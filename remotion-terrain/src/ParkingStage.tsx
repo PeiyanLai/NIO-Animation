@@ -3,7 +3,7 @@ import {AbsoluteFill, Img, useCurrentFrame, useVideoConfig} from 'remotion';
 import {ES9_TOP_URI} from './es9-top-photo';
 import {
   CARD_H, CARD_W, CAR_BBOX, CAR_H, CAR_SCALE, CAR_SRC, CAR_TOP_BODY, CAR_W, F_DATA, F_UI,
-  NEIGHBORS, PK_SCENES, SLOT, SLOT_L, SLOT_R, T_COLORS as C, TOP_ANCHORS,
+  HEADLIGHTS, NEIGHBORS, PK_SCENES, SLOT, SLOT_L, SLOT_R, T_COLORS as C, TOP_ANCHORS,
   buildPark, cardBox, easeOutBack, leadPoint, poseAt, win,
 } from './parking-data';
 
@@ -14,6 +14,14 @@ const CarTop: React.FC<{opacity?: number; ego?: boolean}> = ({opacity = 1, ego =
     transform={`scale(${CAR_SCALE}) translate(${-(CAR_BBOX.x0 + CAR_BBOX.x1) / 2} ${-(CAR_BBOX.y0 + CAR_BBOX.y1) / 2})`}
   >
     <image href={ES9_TOP_URI} width={CAR_SRC.w} height={CAR_SRC.h} mask="url(#carTopMask)" />
+    {/* 前大灯：照片里的灯条只有几像素、在浅底上会糊掉，叠一层灯罩 + 灯芯让它读得出来 */}
+    {HEADLIGHTS.map((d, i) => (
+      <g key={i} strokeLinecap="round" fill="none">
+        <path d={d} stroke="#0E1414" strokeWidth={11} opacity={0.92} />
+        <path d={d} stroke="#FFF6E2" strokeWidth={5.2} />
+        <path d={d} stroke="#FFFFFF" strokeWidth={2} opacity={0.95} />
+      </g>
+    ))}
     {ego && <path d={CAR_TOP_BODY} fill="none" stroke={C.accent} strokeWidth={5} opacity={0.55} />}
   </g>
 );
