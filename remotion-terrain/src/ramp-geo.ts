@@ -47,6 +47,18 @@ export const TAILGATE_PHOTO: [number, number][] = [
   [918, 240], [913, 200], [906, 150], [900, 110],
 ];
 
+/** 车身上真正被挖开的「装载开口」——比整块尾门小得多。
+ *  侧视里门槛以上、腰线以下那一截才是能看进去的载物口；再往上被远侧 D 柱与玻璃框挡住，
+ *  整块挖掉会让车身像被切走一角。尾门门板照旧按 TAILGATE_PHOTO 整块抬起。 */
+export const APERTURE_PHOTO: [number, number][] = [
+  [908, 166], [924, 161], [938, 161],
+  [943, 168], [951, 181], [957, 196], [957, 215], [956, 232], [957, 248], [958, 258],
+  [940, 262], [925, 262],
+  [918, 240], [912, 200],
+];
+export const APERTURE_STAGE: [number, number][] =
+  APERTURE_PHOTO.map(([x, y]) => [px2sx(x), py2sy(y)]);
+
 /** 同一轮廓换算到舞台坐标（镜像已在此处理，可直接当 path 用） */
 export const TAILGATE_STAGE: [number, number][] =
   TAILGATE_PHOTO.map(([x, y]) => [px2sx(x), py2sy(y)]);

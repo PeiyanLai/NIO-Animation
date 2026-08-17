@@ -8,7 +8,7 @@
 import {CAR_BODY} from './data';
 import {
   DOG, GATE_OPEN_DEG, GY, LIP, RAMP_DEG, RAMP_FOOT, RAMP_LEN, RAMP_THICK,
-  TAILGATE_PHOTO, TAILGATE_STAGE, clamp01, mm, pathOf, px2sx, py2sy, rampPt, win,
+  APERTURE_PHOTO, APERTURE_STAGE, TAILGATE_PHOTO, TAILGATE_STAGE, clamp01, mm, pathOf, px2sx, py2sy, rampPt, win,
 } from './ramp-geo';
 
 export {CAR_BODY} from './data';
@@ -56,14 +56,17 @@ export const TIRE_GROUND = TIRES.map((w) => ({x: px2sx(w.cx), r: w.r * 0.58}));
 
 export const TG_PATH_PHOTO = pathOf(TAILGATE_PHOTO);
 export const TG_PATH_STAGE = pathOf(TAILGATE_STAGE);
+/** 车身上真正挖开的载物口（比整块尾门小） */
+export const AP_PATH_PHOTO = pathOf(APERTURE_PHOTO);
+export const AP_PATH_STAGE = pathOf(APERTURE_STAGE);
 export const CAR_MASK_TIRES = TIRES;
 
 /** 装载口（洞）在舞台坐标下的包围盒 */
 export const HOLE = {
-  x0: Math.min(...TAILGATE_STAGE.map(([x]) => x)),
-  x1: Math.max(...TAILGATE_STAGE.map(([x]) => x)),
-  y0: Math.min(...TAILGATE_STAGE.map(([, y]) => y)),
-  y1: Math.max(...TAILGATE_STAGE.map(([, y]) => y)),
+  x0: Math.min(...APERTURE_STAGE.map(([x]) => x)),
+  x1: Math.max(...APERTURE_STAGE.map(([x]) => x)),
+  y0: Math.min(...APERTURE_STAGE.map(([, y]) => y)),
+  y1: Math.max(...APERTURE_STAGE.map(([, y]) => y)),
 };
 
 // ── 缓动 ─────────────────────────────────────────────────────────────────
@@ -148,7 +151,8 @@ export interface RampState {
   on: boolean;
   /** 段一（上半段）的上端点 + 下坡角（度） */
   topX: number; topY: number; angA: number;
-  /** 折叠角：180 = 完全折起（段二压在段一上），0 = 展平成一条直线 */
+  /** 折叠角：−180 = 完全折起（段二压在段一上），0 = 展平成一条直线。
+   *  取负号是为了让段二**逆时针向上翻过去**展开——正号会让它从地面下方扫过，反常识。 */
   fold: number;
   /** 单段长度 */
   segLen: number;
@@ -363,11 +367,11 @@ export const dogAt = (scene: RampKey, t: number): DogState => {
   // 跨过门槛：前掌先上载物平面，身体从坡角摆平，整只犬被车身遮住 = 走进车里
   const from = rampPt(U_HI);
   const k = ease(win(t, IN0, IN1));
-  const x = lerp(from.x, 506, k);
+  const x = lerp(from.x, 492, k);   // 终点落在装载口开口内，透过开口还能看见趴着的犬
   const y = lerp(from.y, LIP.y, clamp01(win(t, IN0, IN0 + (IN1 - IN0) * 0.6)));
   const rot = lerp(-RAMP_DEG, 0, clamp01(win(t, IN0, IN0 + (IN1 - IN0) * 0.7)));
   const pose: Pose = t < 9.2 ? 'walk' : 'lie';
-  return {...base, x, y, rot, pose, inside: clamp01((x - LIP.x) / 22)};
+  return {...base, x, y, rot, pose, inside: clamp01((x - LIP.x) / 16)};
 };
 
 // ── 时间轴：坡道 ─────────────────────────────────────────────────────────
@@ -380,7 +384,7 @@ export const rampAt = (scene: RampKey, t: number): RampState => {
   };
   if (scene === 'c4') return done;
   if (scene !== 'c3') return {...done, on: false, seated: 0};
-  if (t < RAMP_OUT0) return {...done, on: false, topX: 648, topY: 337, angA: 0, fold: 180, seated: 0};
+  if (t < RAMP_OUT0) return {...done, on: false, topX: 648, topY: 337, angA: 0, fold: -180, seated: 0};
   const outK = ease(win(t, RAMP_OUT0, RAMP_OUT1));
   const tipK = ease(win(t, RAMP_TIP0, RAMP_TIP1));
   const unfK = springK(win(t, RAMP_UNF0, RAMP_UNF1));
@@ -389,7 +393,7 @@ export const rampAt = (scene: RampKey, t: number): RampState => {
     topX: lerp(648, LIP.x, outK),
     topY: lerp(337, LIP.y, outK),
     angA: RAMP_DEG * tipK,
-    fold: 180 * (1 - unfK),
+    fold: -180 * (1 - unfK),
     segLen: SEG_LEN,
     seated: clamp01(win(t, RAMP_UNF1 - 0.15, RAMP_UNF1 + 0.5)),
   };

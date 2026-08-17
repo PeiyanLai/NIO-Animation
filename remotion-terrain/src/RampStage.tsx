@@ -4,7 +4,7 @@ import {PHOTO_URI} from './photo';
 import {CAR_BODY} from './data';
 import {Dog} from './Dog';
 import {
-  CARD_H, CARD_W, CLEATS, DOG, GY, HINGE, HOLE, JUMPS, KX, KY, LIP,
+  AP_PATH_PHOTO, AP_PATH_STAGE, CARD_H, CARD_W, CLEATS, DOG, GY, HINGE, HOLE, JUMPS, KX, KY, LIP,
   PILL, PLACE, RAMP_DEG, RAMP_DEG_TXT, RAMP_FOOT, RAMP_LEN, RAMP_THICK,
   RAMP_KEYS, RAMP_SCENES, REACH_MM, SHORT_PCT, TG_PATH_PHOTO, TG_PATH_STAGE,
   TIRES, TIRE_GROUND, T_COLORS as C, F_DATA, F_UI, cardBox, dogAt, easeOutBack,
@@ -50,7 +50,7 @@ const RampRig: React.FC<{r: RampState}> = ({r}) => {
   const a1 = segLow(r.topX, r.topY, r.angA, r.segLen);
   const ang2 = r.angA + r.fold;
   const a2 = segLow(j.x, j.y, ang2, r.segLen);
-  const settled = r.fold < 0.5 && r.seated > 0.01;
+  const settled = Math.abs(r.fold) < 0.5 && r.seated > 0.01;
   return (
     <g>
       <g transform={`translate(${N(a2.x)} ${N(a2.y)}) rotate(${N(-ang2)})`}>
@@ -165,10 +165,10 @@ export const RampStage: React.FC<{scene: RampKey}> = ({scene}) => {
             {TIRES.map((w, i) => (
               <circle key={i} cx={w.cx} cy={w.cy} r={w.r} fill="#fff" />
             ))}
-            {open && <path d={TG_PATH_PHOTO} fill="#000" />}
+            {open && <path d={AP_PATH_PHOTO} fill="#000" />}
           </mask>
           <clipPath id={`hole-${uid}`}>
-            <path d={TG_PATH_STAGE} />
+            <path d={AP_PATH_STAGE} />
           </clipPath>
           <clipPath id={`gate-${uid}`}>
             <path d={TG_PATH_STAGE} />
