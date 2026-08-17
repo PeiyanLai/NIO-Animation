@@ -225,11 +225,11 @@ const TORSO_SIT: P[] = [
 const SIT_UNDER: [number, number] = [13, 18];
 
 const TORSO_LIE: P[] = [
-  [0.446, -0.690], [0.382, -0.676], [0.202, -0.652], [-0.020, -0.620],
-  [-0.234, -0.586], [-0.424, -0.566], [-0.566, -0.530], [-0.686, -0.440],
+  [0.452, -0.606], [0.386, -0.598], [0.204, -0.590], [-0.020, -0.580],
+  [-0.234, -0.570], [-0.424, -0.556], [-0.566, -0.526], [-0.686, -0.438],
   [-0.760, -0.350], [-0.806, -0.234], [-0.796, -0.122], [-0.704, -0.042],
-  [-0.480, -0.020], [-0.150, -0.024], [0.160, -0.040], [0.352, -0.098],
-  [0.462, -0.200], [0.530, -0.340], [0.548, -0.452],
+  [-0.480, -0.020], [-0.150, -0.024], [0.160, -0.040], [0.366, -0.096],
+  [0.474, -0.196], [0.542, -0.300], [0.564, -0.372],
 ];
 const LIE_UNDER: [number, number] = [11, 16];
 
@@ -304,7 +304,7 @@ const buildRig = (pose: DogPose, t: number, senior: boolean): Rig => {
   let headPos: P = [0.756, -1.028];
   let headAng = 4;
   if (pose === 'sit') {headPos = [0.734, -1.068]; headAng = -8;}
-  if (pose === 'lie') {headPos = [0.640, -0.156]; headAng = -2;}
+  if (pose === 'lie') {headPos = [0.668, -0.212]; headAng = 6;}
   if (crouch) {headPos = [0.770, -1.006]; headAng = 1;}
   if (pose === 'lookup') {
     const pivot: P = [0.556, -0.916];
@@ -342,8 +342,8 @@ const buildRig = (pose: DogPose, t: number, senior: boolean): Rig => {
   // ── 四肢 ──────────────────────────────────────────────────────────────
   let fore: LegSpec, hind: LegSpec;
   if (pose === 'lie') {
-    fore = {root: FORE_ROOT, chain: [[0.402, -0.566], [0.470, -0.132], [0.730, -0.062], [0.922, -0.034]]};
-    hind = {root: HIND_ROOT, chain: [[-0.530, -0.428], [-0.364, -0.176], [-0.628, -0.078], [-0.852, -0.032]]};
+    fore = {root: FORE_ROOT, chain: [[0.402, -0.520], [0.470, -0.140], [0.734, -0.078], [0.926, -0.048]]};
+    hind = {root: HIND_ROOT, chain: [[-0.530, -0.412], [-0.364, -0.180], [-0.628, -0.086], [-0.852, -0.042]]};
   } else if (pose === 'sit') {
     fore = {root: [0.500, -1.000], paw: FORE_PAW0, off: FORE_PASTERN};
     hind = {root: [-0.330, -0.410], paw: [-0.170, -0.010], off: [-0.230, -0.065]};
@@ -387,7 +387,7 @@ const solveLeg = (leg: Leg, rig: Rig, pose: DogPose, t: number, senior: boolean)
 /* ═══ 零件 ═══════════════════════════════════════════════════════════════ */
 
 const LegPart: React.FC<{chain: P[]; near: boolean; hind: boolean}> = ({chain, near, hind}) => {
-  const startF = hind ? 0.16 : 0.78;
+  const startF = hind ? 0.16 : 0.84;
   // 末端往回缩 0.018u：加上线宽后掌尖恰好落在 y = 0，不会插进地面
   const segL = dist(chain[2], chain[3]) || 1;
   const tip = lerpP(chain[2], chain[3], Math.max(0, 1 - 0.018 / segL));
@@ -466,7 +466,7 @@ export const Dog: React.FC<{
   // 结构分色引导线
   const underline = rig.torso.slice(rig.under[0], rig.under[1] + 1);
   const shoulderArc: P[] = pose === 'lie'
-    ? [[0.368, -0.612], [0.416, -0.440], [0.404, -0.262]]
+    ? [[0.372, -0.572], [0.420, -0.416], [0.408, -0.248]]
     : [[0.474, -0.976], [0.444, -0.766], [0.408, -0.552]];
   const ribArc: P[] | null = pose === 'sit' || pose === 'lie' ? null
     : [[0.176, -0.508], [0.086, -0.720], [0.052, -0.944]];
@@ -533,7 +533,7 @@ export const Dog: React.FC<{
           strokeWidth={LW2 * 1.2} strokeLinecap="round" opacity={0.75} />
         {ribArc && (
           <path d={polyPath(ribArc)} fill="none" stroke={FUR.mid}
-            strokeWidth={LW2} strokeLinecap="round" opacity={0.5} />
+            strokeWidth={LW2} strokeLinecap="round" opacity={0.34} />
         )}
       </g>
       <path d={torsoLine} fill="none" stroke={FUR.line} strokeWidth={LW}

@@ -171,10 +171,6 @@ export const RampStage: React.FC<{scene: RampKey}> = ({scene}) => {
           <clipPath id={`gate-${uid}`}>
             <path d={TG_PATH_STAGE} />
           </clipPath>
-          {/* 车外的犬只画到门槛为止，越过门槛那份交给洞内图层 */}
-          <clipPath id={`outside-${uid}`}>
-            <rect x={-40} y={-40} width={LIP.x + 40} height={640} />
-          </clipPath>
           <linearGradient id={`cavity-${uid}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#3A4A4A" />
             <stop offset="62%" stopColor="#232C2C" />
@@ -217,14 +213,21 @@ export const RampStage: React.FC<{scene: RampKey}> = ({scene}) => {
             opacity={0.16 * ramp.seated} />
         )}
 
-        {/* 走进装载口后的犬：透过洞看见，整体压暗表示车内背光 */}
-        {open && dog.opIn > 0.01 && (
+        {/* 犬：只画一份，画在车身照片之下。
+            走到门槛以外时完整可见；跨进装载口后自然被车身遮住、只从洞里露出躯干。 */}
+        {dog.y >= GY - 0.5 && (
+          <ellipse cx={dog.x} cy={GY + 1} rx={DOG.bodyPx * 0.46} ry={5}
+            fill="#5C7070" opacity={0.16} />
+        )}
+        <g transform={`translate(${N(dog.x)} ${N(dog.y)}) rotate(${N(dog.rot)})`}>
+          <Dog t={t} pose={dog.pose} h={DOG.witherPx} senior={dog.senior} op={1} />
+        </g>
+
+        {/* 车内背光：把洞里的一切（内景 / 坡架 / 犬）统一压暗 */}
+        {open && (
           <g clipPath={`url(#hole-${uid})`}>
-            <g transform={`translate(${N(dog.x)} ${N(dog.y)}) rotate(${N(dog.rot)})`}>
-              <Dog t={t} pose={dog.pose} h={DOG.witherPx} senior={dog.senior} op={dog.opIn} />
-            </g>
             <rect x={HOLE.x0 - 4} y={HOLE.y0 - 4} width={HOLE.x1 - HOLE.x0 + 8}
-              height={HOLE.y1 - HOLE.y0 + 8} fill={C.ink} opacity={0.42 * dog.opIn} />
+              height={HOLE.y1 - HOLE.y0 + 8} fill={C.ink} opacity={0.34 * gateK} />
           </g>
         )}
 
@@ -232,19 +235,6 @@ export const RampStage: React.FC<{scene: RampKey}> = ({scene}) => {
         <g transform={PLACE}>
           <image href={PHOTO_URI} width={1020} height={460} mask={`url(#carMask-${uid})`} />
         </g>
-
-        {/* 车外的犬（在坡道之上；越过门槛后淡出交给洞内那份） */}
-        {dog.opOut > 0.01 && (
-          <g clipPath={`url(#outside-${uid})`}>
-            {dog.y >= GY - 0.5 && (
-              <ellipse cx={dog.x} cy={GY + 1} rx={DOG.bodyPx * 0.46} ry={5}
-                fill="#5C7070" opacity={0.16 * dog.opOut} />
-            )}
-            <g transform={`translate(${N(dog.x)} ${N(dog.y)}) rotate(${N(dog.rot)})`}>
-              <Dog t={t} pose={dog.pose} h={DOG.witherPx} senior={dog.senior} op={dog.opOut} />
-            </g>
-          </g>
-        )}
 
         {/* 抬起的尾门：同一张照片 clip 到轮廓，绕 HINGE 旋转。
             GATE_OPEN_DEG 定义在照片坐标系（已镜像），舞台里旋转方向取负号。 */}
