@@ -87,6 +87,20 @@
       "reviewedAt": "2026-08-17",
       "visualFidelity": "reference-only",
       "usageNote": "仅用于校正中央岛台形态：前段托盘/杯架 → 中段软包扶手 → 后端二排屏；NOMI 位于仪表台中央上方。不得内联进交付页。"
+    },
+    {
+      "id": "es9-front-cabin-frontal",
+      "path": "es9-front-cabin-frontal.jpg",
+      "view": "cabin-interior-frontal",
+      "source": "用户上传 PDF（2026-08-17）· 前排内饰正视官方图，从两张前排座椅之间朝前拍",
+      "copyrightClearance": "internal-official-material",
+      "watermarkChecked": true,
+      "watermarkNote": "无水印、无营销叠字（与另外两张座舱参考图不同，这张可直接使用）",
+      "marketingOverlayChecked": true,
+      "reviewedBy": "peiyanl@umich.edu",
+      "reviewedAt": "2026-08-17",
+      "visualFidelity": "official-photo",
+      "usageNote": "座舱概念平面/剖面的主要校正依据：中央岛台从仪表台贯通到前排之间（前段 HORIZON 储物凹槽 → 中段对开软包扶手）、NOMI 位于仪表台中央上方、中控大屏居中、仪表台有贯穿式细长屏、门板扬声器位置、菱格纹座椅。可直接内联使用。"
     }
   ],
   "conceptualItems": [

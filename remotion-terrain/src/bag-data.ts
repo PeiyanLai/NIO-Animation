@@ -99,7 +99,8 @@ export const BAG_PLAN = (() => {
 })();
 /** 俯视敞篷：铰链在包体**前**沿（小 y），与侧视 CANOPY.hinge 的 8% 位置一致 */
 export const CANOPY_PLAN = {
-  hingeY: BAG_PLAN.y + BAG_PLAN.h * 0.08,
+  // 俯视里车头朝上（−y），车尾在 +y：铰链取包体**车尾**一端，盖板向车尾翻开，不挡前排的手
+  hingeY: BAG_PLAN.y + BAG_PLAN.h * 0.92,
   len: BAG_PLAN.h * 0.92,
 };
 
@@ -583,7 +584,7 @@ export const focusAt = (scene: BagKey, t: number): {p: Pt; view: 'plan' | 'side'
     return {p: {x: PLAN.cx, y: BAG_PLAN.y + BAG_PLAN.h * 0.5}, view: 'plan'};
   }
   const ph4 = phaseOf(s, t);
-  if (ph4 === 1) return {p: {x: CANOPY.hinge.x + LID_LEN * 0.6, y: CANOPY.closedY - 6}, view: 'side'};
+  if (ph4 === 1) return {p: {x: CANOPY.hinge.x - LID_LEN * 0.6, y: CANOPY.closedY - 6}, view: 'side'};
   if (ph4 === 2) return {p: {x: BUTTON.x, y: BUTTON.y}, view: 'side'};
   if (ph4 >= 3) return {p: {x: BAG.x + BAG.w * 0.5, y: bagBottom(scene, t) - BAG.h - 24}, view: 'side'};
   return {p: {x: BAG.x + BAG.w * 0.2, y: ISLAND_TOP - 10}, view: 'side'};

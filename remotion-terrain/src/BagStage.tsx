@@ -148,8 +148,8 @@ const PlanView: React.FC<{scene: BagKey; t: number; op: number}> = ({scene, t, o
   const steer = c3 ? steerDeg(t) : 0;
   const flow = c3 ? roadPhase(t) : 0;
 
-  // 敞篷（俯视投影）：绕包体前沿翻起，投影长度 = len·cos θ（θ>90° 时翻到前侧）
-  const th = (CANOPY.openDeg * canOpen * Math.PI) / 180;
+  // 敞篷（俯视投影）：绕包体**车尾**沿翻起，投影长度 = len·cos θ（θ>90° 后翻到车尾侧）
+  const th = (Math.abs(CANOPY.openDeg) * canOpen * Math.PI) / 180;
   const lidProj = CANOPY_PLAN.len * Math.cos(th);
 
   return (
@@ -261,17 +261,17 @@ const PlanView: React.FC<{scene: BagKey; t: number; op: number}> = ({scene, t, o
           <rect x={BAG_PLAN.x} y={BAG_PLAN.y} width={BAG_PLAN.w} height={BAG_PLAN.h} rx={10}
             fill={C.panel} stroke={C.ink2} strokeWidth={2.4} />
           {/* 包内（敞篷打开后看得见） */}
-          <rect x={BAG_PLAN.x + 5} y={CANOPY_PLAN.hingeY + 2} width={BAG_PLAN.w - 10}
-            height={BAG_PLAN.y + BAG_PLAN.h - CANOPY_PLAN.hingeY - 7} rx={7}
+          <rect x={BAG_PLAN.x + 5} y={BAG_PLAN.y + 5} width={BAG_PLAN.w - 10}
+            height={CANOPY_PLAN.hingeY - BAG_PLAN.y - 7} rx={7}
             fill={C.lineSoft} stroke={C.line} strokeWidth={1} opacity={canOpen} />
           {canOpen > 0.35 && (
-            <g transform={`translate(${PLAN.cx} ${BAG_PLAN.y + BAG_PLAN.h * 0.68})`}
+            <g transform={`translate(${PLAN.cx} ${BAG_PLAN.y + BAG_PLAN.h * 0.46})`}
               opacity={(canOpen - 0.35) / 0.65}>
               <CatTop t={t} r={12.4} />
             </g>
           )}
-          {/* 敞篷盖板：绕前沿翻起，俯视里投影长度 = len·cosθ */}
-          <rect x={BAG_PLAN.x + 2} y={lidProj >= 0 ? CANOPY_PLAN.hingeY : CANOPY_PLAN.hingeY + lidProj}
+          {/* 敞篷盖板：绕车尾沿翻起，俯视里投影长度 = len·cosθ；翻过 90° 后落到车尾侧 */}
+          <rect x={BAG_PLAN.x + 2} y={lidProj >= 0 ? CANOPY_PLAN.hingeY - lidProj : CANOPY_PLAN.hingeY}
             width={BAG_PLAN.w - 4} height={Math.max(2.5, Math.abs(lidProj))} rx={7}
             fill={lidProj >= 0 ? C.accentWash : C.accentDim}
             stroke={C.ink3} strokeWidth={1.5} />
@@ -559,20 +559,21 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
                 fill="none" stroke={C.ink3} strokeWidth={5} strokeLinecap="round" />
             </g>
 
-            {/* 敞篷盖板：铰链在包体前上沿，绕 hinge 向前上方翻开（openDeg = −108°） */}
+            {/* 敞篷盖板：铰链在包体**车尾**上沿，绕 hinge 向车尾上方翻开（openDeg = +108°）——
+                前排的人从车头侧伸手，盖板往车头翻会挡手 */}
             <g transform={`rotate(${N(deg)} ${N(hingeNow.x)} ${N(hingeNow.y)})`}>
-              <rect x={hingeNow.x} y={hingeNow.y - LID_TH} width={LID_LEN} height={LID_TH} rx={5}
+              <rect x={hingeNow.x - LID_LEN} y={hingeNow.y - LID_TH} width={LID_LEN} height={LID_TH} rx={5}
                 fill={C.accentWash} stroke={C.ink2} strokeWidth={2} />
-              <rect x={hingeNow.x + 8} y={hingeNow.y - LID_TH + 3.2} width={LID_LEN - 16}
+              <rect x={hingeNow.x - LID_LEN + 8} y={hingeNow.y - LID_TH + 3.2} width={LID_LEN - 16}
                 height={LID_TH - 6.4} rx={2.4} fill={C.accentDim} opacity={0.8} />
               {/* 末端翻边唇口（盖子扣在包沿上的那一圈） */}
-              <rect x={hingeNow.x + LID_LEN - 6} y={hingeNow.y - LID_TH - 2} width={7}
+              <rect x={hingeNow.x - LID_LEN - 1} y={hingeNow.y - LID_TH - 2} width={7}
                 height={LID_TH + 13} rx={3} fill={C.accentDim} stroke={C.ink2} strokeWidth={1.8} />
             </g>
             <circle cx={hingeNow.x} cy={hingeNow.y} r={4.2} fill={C.panel} stroke={C.ink2}
               strokeWidth={1.8} />
             {openK > 0.15 && (
-              <text x={hingeNow.x - 30} y={hingeNow.y + 22} textAnchor="middle" fontFamily={F_UI}
+              <text x={hingeNow.x + 34} y={hingeNow.y + 22} textAnchor="middle" fontFamily={F_UI}
                 fontSize={11.5} fill={C.ink3} opacity={openK}>敞篷（已打开）</text>
             )}
 

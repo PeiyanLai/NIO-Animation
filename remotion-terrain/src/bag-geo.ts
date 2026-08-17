@@ -96,13 +96,15 @@ export const TETHER = {
 export const CAT_MM = {bodyMM: 450, sitMM: 330};
 export const CAT = {body: smm(CAT_MM.bodyMM), sit: smm(CAT_MM.sitMM)};
 
-/** 敞篷（内部需求文档提到「到达目的地～关闭敞篷」）：行驶中打开露出宠物头部，下车前合上再提走 */
+/** 敞篷（内部需求文档提到「到达目的地～关闭敞篷」）：行驶中打开露出宠物头部，下车前合上再提走。
+ *  ⚠️ 铰链必须在**朝车尾**的那一侧，盖板向车尾方向翻开 ——
+ *  前排的人是从车头侧伸手过来摸宠物的，盖板往车头翻会直接挡住手。
+ *  本视角车头在 −x，所以铰链取包体 +x（车尾）一端，openDeg 取正（顺时针 = 向车尾上方翻起）。 */
 export const CANOPY = {
   /** 合上时的顶面 y */
   closedY: BAG.y - BAG.h,
-  /** 打开角度（绕包体后上沿向后翻开） */
-  openDeg: -108,
-  hinge: {x: BAG.x + BAG.w * 0.08, y: BAG.y - BAG.h},
+  openDeg: 108,
+  hinge: {x: BAG.x + BAG.w * 0.92, y: BAG.y - BAG.h},
 };
 
 // ── 状态机：固定 ↔ 解锁（两个方向都必须由用户动作触发，不许自动切换）────
