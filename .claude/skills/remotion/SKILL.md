@@ -102,6 +102,27 @@ description: 用 Remotion（React 帧驱动框架）以代码方式制作动画�
 - 旋转件的高光要画在**旋转组之外**（光源固定不跟着转），孔用 `<mask>` 做成真镂空并透出下层轮腔/卡钳，转起来才看得出在转
 - 登记进 `approved-asset-manifest.json`，`visualFidelity: "reference-only"`——参考图只用来定型，不直接贴图
 
+## 现成资产：不要重画车
+
+`assets/nio-vehicle/` 是从已交付动画沉淀下来的资产库，**每个文件独立可用**（不 import 动画工程、贴图 base64 已内联、只依赖 react）。做新动画前先看这里，不要重画车、不要重推物理。
+
+| 文件 | 用途 |
+|---|---|
+| `colors.ts` | NIO 浅色 token + 地形色 + 字体栈；**资产库唯一允许出现裸色值的地方** |
+| `spec.ts` | ES9 实车规格 + mm/px 标尺换算 + 比例自检 |
+| `side.ts` | 正侧视车身（照片 + 轮廓 + 轮拱 + 车轮/阴影摆位） |
+| `top.ts` | 正俯视车身（照片 + 轮廓 + 包围盒 + 锚点 + 大灯灯带） |
+| `Wheel.tsx` | ES9 大饼轮毂（9 孔）+ 它依赖的 `<defs>`（`WheelDefs`） |
+| `Kinematics.ts` | 四轮转向运动学：解析积分 / 反推起点 / 退化自检 |
+| `FollowCard.tsx` | 贴主体信息卡：卡片 + 三角 + 引导线 + 安全区 clamp |
+| `terrain-props.tsx` | 环境道具：雪人/松树/仙人掌/芦苇/石堆/底纹/飘雪/扬沙 |
+
+用法：把整个目录复制进工程（`cp -r .claude/skills/remotion/assets/nio-vehicle my-video/src/assets/`）再按相对路径 import——**交付过的动画要复制不要引用**，否则 skill 更新会改变旧动画。
+
+配套脚本：`scripts/cutout-trace.py`（照片抠形：扫边界/找设计线/逐点内缩/渗出体检/网格读数/编码/预览）、`scripts/assert-timeline.mjs`（全时间轴断言原语：SAT 间距/单调性/终点精度/值域/出界重叠，`--selftest` 自测）。
+
+**每个资产的硬性约束、落位公式、换车型改动清单一律见 `references/vehicle-assets.md`，动手前必读那一份。**
+
 ## 素材合规与溯源（用真实照片必读）
 
 - 只用**已批准、无水印、无营销叠字**的原图；**不得靠裁切/修图去掉第三方水印**，不得把网络截图直接嵌进交付页
@@ -540,8 +561,12 @@ const AnimatedButton = () => {
 ## 资源
 
 - `references/animation-routing.md` — 演示空间/机制/输出形式/分镜模板的完整选择规则
+- `references/vehicle-assets.md` — 车辆资产库使用说明（硬性约束、落位公式、换车型改动清单）
+- `assets/nio-vehicle/` — 现成资产：侧视/俯视车身、大饼轮毂、四轮转向运动学、贴身信息卡、环境道具、配色 token
 - `scripts/validate-animation-manifest.mjs` — 校验动画决策卡（scope、mechanism、每章 claim/startState/endState）
 - `scripts/assert-self-contained-html.mjs` — 交付前拦截外链依赖（`--fragment` 用于 Artifact 片段）
+- `scripts/cutout-trace.py` — 照片抠形工具链（scan / bright / grid / erode / bleed / encode / preview）
+- `scripts/assert-timeline.mjs` — 全时间轴断言原语（SAT 间距 / 单调 / 终点 / 值域 / 出界重叠）
 
 > 决策卡路由、分镜模板、缺口标注（conceptualItems）、素材合规溯源、语义锚点这几套方法，
 > 吸收自内部 `vehicle-feature-animation` skill；两个校验脚本在其基础上改编。
