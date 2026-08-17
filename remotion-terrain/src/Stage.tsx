@@ -17,37 +17,68 @@ const rnd = (i: number) => frac(Math.sin(i * 127.1 + 311.7) * 43758.5453);
 const f1 = (n: number) => n.toFixed(1);
 
 // ─── 车轮 ────────────────────────────────────────────────────────────────
-// ES9「大饼轮毂」：整块高抛光实心盘面 + 9 个等分 40° 的水滴形镂空。
+// ES9「大饼轮毂」：整块高抛光实心盘面 + 9 个等分 40° 的四边形镂空。
+// 孔形按 275/45 R22 实拍还原（沿轮毂轮廓走的四边形，不是水滴/圆头）：
+//   外缘 = 一段贴着轮辋走的同心圆弧（最宽的一条边）
+//   内缘 = 一段更短的同心圆弧，靠近中心盖
+//   两侧 = 近乎直线，从外缘两端收到内缘两端
+//   四角 = 极小倒角，保持四边形的硬朗棱角
 // 外径不变：WheelTire 外圈 r=100（275/40R23 胎面）、内圈 r=73（23" 轮辋，0.727）。
-const R_FACE = 69;    // 盘面外缘（r=73 轮辋内，留 4 单位暗色轮辋唇）
-const R_HOLE_O = 63;  // 孔外端 ≈ 0.91 R
-const R_HOLE_I = 39;  // 孔内端 ≈ 0.57 R（中央留出大片抛光盘面）
-const A_HOLE_O = 9.2; // 外端半角（40° 一个孔 → 18.4° 镂空 / 21.6° 盘面桥）
-const A_HOLE_I = 4.8; // 内端半角
-const HOLE_TWIST = 5; // 内端相对外端的切向扭转，形成涡轮感
+const R_FACE = 69;     // 盘面外缘（r=73 轮辋内，留 4 单位暗色轮辋唇）
+const R_HOLE_O = 65;   // 孔外缘圆弧半径 = 0.95 R_FACE（实拍量得）
+const R_HOLE_I = 48;   // 孔内缘圆弧半径 = 0.70 R_FACE（实拍量得；孔宽/孔长 ≈ 1.7，又矮又胖）
+const A_HOLE_O = 12.8; // 外缘半角 → 25.6° 镂空 / 14.4° 盘面桥（40° 一格）
+const A_HOLE_I = 8.6;  // 内缘半角 → 内缘弦长 / 外缘弦长 = 0.50（实拍量得）
+const HOLE_TILT = 2.5; // 内缘相对外缘的切向偏移（实拍量得约 2.6°，轻微涡轮感）
+const HOLE_R = 2.4;    // 四角倒角：沿两条边各回退的长度（等效圆角半径 ≈ 2）
 
-const pol = (r: number, d: number): [number, number] => {
+type Pt = [number, number];
+const pol = (r: number, d: number): Pt => {
   const a = ((d - 90) * Math.PI) / 180;
   return [r * Math.cos(a), r * Math.sin(a)];
 };
-const P = (r: number, d: number) => {
-  const [x, y] = pol(r, d);
-  return `${x.toFixed(2)} ${y.toFixed(2)}`;
+const S = (p: Pt) => `${p[0].toFixed(2)} ${p[1].toFixed(2)}`;
+// 从 a 沿 a→b 方向前进 dist 个单位（用于把尖角回退成小倒角）
+const along = (a: Pt, b: Pt, dist: number): Pt => {
+  const L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+  return [a[0] + ((b[0] - a[0]) * dist) / L, a[1] + ((b[1] - a[1]) * dist) / L];
 };
+const DEG = 180 / Math.PI;
 
-// 单个孔：外端沿轮辋方向的宽圆头 → 两侧内收 → 内端小圆头
+// 单个孔：外缘弧（贴轮辋）→ 顺时针侧边 → 内缘弧 → 逆时针侧边，四角小倒角
 const holePath = (deg: number) => {
-  const oA = deg - A_HOLE_O;
-  const oB = deg + A_HOLE_O;
-  const iA = deg + HOLE_TWIST - A_HOLE_I;
-  const iB = deg + HOLE_TWIST + A_HOLE_I;
-  const rm = (R_HOLE_O + R_HOLE_I) / 2;
+  const oL = deg - A_HOLE_O;              // 外缘逆时针端
+  const oR = deg + A_HOLE_O;              // 外缘顺时针端
+  const iL = deg + HOLE_TILT - A_HOLE_I;  // 内缘逆时针端
+  const iR = deg + HOLE_TILT + A_HOLE_I;  // 内缘顺时针端
+  const dO = (HOLE_R / R_HOLE_O) * DEG;   // 外弧上的回退角
+  const dI = (HOLE_R / R_HOLE_I) * DEG;   // 内弧上的回退角
+
+  const CoL = pol(R_HOLE_O, oL);          // 四个尖角（倒角的控制点）
+  const CoR = pol(R_HOLE_O, oR);
+  const CiR = pol(R_HOLE_I, iR);
+  const CiL = pol(R_HOLE_I, iL);
+
+  const arcO0 = pol(R_HOLE_O, oL + dO);   // 外缘弧起止
+  const arcO1 = pol(R_HOLE_O, oR - dO);
+  const arcI0 = pol(R_HOLE_I, iR - dI);   // 内缘弧起止（反向走）
+  const arcI1 = pol(R_HOLE_I, iL + dI);
+
+  const sR0 = along(CoR, CiR, HOLE_R);    // 顺时针侧边两端
+  const sR1 = along(CiR, CoR, HOLE_R);
+  const sL0 = along(CiL, CoL, HOLE_R);    // 逆时针侧边两端
+  const sL1 = along(CoL, CiL, HOLE_R);
+
   return (
-    `M${P(R_HOLE_O, oA)}` +
-    ` A${R_HOLE_O} ${R_HOLE_O} 0 0 1 ${P(R_HOLE_O, oB)}` +
-    ` Q${P(rm, oB + 1.5)} ${P(R_HOLE_I, iB)}` +
-    ` A${R_HOLE_I} ${R_HOLE_I} 0 0 0 ${P(R_HOLE_I, iA)}` +
-    ` Q${P(rm, oA - 1.5)} ${P(R_HOLE_O, oA)} Z`
+    `M${S(arcO0)}` +
+    ` A${R_HOLE_O} ${R_HOLE_O} 0 0 1 ${S(arcO1)}` + // 外缘：沿轮辋的圆弧
+    ` Q${S(CoR)} ${S(sR0)}` +
+    ` L${S(sR1)}` +                                  // 顺时针侧边（直线）
+    ` Q${S(CiR)} ${S(arcI0)}` +
+    ` A${R_HOLE_I} ${R_HOLE_I} 0 0 0 ${S(arcI1)}` +  // 内缘：同心短弧
+    ` Q${S(CiL)} ${S(sL0)}` +
+    ` L${S(sL1)}` +                                  // 逆时针侧边（直线）
+    ` Q${S(CoL)} ${S(arcO0)} Z`
   );
 };
 const RIM_HOLES = Array.from({length: 9}, (_, i) => holePath(i * 40));
