@@ -18,6 +18,43 @@ description: 用 Remotion（React 帧驱动框架）以代码方式制作动画�
 - 确实要看图时，只在关键节点看 **1 张**，并裁切/缩小到必要区域，不要整帧 1080p 连看多张
 - 让用户当验收人：先发链接，等他指出问题再改，不要自己反复猜
 
+## 交付形态：从网页演示到实拍宣传片
+
+决策卡可以带 `deliverable` 字段，默认 `["explainer-html"]`。可选：
+`explainer-html`（交互网页，默认）· `explainer-mp4`（成片，用户明确要求时）·
+`shot-list`（给拍摄用的分镜表）· `overlay-plates`（给后期用的带 alpha 叠加层）。
+
+**关于「真人真车真宠物的宣传级视频」**：本环境**不能生成实拍画面**——没有可用的视频生成模型，
+Remotion 只渲染你画的东西，也没有 3D 管线。而且即使有生成模型也不该用在主体上：宣传级要求
+车型细节准确（大饼轮毂 9 个孔）、尺寸真实（787mm）、动作合规，生成模型对这些没有约束能力。
+**宣传级实拍是拍摄工程，不是渲染工程。**
+
+但我们做的东西正好是拍摄前最缺的技术底稿：
+
+- `chapters[].claim` → 每个镜头要证明什么
+- `acceptance[]` 里的数字 → 镜头必须拍到的可量化事实（验收拿它对素材）
+- `*-geo.ts` 的实测标定 → 构图与机位参数
+- **`conceptualItems[]` → 开拍前必须归零的清单**
+
+最后一条是实拍与插画的分水岭：**概念件可以画，但拍不出来。** 一个还有 10 项未定义的功能
+今天不具备开拍条件，因为那 10 件东西还不存在。所以
+
+```
+liveActionReadiness.blockers === conceptualItems.length
+```
+
+归零之前实拍这条路走不通；归零那天，分镜表一条命令就能生成：
+
+```bash
+node scripts/make-shotlist.mjs <manifest.json> > shotlist.md
+```
+
+同一份组件也能产出**给后期用的叠加层**（去掉背景，导出带 alpha 的 PNG 序列或 ProRes 4444），
+让实拍空镜配上我们算好的坡度标注、可及范围、信号链路——这是这类科技宣传片的通行做法。
+
+完整路径分析、导出命令、合规清单见 `references/live-action-path.md`。**用户问到实拍/宣传片时
+先读那一份**，不要凭感觉承诺能力。
+
 ## 第 0 步：先做动画决策卡，再写代码
 
 **最容易犯的错是把所有功能都套成「车在路上行驶」**。动手前先分类，把结论写成 `animation-manifest.json`：
@@ -723,6 +760,8 @@ const AnimatedButton = () => {
 - `assets/nio-vehicle/` — 现成资产：侧视/俯视车身、大饼轮毂、四轮转向运动学、贴身信息卡、环境道具、配色 token
 - `scripts/validate-animation-manifest.mjs` — 校验动画决策卡（scope、mechanism、每章 claim/startState/endState）
 - `scripts/assert-self-contained-html.mjs` — 交付前拦截外链依赖（`--fragment` 用于 Artifact 片段）
+- `scripts/make-shotlist.mjs` — 决策卡 → 实拍分镜表（含开拍前必须归零的项、可量化验收清单、合规清单）
+- `references/live-action-path.md` — 走到实拍宣传片的三条路径、能力边界、带 alpha 叠加层导出
 - `scripts/cutout-trace.py` — 照片抠形工具链（scan / bright / grid / erode / bleed / encode / preview）
 - `scripts/assert-timeline.mjs` — 全时间轴断言原语（SAT 间距 / 单调 / 终点 / 值域 / 出界重叠）
 
