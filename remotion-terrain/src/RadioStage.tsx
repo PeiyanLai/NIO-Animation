@@ -4,6 +4,8 @@ import {
   A_CFG, B_CFG, C_CFG, D_CFG, GEO, RADIO_SCENES, R, T_COLORS as C,
   F_DATA, F_UI, type RadioKey, dCarX, frac, qPath, qPt, radioState, textW, win,
 } from './radio-data';
+import {CAR_BBOX, CAR_SRC, CAR_TOP_BODY, HEADLIGHTS} from './parking-data';
+import {ES9_TOP_URI} from './es9-top-photo';
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
@@ -63,28 +65,50 @@ const Cloud: React.FC<{x: number; y: number; live: number; t: number}> = ({x, y,
 );
 
 /* ═══ 俯视车（车头朝右）═════════════════════════════════════════════ */
+
+/**
+ * 正俯视一律复用泊车动画那张实拍图（`es9-top-photo.ts` + `CAR_TOP_BODY` 遮罩），
+ * 不再画矢量简图——同一个车型在不同动画里必须长一样。
+ *
+ * 两处必须注意：
+ * 1. 原图**车头朝上**，这里车队是横向的，所以整组 `rotate(90)`（SVG 正角=顺时针，
+ *    (0,-1) 转 90° 得 (1,0)，正好朝右）。灯条路径在图坐标系里，跟着一起转，不用另算。
+ * 2. 尺寸按**实车比例** 5365:2029 = 2.644 定，不能沿用原来矢量简图的 112×52（2.15）。
+ *    车长定 120 → 车宽 45.4，车距 190 仍留 70 的间隙，队形不受影响。
+ */
+const CAR_L = 120;                                   // 舞台车长（前后向）
+const RADIO_CAR_SCALE = CAR_L / (CAR_BBOX.y1 - CAR_BBOX.y0);
+
 const Car: React.FC<{x: number; y?: number; kind: 'nio' | 'oth'; op?: number}> = ({
   x, y = GEO.carY, kind, op = 1,
-}) => {
-  const b = kind === 'nio' ? R.nio : R.oth;
-  const l = kind === 'nio' ? R.nioLine : R.othLine;
-  const g = kind === 'nio' ? R.nioRoof : R.othRoof;
-  return (
-    <g transform={`translate(${x} ${y})`} opacity={op}>
-      <ellipse cx={0} cy={31} rx={54} ry={8} fill="#5C7070" opacity={0.11} />
-      <rect x={6} y={-31} width={13} height={6} rx={3} fill={l} />
-      <rect x={6} y={25} width={13} height={6} rx={3} fill={l} />
-      <rect x={-56} y={-26} width={112} height={52} rx={17} fill={b} stroke={l} strokeWidth={2.2} />
-      <rect x={-47} y={-20} width={94} height={40} rx={13} fill="none" stroke={l} strokeWidth={1.2} opacity={0.45} />
-      <rect x={24} y={-16} width={13} height={32} rx={6} fill={g} opacity={0.55} />
-      <rect x={-19} y={-18} width={40} height={36} rx={12} fill={g} />
-      <rect x={-33} y={-15} width={10} height={30} rx={5} fill={g} opacity={0.4} />
-      <rect x={47.5} y={-19} width={6} height={13} rx={3} fill={R.lampF} />
-      <rect x={47.5} y={6} width={6} height={13} rx={3} fill={R.lampF} />
-      <rect x={-54.5} y={-19} width={5} height={38} rx={2.5} fill={R.lampR} opacity={0.75} />
+}) => (
+  <g transform={`translate(${x} ${y})`} opacity={op}>
+    <ellipse cx={0} cy={26} rx={58} ry={7} fill="#5C7070" opacity={0.11} />
+    <g
+      transform={`rotate(90) scale(${RADIO_CAR_SCALE}) translate(${-(CAR_BBOX.x0 + CAR_BBOX.x1) / 2} ${-(CAR_BBOX.y0 + CAR_BBOX.y1) / 2})`}
+    >
+      <image href={ES9_TOP_URI} width={CAR_SRC.w} height={CAR_SRC.h} mask="url(#carTopMask)" />
+      {/* 车型统一后，「哪台是蔚来」只能靠轮廓色区分。
+          原先是靠车身色（金 / 蓝灰），换成实拍图后四台全是黑车，
+          去色滤镜对黑车等于没做——所以改用描边，这是唯一还能读出来的通道。 */}
+      <path
+        d={CAR_TOP_BODY}
+        fill="none"
+        stroke={kind === 'nio' ? C.accent : R.oth}
+        strokeWidth={7}
+        opacity={kind === 'nio' ? 0.85 : 0.7}
+      />
+      {/* 前大灯：照片里的灯条只有几像素，叠一层灯罩 + 灯芯才读得出来 */}
+      {HEADLIGHTS.map((d, i) => (
+        <g key={i} strokeLinecap="round" fill="none">
+          <path d={d} stroke="#0E1414" strokeWidth={11} opacity={0.92} />
+          <path d={d} stroke="#FFF6E2" strokeWidth={5.2} />
+          <path d={d} stroke="#FFFFFF" strokeWidth={2} opacity={0.95} />
+        </g>
+      ))}
     </g>
-  );
-};
+  </g>
+);
 
 /* ═══ 贴车状态徽标（尖角朝下 + 虚线引导线到车顶）═══════════════════ */
 const Badge: React.FC<{
@@ -290,6 +314,11 @@ export const RadioStage: React.FC<{scene: RadioKey}> = ({scene}) => {
   return (
     <AbsoluteFill style={{background: C.stageBg, fontFamily: F_UI}}>
       <svg viewBox="0 0 1000 560" style={{position: 'absolute', inset: 0, width: 1920, height: 1075}}>
+        <defs>
+          <mask id="carTopMask">
+            <path d={CAR_TOP_BODY} fill="#fff" />
+          </mask>
+        </defs>
         {/* ── 场景二：无网区底色 + 分界线 ── */}
         {scene === 'b' && (
           <g>

@@ -12,6 +12,8 @@ import {PET_SCENES} from './pet-data';
 import {RampStage} from './RampStage';
 import {RAMP_SCENES} from './ramp-data';
 import {BagStage} from './BagStage';
+import {RadioStage} from './RadioStage';
+import {RADIO_SCENES} from './radio-data';
 import {BAG_SCENES} from './bag-data';
 
 export const RemotionRoot: React.FC = () => {
@@ -54,6 +56,10 @@ export const RemotionRoot: React.FC = () => {
       <Composition id="BagB" component={BagStage} durationInFrames={Math.round(BAG_SCENES.c2.T * 30)} width={1920} height={1080} fps={30} defaultProps={{scene: 'c2' as const}} />
       <Composition id="BagC" component={BagStage} durationInFrames={Math.round(BAG_SCENES.c3.T * 30)} width={1920} height={1080} fps={30} defaultProps={{scene: 'c3' as const}} />
       <Composition id="BagD" component={BagStage} durationInFrames={Math.round(BAG_SCENES.c4.T * 30)} width={1920} height={1080} fps={30} defaultProps={{scene: 'c4' as const}} />
+      <Composition id="RadioA" component={RadioStage} durationInFrames={Math.round(RADIO_SCENES.a.T * 30)} width={1920} height={1080} fps={30} defaultProps={{scene: 'a' as const}} />
+      <Composition id="RadioB" component={RadioStage} durationInFrames={Math.round(RADIO_SCENES.b.T * 30)} width={1920} height={1080} fps={30} defaultProps={{scene: 'b' as const}} />
+      <Composition id="RadioC" component={RadioStage} durationInFrames={Math.round(RADIO_SCENES.c.T * 30)} width={1920} height={1080} fps={30} defaultProps={{scene: 'c' as const}} />
+      <Composition id="RadioD" component={RadioStage} durationInFrames={Math.round(RADIO_SCENES.d.T * 30)} width={1920} height={1080} fps={30} defaultProps={{scene: 'd' as const}} />
     </>
   );
 };
