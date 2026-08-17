@@ -200,10 +200,6 @@ export const RampStage: React.FC<{scene: RampKey}> = ({scene}) => {
           <g clipPath={`url(#hole-${uid})`} opacity={gateK}>
             <rect x={HOLE.x0 - 4} y={HOLE.y0 - 4} width={HOLE.x1 - HOLE.x0 + 8}
               height={HOLE.y1 - HOLE.y0 + 8} fill={`url(#cavity-${uid})`} />
-            {/* 更深处（靠车头一侧）压暗，做出纵深 */}
-            <rect x={HOLE.x0 + (HOLE.x1 - HOLE.x0) * 0.55} y={HOLE.y0 - 4}
-              width={(HOLE.x1 - HOLE.x0) * 0.5} height={HOLE.y1 - HOLE.y0 + 8}
-              fill="#0F1414" opacity={0.28} />
             {/* 载物平面：y 落在 LIP 高度 */}
             <rect x={HOLE.x0 - 4} y={LIP.y - 5.6} width={HOLE.x1 - HOLE.x0 + 8} height={6.6}
               fill={C.ink4} opacity={0.9} />
