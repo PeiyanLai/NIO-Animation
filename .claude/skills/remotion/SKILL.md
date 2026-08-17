@@ -64,8 +64,19 @@ node scripts/make-shotlist.mjs <manifest.json> > shotlist.md
 同一份组件也能产出**给后期用的叠加层**（去掉背景，导出带 alpha 的 PNG 序列或 ProRes 4444），
 让实拍空镜配上我们算好的坡度标注、可及范围、信号链路——这是这类科技宣传片的通行做法。
 
-完整路径分析、导出命令、合规清单见 `references/live-action-path.md`。**用户问到实拍/宣传片时
-先读那一份**，不要凭感觉承诺能力。
+**用户给参考片要求「做成宣传级」时**：先把「宣传级」拆两半——**动效语言（节奏、缓动、
+字幕、转场、配色）能学且能量化**，**实拍画面不能生成**。用
+`python3 scripts/analyze-reference-video.py <参考片.mp4> --out style-ref` 把参考片量成
+`style-spec.json`（镜头时长分布、每分钟切点数、色板、明暗分布 + 每镜代表帧），
+动画照这组参数编排，而不是凭感觉「做得高级一点」。
+
+对内宣讲最实际的形态是**官方已发布 B-roll + 我们的动画 + 手机实拍的三段混剪**：
+车辆美学用官方素材（那个质感我们拍不出也没必要拍）、功能机构用动画（实拍反而看不清）、
+产品验证用手机实拍（动画证明不了）。片子里一半画面本来就是蔚来拍的，
+「像蔚来的片子」这件事天然成立。
+
+完整路径分析、参考片分析用法、导出命令、合规清单见 `references/live-action-path.md`。
+**用户问到实拍/宣传片时先读那一份**，不要凭感觉承诺能力。
 
 ## 第 0 步：先做动画决策卡，再写代码
 
@@ -773,7 +784,8 @@ const AnimatedButton = () => {
 - `scripts/validate-animation-manifest.mjs` — 校验动画决策卡（scope、mechanism、每章 claim/startState/endState）
 - `scripts/assert-self-contained-html.mjs` — 交付前拦截外链依赖（`--fragment` 用于 Artifact 片段）
 - `scripts/make-shotlist.mjs` — 决策卡 → 实拍分镜表（含开拍前必须归零的项、可量化验收清单、合规清单）
-- `references/live-action-path.md` — 走到实拍宣传片的三条路径、能力边界、带 alpha 叠加层导出
+- `scripts/analyze-reference-video.py` — 参考片 → `style-spec.json`（镜头时长分布/切点密度/色板/明暗 + 每镜代表帧），把「像某某片子」变成可对齐的参数
+- `references/live-action-path.md` — 走到实拍宣传片的三条路径、对内 vs 对外、参考片风格对齐、带 alpha 叠加层导出
 - `scripts/cutout-trace.py` — 照片抠形工具链（scan / bright / grid / erode / bleed / encode / preview）
 - `scripts/assert-timeline.mjs` — 全时间轴断言原语（SAT 间距 / 单调 / 终点 / 值域 / 出界重叠）
 
