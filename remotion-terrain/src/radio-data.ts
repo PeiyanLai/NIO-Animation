@@ -62,6 +62,7 @@ export const qPath = (p: number[], c: number[], q: number[]) =>
 
 export interface CarSpec {
   kind: 'nio' | 'oth';
+  wheel?: boolean;   // 车机方向盘按键（车载对讲能力，非手持机）
   x: number;            // 车中心 x（场景四由队形函数算）
   bx?: number;          // 徽标中心 x（默认同 x；用于躲开分界线）
   label: string;
@@ -120,18 +121,23 @@ export const C_CFG = {
 };
 
 /* ─── 场景四：混合车队的队形（1 台蔚来 + 3 台非蔚来）─────────────────
-   车序号：0=蔚来车主（车载对讲机）1=非蔚来·持对讲机 2/3=非蔚来·仅 App
+   全队只有 **一台** 手持对讲机，原本在蔚来车主手上。
+   蔚来车主把它递给其中一台非蔚来车 —— 递出之后蔚来车主手上就没有对讲机了，
+   他靠 **车机方向盘按键** 发话（车载对讲能力内置在车上，不占用那台手持机）。
+   车序号：0=蔚来车主（递出后只剩方向盘按键）1=非蔚来·收到对讲机 2/3=非蔚来·仅 App
    错误队形：0,1,2,3 依次排（队尾 3 只有 App → 掉队失联）
-   推荐队形：0 领队、1 押尾，2/3 夹在中间 → 头尾都有硬件通信能力。*/
+   推荐队形：0 领队、1 押尾，2/3 夹在中间 → 头尾各有一端硬件通信能力。*/
 export const D_CFG = {
   slot: [860, 660, 460, 260] as const, // 从右（队首）到左（队尾）
   wrong: [0, 1, 2, 3] as const,        // 车 i → 槽位
   good: [0, 3, 1, 2] as const,
-  drift: [4.0, 5.8] as const,          // 队尾掉队
-  lost: 5.6,                           // 失联标记
-  back: [7.2, 7.9] as const,           // 归位
-  swap: [7.6, 9.8] as const,           // 换队形
-  link: 10.8,                          // 头尾硬件链路建立
+  hand: [1.0, 2.8] as const,           // 对讲机从蔚来车主递给非蔚来车（唯一的一台）
+  drift: [5.2, 7.0] as const,          // 队尾掉队
+  lost: 6.8,                           // 失联标记
+  back: [8.4, 9.1] as const,           // 归位
+  swap: [8.8, 11.0] as const,          // 换队形
+  link: 12.0,                          // 头尾链路建立
+  talk: [13.4, 14.6] as const,         // 蔚来车主按方向盘按键发话
 };
 
 export const RADIO_SCENES: Record<RadioKey, RadioScene> = {
@@ -196,21 +202,21 @@ export const RADIO_SCENES: Record<RadioKey, RadioScene> = {
     ],
   },
   d: {
-    T: 17.2,
-    ph: [3.2, 7.2, 10.4, 14.0, 17.2],
+    T: 18.4,
+    ph: [3.4, 8.0, 11.2, 15.0, 18.4],
     chip: '场景四 · 混合车队的队形',
-    sub: '有对讲机的两台守住头尾，只有 App 的夹在中间',
+    sub: '全队只有一台对讲机，蔚来车主递出后靠方向盘按键发话',
     capTip: [560, 260, 560, 560, 560],
     caps: [
-      ['1 台蔚来 + 3 台非蔚来同行', '蔚来车主把对讲机给了其中一台朋友的车'],
+      ['1 台蔚来 + 3 台非蔚来，全队只有一台对讲机', '蔚来车主把它递给其中一台朋友的车 —— 自己手上就没有了'],
       ['✕ 错误队形：队尾只有 App', '一进弱网就掉队，谁也叫不到它'],
-      ['把有对讲机的那台换到队尾', '两台有硬件通信能力的车分守头尾'],
-      ['头尾对讲机直连，中间两台被夹住', '硬件基础通信 5–8 km，覆盖整个队伍'],
+      ['把拿到对讲机的那台换到队尾', '一端是车机、一端是对讲机，分守头尾'],
+      ['蔚来车主按方向盘按键发话，队尾用对讲机收', '硬件基础通信 5–8 km，罩住中间两台'],
       ['✓ 推荐队形 · 头尾守着中间', '中间的车不会走丢，也不会失联'],
     ],
     cars: [
-      {kind: 'nio', x: 860, label: '蔚来车主', radio: true, net: 'on'},
-      {kind: 'oth', x: 660, label: '持对讲机', radio: true, net: 'on'},
+      {kind: 'nio', x: 860, label: '蔚来车主', radio: true, wheel: true, net: 'on'},
+      {kind: 'oth', x: 660, label: '朋友的车', radio: false, net: 'on'},
       {kind: 'oth', x: 460, label: '仅 App', radio: false, net: 'on'},
       {kind: 'oth', x: 260, label: '仅 App', radio: false, net: 'on'},
     ],
@@ -263,6 +269,9 @@ export function radioState(k: RadioKey, t: number) {
     cApp: k === 'c' && t >= C_CFG.app,
     cJoined: k === 'c' && t >= C_CFG.join,
     // 场景四
+    dHand: k === 'd' ? w(D_CFG.hand[0], D_CFG.hand[1]) : 0,
+    dTalk: k === 'd' && t >= D_CFG.talk[0] && t < D_CFG.talk[1] + 0.5,
+    dRecv: k === 'd' && t >= D_CFG.talk[1],
     dLost: k === 'd' && t >= D_CFG.lost && t < D_CFG.back[1],
     dSwap: k === 'd' ? smooth(w(D_CFG.swap[0], D_CFG.swap[1])) : 0,
     dLink: k === 'd' ? w(D_CFG.link, D_CFG.link + 1.2) : 0,

@@ -20,6 +20,17 @@ const RadioIcon: React.FC<{x: number; y: number; k?: number; col?: string}> = ({
   </g>
 );
 
+/** 方向盘中键：车机内置的对讲能力（不占用那台手持对讲机） */
+const WheelIcon: React.FC<{x: number; y: number; k?: number; col?: string; live?: boolean}> =
+  ({x, y, k = 1, col = R.hw, live = false}) => (
+  <g transform={`translate(${x} ${y}) scale(${k})`}>
+    <circle r={9.2} fill="none" stroke={col} strokeWidth={2.1} />
+    <path d="M-9 0.6 H9" stroke={col} strokeWidth={2.1} strokeLinecap="round" />
+    <path d="M0 0.6 V9" stroke={col} strokeWidth={2.1} strokeLinecap="round" />
+    <circle r={3.4} fill={live ? col : C.panel} stroke={col} strokeWidth={1.6} />
+  </g>
+);
+
 /** 网络信号（三格）；off 时灰格 + 红叉 */
 const NetIcon: React.FC<{x: number; y: number; on: boolean}> = ({x, y, on}) => (
   <g transform={`translate(${x} ${y})`}>
@@ -78,10 +89,11 @@ const Car: React.FC<{x: number; y?: number; kind: 'nio' | 'oth'; op?: number}> =
 /* ═══ 贴车状态徽标（尖角朝下 + 虚线引导线到车顶）═══════════════════ */
 const Badge: React.FC<{
   cx: number; tipX: number; label: string; radio: boolean; net: 'on' | 'off' | 'none';
+  wheel?: boolean; wheelLive?: boolean;
   tone?: 'n' | 'hl' | 'bad' | 'ok'; t: number; pulse?: boolean;
-}> = ({cx, tipX, label, radio, net, tone = 'n', t, pulse = false}) => {
+}> = ({cx, tipX, label, radio, net, wheel = false, wheelLive = false, tone = 'n', t, pulse = false}) => {
   const fs = 13.5;
-  const iw = (radio ? 25 : 0) + (net !== 'none' ? 26 : 0);
+  const iw = (radio ? 25 : 0) + (wheel ? 26 : 0) + (net !== 'none' ? 26 : 0);
   const w = Math.max(92, textW(label, fs) + iw + 28);
   const h = GEO.badgeH;
   const y = GEO.badgeY;
@@ -93,6 +105,7 @@ const Badge: React.FC<{
   const ir = x0 + w - 14;
   const netX = ir - 13;
   const radX = ir - (net !== 'none' ? 26 : 0) - 11;
+  const whlX = radX - (radio ? 25 : 0) - 1;
   return (
     <g>
       {pulse && [0, 0.5].map((d, i) => {
@@ -106,6 +119,7 @@ const Badge: React.FC<{
       <path d={`M${tip - 6} ${y + h} h12`} stroke={bg} strokeWidth={3} />
       <text x={x0 + 13} y={y + 22.5} fontSize={fs} fontWeight={600} fill={ink}>{label}</text>
       {radio && <RadioIcon x={radX} y={y + 17} k={0.9} col={tone === 'bad' ? R.neg : R.hw} />}
+      {wheel && <WheelIcon x={whlX} y={y + 17} k={0.86} col={wheelLive ? C.accent : C.ink3} live={wheelLive} />}
       {net !== 'none' && <NetIcon x={netX} y={y + 17} on={net === 'on'} />}
       <path d={`M${tip} ${y + h + GEO.badgeTip + 2} V${GEO.carY - 28}`} stroke={col}
         strokeWidth={1.4} strokeDasharray="3 4" opacity={0.55} />
@@ -270,6 +284,8 @@ export const RadioStage: React.FC<{scene: RadioKey}> = ({scene}) => {
 
   /* 场景三：对讲机飞行 */
   const cHandPt = qPt([640, GEO.carY - 6], [750, 230], [C_CFG.friend, GEO.carY - 6], st.cHand);
+  const dHandPt = qPt([D_CFG.slot[0], GEO.carY - 6],
+    [(D_CFG.slot[0] + D_CFG.slot[1]) / 2, 232], [D_CFG.slot[1], GEO.carY - 6], st.dHand);
 
   return (
     <AbsoluteFill style={{background: C.stageBg, fontFamily: F_UI}}>
@@ -390,6 +406,17 @@ export const RadioStage: React.FC<{scene: RadioKey}> = ({scene}) => {
         {/* ── 场景四：队形链路 ── */}
         {scene === 'd' && (
           <g>
+            {/* 全队唯一的一台对讲机，从蔚来车主递给朋友的车 */}
+            {st.dHand > 0 && st.dHand < 1 && (
+              <g>
+                <path d={qPath([D_CFG.slot[0], GEO.carY - 6], [(D_CFG.slot[0] + D_CFG.slot[1]) / 2, 232],
+                  [D_CFG.slot[1], GEO.carY - 6])} fill="none" stroke={R.hw} strokeWidth={2}
+                  strokeDasharray="6 7" opacity={0.5} />
+                <circle cx={dHandPt.x} cy={dHandPt.y} r={17} fill={R.hwWash} stroke={R.hw} strokeWidth={2} />
+                <RadioIcon x={dHandPt.x} y={dHandPt.y + 2} k={1.05} />
+                <LinkTag x={(D_CFG.slot[0] + D_CFG.slot[1]) / 2} y={206} text="全队只有这一台" col={R.hw} />
+              </g>
+            )}
             {/* 错误队形：队尾只有 App，弱网 → 链路断开 */}
             {ph === 1 && st.dLost && (
               <g>
@@ -405,8 +432,9 @@ export const RadioStage: React.FC<{scene: RadioKey}> = ({scene}) => {
             {st.dLink > 0 && (
               <g>
                 <HwArc x1={xs[0]} x2={xs[1]} p={st.dLink} t={t} />
-                <LinkTag x={(xs[0] + xs[1]) / 2} y={318} text="硬件对讲 · 覆盖全队" col={R.hw}
-                  op={Math.min(1, st.dLink * 2)} />
+                <LinkTag x={(xs[0] + xs[1]) / 2} y={318}
+                  text={st.dTalk || st.dRecv ? '方向盘按键发话 → 对讲机收话' : '硬件对讲 · 覆盖全队'}
+                  col={R.hw} op={Math.min(1, st.dLink * 2)} />
               </g>
             )}
           </g>
@@ -439,13 +467,26 @@ export const RadioStage: React.FC<{scene: RadioKey}> = ({scene}) => {
             else { label = '朋友的车 · 绑定中'; radio = true; tone = 'hl'; pulse = true; }
           }
           if (scene === 'c' && i === 0 && st.cHand >= 1) radio = false;
+          let wheel = c.wheel === true;
+          let wheelLive = false;
           if (scene === 'd') {
+            // 全队只有一台手持对讲机：递出后车 0 不再有，车 1 才有
+            if (i === 0) {
+              radio = st.dHand < 1;
+              label = st.dHand < 1 ? '蔚来车主 · 有对讲机' : '蔚来车主 · 方向盘按键发话';
+              if (st.dTalk) { tone = 'hl'; pulse = true; wheelLive = true; label = '蔚来车主 · 讲话中'; }
+            }
+            if (i === 1) {
+              radio = st.dHand >= 1;
+              label = st.dHand < 1 ? '朋友的车 · 仅 App' : '朋友的车 · 拿到对讲机';
+              if (st.dRecv) { tone = 'ok'; label = '朋友的车 · 对讲机已收到'; }
+            }
             if (i === 3 && st.dLost) { label = '掉队 · 失联'; tone = 'bad'; net = 'off'; }
-            if (st.dGood && (i === 0 || i === 1)) tone = 'hl';
+            if (st.dGood && !st.dTalk && !st.dRecv && (i === 0 || i === 1)) tone = 'hl';
           }
           return (
             <Badge key={i} cx={xs[i] + ((c.bx ?? c.x) - c.x)} tipX={xs[i]} label={label}
-              radio={radio} net={net} tone={tone} t={t} pulse={pulse} />
+              radio={radio} net={net} wheel={wheel} wheelLive={wheelLive} tone={tone} t={t} pulse={pulse} />
           );
         })}
 
@@ -455,10 +496,10 @@ export const RadioStage: React.FC<{scene: RadioKey}> = ({scene}) => {
             {st.dGood && (
               <g opacity={Math.min(1, win(t, D_CFG.swap[1], D_CFG.swap[1] + 0.5))}>
                 <text x={xs[0]} y={456} textAnchor="middle" fontSize={13.5} fontWeight={700} fill={R.hw}>
-                  队首 · 有对讲机
+                  队首 · 车机方向盘发话
                 </text>
                 <text x={xs[1]} y={456} textAnchor="middle" fontSize={13.5} fontWeight={700} fill={R.hw}>
-                  队尾 · 有对讲机
+                  队尾 · 手持对讲机
                 </text>
                 <path d={`M${xs[2] + 74} 444 v10 H${xs[3] - 74} v-10`} fill="none" stroke={C.accent} strokeWidth={2} />
                 <text x={(xs[2] + xs[3]) / 2} y={476} textAnchor="middle" fontSize={13.5} fontWeight={600} fill={C.accent}>
