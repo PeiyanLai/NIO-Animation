@@ -56,15 +56,19 @@
 ## GIF 怎么产
 
 ```bash
-python3 scripts/make-gif.py SceneA --out out/terrain-a.gif --scale 0.3 --every 4
+python3 scripts/make-gif.py SceneA --out out/terrain-ch1.gif --scale 0.38 --every 4
 ```
 
 - 走 Remotion 原生 `--codec=gif`，超过 `--max-mb` 时自动降色深/降尺寸重压
 - **1080p30 直接渲会被系统 OOM 杀掉**（实测 exit 137）：必须用 `--scale` 降分辨率、
   `--every-nth-frame` 降帧率，并把 `--concurrency` 压到 2
-- 实测参考：全地形第一章 13.6s，`--scale 0.3 --every 4` → 576×324 · 8fps · **3.9MB**
+- **默认从 `--scale 0.38 --every 4` 起手**。实测全地形三章各 13.6–14s →
+  730×410 · 8fps · **5.4 / 6.3 / 6.3MB**，都在 8MB 以内。
+  画面越花（雪花、多地形切换）体积越大，同样参数能差 1MB 以上，所以**每一章都要看一眼实际大小**
 - 单条控制在 **8MB 以内、时长 ≤15s**；飞书 `upload_all` 单次上限 20MB，但文档里图片太大加载很慢
-- 交付前**亲眼看一眼 GIF**：字幕和读数在 576px 宽下必须仍然可读，读不出来就调大 `--scale` 并缩短时长
+- 交付前**亲眼看一眼 GIF**（抽 3 帧拼成一张放大看）：主字幕、弹窗、HUD 读数都要能认出来。
+  实测 `--scale 0.3`（576px 宽）时主字幕还行、**顶栏小字已经糊了**，所以起手用 0.38 而不是 0.3。
+  真读不出来就继续调大 `--scale` 并缩短这一段时长，不要靠「反正能点链接看高清版」糊弄过去
 
 ## OpenAPI 直连备查
 
