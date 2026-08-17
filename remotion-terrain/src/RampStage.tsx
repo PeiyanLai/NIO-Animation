@@ -139,7 +139,9 @@ export const RampStage: React.FC<{scene: RampKey}> = ({scene}) => {
   })();
   // 第三/四章：坡度标注
   const triOp = scene === 'c3' ? win(t, 6.2, 6.6) : scene === 'c4' ? 0.34 : 0;
-  const dimOp = scene === 'c3' ? win(t, 6.4, 6.8) : scene === 'c4' ? 0.6 : 0;
+  // 坡长读数只在第三章讲；第四章犬要走过坡面中段，那里不能压卡片，只留坡度提示
+  const lenOp = scene === 'c3' ? win(t, 6.4, 6.8) : 0;
+  const angOp = scene === 'c3' ? win(t, 6.4, 6.8) : scene === 'c4' ? 0.6 : 0;
   // 第四章：完成勾
   const ck = scene === 'c4' ? win(t, 10.6, 11.05) : 0;
 
@@ -213,15 +215,24 @@ export const RampStage: React.FC<{scene: RampKey}> = ({scene}) => {
             opacity={0.16 * ramp.seated} />
         )}
 
-        {/* 犬：只画一份，画在车身照片之下。
-            走到门槛以外时完整可见；跨进装载口后自然被车身遮住、只从洞里露出躯干。 */}
+        {/* 犬：画在车身照片之下，所以走到车尾时前身自然被车身遮住、只从装载口露出。
+            跨过门槛之后换成「只从洞里可见」的那一份 —— 否则躯干后半截会挂在车外的空气里。 */}
         {dog.y >= GY - 0.5 && (
           <ellipse cx={dog.x} cy={GY + 1} rx={DOG.bodyPx * 0.46} ry={5}
             fill="#5C7070" opacity={0.16} />
         )}
-        <g transform={`translate(${N(dog.x)} ${N(dog.y)}) rotate(${N(dog.rot)})`}>
-          <Dog t={t} pose={dog.pose} h={DOG.witherPx} senior={dog.senior} op={1} />
-        </g>
+        {dog.inside < 0.995 && (
+          <g transform={`translate(${N(dog.x)} ${N(dog.y)}) rotate(${N(dog.rot)})`}>
+            <Dog t={t} pose={dog.pose} h={DOG.witherPx} senior={dog.senior} op={1 - dog.inside} />
+          </g>
+        )}
+        {dog.inside > 0.005 && (
+          <g clipPath={`url(#hole-${uid})`}>
+            <g transform={`translate(${N(dog.x)} ${N(dog.y)}) rotate(${N(dog.rot)})`}>
+              <Dog t={t} pose={dog.pose} h={DOG.witherPx} senior={dog.senior} op={dog.inside} />
+            </g>
+          </g>
+        )}
 
         {/* 车内背光：把洞里的一切（内景 / 坡架 / 犬）统一压暗 */}
         {open && (
@@ -312,19 +323,21 @@ export const RampStage: React.FC<{scene: RampKey}> = ({scene}) => {
               fill={C.ink2} transform="rotate(-90 462 388)">787 mm</text>
           </g>
         )}
-        <Pill r={PILL.c3Len} op={dimOp} lines={['坡长（概念值）', '2000 mm']} />
-        <Pill r={PILL.c3Ang} op={dimOp} lines={[`坡度 ${RAMP_DEG_TXT}°`]} />
-        {dimOp > 0.01 && (
+        <Pill r={PILL.c3Len} op={lenOp} lines={['坡长（概念值）', '2000 mm']} />
+        <Pill r={PILL.c3Ang} op={angOp} lines={[`坡度 ${RAMP_DEG_TXT}°`]} />
+        {lenOp > 0.01 && (
           <>
             <line x1={PILL.c3Len.x + PILL.c3Len.w / 2} y1={PILL.c3Len.y + PILL.c3Len.h}
               x2={rampPt(0.5).x - 8} y2={rampPt(0.5).y - 8} stroke={C.accent} strokeWidth={1.3}
-              strokeDasharray="4 4" opacity={dimOp} />
+              strokeDasharray="4 4" opacity={lenOp} />
             <circle cx={rampPt(0.5).x - 8} cy={rampPt(0.5).y - 8} r={3} fill={C.accent}
-              opacity={dimOp} />
-            <line x1={PILL.c3Ang.x + PILL.c3Ang.w / 2} y1={PILL.c3Ang.y}
-              x2={foot.x + 12} y2={GY - 6} stroke={C.accent} strokeWidth={1.3}
-              strokeDasharray="4 4" opacity={dimOp} />
+              opacity={lenOp} />
           </>
+        )}
+        {angOp > 0.01 && (
+          <line x1={PILL.c3Ang.x + PILL.c3Ang.w / 2} y1={PILL.c3Ang.y}
+            x2={foot.x + 12} y2={GY - 6} stroke={C.accent} strokeWidth={1.3}
+            strokeDasharray="4 4" opacity={angOp} />
         )}
 
         {/* 完成勾 */}

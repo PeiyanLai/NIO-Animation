@@ -308,7 +308,7 @@ export const dogAt = (scene: RampKey, t: number): DogState => {
   };
   if (scene === 'c1') {
     const k = ease(win(t, 0.15, 2.5));
-    const x = lerp(118, 236, k);
+    const x = lerp(118, 272, k);        // 停在坡脚位置附近（RAMP_FOOT.x ≈ 288）
     const pose: Pose = t < 2.5 ? 'walk' : t < 4.1 ? 'stand' : 'lookup';
     return {...base, x, pose};
   }
