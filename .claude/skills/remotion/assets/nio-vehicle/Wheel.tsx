@@ -23,12 +23,14 @@
 // <g transform={`translate(${cx} ${cy}) scale(${k})`}>
 //   <WheelTire />
 //   <g transform={`rotate(${deg})`}><WheelSpokes /></g>
+//   <WheelCap />   ← 中心盖也在旋转组外，品牌标保持正立
 //   <WheelGloss />
 // </g>
 // ```
 // 或直接用 <ES9Wheel cx={573.2} cy={376.6} scale={0.407} deg={deg} />
 
 import React from 'react';
+import {NioLogo} from './NioLogo';
 import {NIO} from './colors';
 
 // ─── 几何常量（实拍量得，不要凭手感改） ──────────────────────────────────
@@ -156,13 +158,27 @@ export const WheelSpokes: React.FC = () => (
         <path d={d} fill="none" stroke={NIO.rimHighlight} strokeWidth={1.2} opacity={0.85} />
       </g>
     ))}
-    {/* 中心盖：细暗环 + 浅色盘底 + 简化 logo */}
+  </g>
+);
+
+/**
+ * 中心盖 —— **必须画在 rotate 组之外**，跟 WheelGloss 一样是静态层。
+ *
+ * 真车的中心盖是固定在轮辋上的，会跟着转；但品牌标一旦转起来就完全认不出，
+ * 教学动画里没有任何价值。**这里是有意偏离物理事实**：轮辐照转，标保持正立。
+ * （渲出来的证据：跟着转时整帧 10–20px 的标只是一团噪点，读不出拱门和人字。）
+ */
+export const WheelCap: React.FC = () => (
+  <g>
+    {/* 细暗环 + 浅色盘底 + 蔚来 Logo（拱门=天空，人字=道路）
+        几何由实拍中心盖二值化拟合而来（IoU 0.87），别改回「一条弧+一个梯形」的简化版。
+        盘面占比：实拍中心盖 / 轮辋 = 0.13，这里放到 0.19 —— **故意不照抄实拍**：
+        照抄的话整帧里 logo 只有 10px，拱门与人字之间的细缝直接糊掉。
+        教学动画里「一眼可辨」优先于比例严格 */}
     <circle r={20} fill="none" stroke={NIO.ink2} strokeWidth={1.3} opacity={0.75} />
     <circle r={17} fill="url(#rimFace)" opacity={0.9} />
-    <circle r={9.6} fill={NIO.ink} stroke={NIO.rimSilver} strokeWidth={0.9} />
-    <path d="M-4.6 -0.6 A5.2 5.2 0 0 1 4.6 -0.6" fill="none" stroke={NIO.rimHighlight}
-      strokeWidth={1.7} strokeLinecap="round" />
-    <path d="M-4 2.2 L4 2.2 L1.7 6.2 L-1.7 6.2 Z" fill={NIO.rimHighlight} />
+    <circle r={13} fill={NIO.ink} stroke={{NIO.rimSilver}} strokeWidth={0.9} />
+    <NioLogo r={11.5} fill={NIO.rimHighlight} />
   </g>
 );
 
@@ -181,6 +197,7 @@ export const ES9Wheel: React.FC<{cx: number; cy: number; scale: number; deg: num
     <g transform={`rotate(${deg.toFixed(1)})`}>
       <WheelSpokes />
     </g>
+    <WheelCap />
     <WheelGloss />
   </g>
 );
