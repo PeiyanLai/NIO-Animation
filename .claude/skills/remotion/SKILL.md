@@ -22,6 +22,19 @@ description: 用 Remotion（React 帧驱动框架）以代码方式制作动画�
 
 动画定稿后**每次都要走完这两步**，不要只丢一个链接就结束。
 
+**换一台 agent 跑本 skill 时，先自检一次分工：**
+
+```bash
+bash scripts/preflight.sh          # 查 node / remotion / chromium / ffmpeg / PIL
+```
+
+**HTML 和 GIF 出自同一条流水线**（都靠 `remotion render` + 无头浏览器），
+不存在「能出 HTML 但出不了 GIF」的中间态。全绿 = 这台 agent 自己跑完整链路；
+有红 = 它只做飞书那一段，HTML 和 GIF 由能跑渲染的一方产出后交给它——这个分工完全可行。
+
+⚠️ **不要用「它已经把 HTML 插进飞书了」来推断它能跑渲染**——那份 HTML 很可能是
+别人产好递给它的，它只做了插入。要判定就跑一次真的渲染，别看结果看过程。
+
 **第一步：对话框里先给 HTML 文件**，让人能预览、能点下载（本环境用 `SendUserFile`，
 `display: 'render'` 可直接在侧栏打开）。同时给一句使用说明：**点击画面暂停/继续、
 顶部 chips 切章节**——不说没人会去点。
