@@ -10,6 +10,8 @@ import {PetStage} from './PetStage';
 import {PET_SCENES} from './pet-data';
 import {RampStage} from './RampStage';
 import {RAMP_SCENES} from './ramp-data';
+import {BagStage} from './BagStage';
+import {BAG_SCENES} from './bag-data';
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -38,6 +40,10 @@ export const RemotionRoot: React.FC = () => {
       <Composition id="RampB" component={RampStage} durationInFrames={Math.round(RAMP_SCENES.c2.T * 30)} width={1920} height={1080} fps={30} defaultProps={{scene: 'c2' as const}} />
       <Composition id="RampC" component={RampStage} durationInFrames={Math.round(RAMP_SCENES.c3.T * 30)} width={1920} height={1080} fps={30} defaultProps={{scene: 'c3' as const}} />
       <Composition id="RampD" component={RampStage} durationInFrames={Math.round(RAMP_SCENES.c4.T * 30)} width={1920} height={1080} fps={30} defaultProps={{scene: 'c4' as const}} />
+      <Composition id="BagA" component={BagStage} durationInFrames={Math.round(BAG_SCENES.c1.T * 30)} width={1920} height={1080} fps={30} defaultProps={{scene: 'c1' as const}} />
+      <Composition id="BagB" component={BagStage} durationInFrames={Math.round(BAG_SCENES.c2.T * 30)} width={1920} height={1080} fps={30} defaultProps={{scene: 'c2' as const}} />
+      <Composition id="BagC" component={BagStage} durationInFrames={Math.round(BAG_SCENES.c3.T * 30)} width={1920} height={1080} fps={30} defaultProps={{scene: 'c3' as const}} />
+      <Composition id="BagD" component={BagStage} durationInFrames={Math.round(BAG_SCENES.c4.T * 30)} width={1920} height={1080} fps={30} defaultProps={{scene: 'c4' as const}} />
     </>
   );
 };

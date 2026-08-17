@@ -1,0 +1,690 @@
+// 灵动宠物包 · 四章舞台（1000×560 概念矢量，无网格纯色底）
+//
+// 视角 A 座舱俯视平面（第 1、3 章）：座舱布局按官方参考图校正的**比例化概念图**
+//   —— 参考图带第三方水印，只作绘制参考，不内联进交付页。
+// 视角 B 岛台侧视剖面（第 1、2、4 章）：讲固定接口、栓扣、按键。
+// 所有位置只依赖当前秒数，与 bag-data.ts 的纯函数一一对应，禁止 Math.random。
+
+import React from 'react';
+import {AbsoluteFill, useCurrentFrame, useVideoConfig} from 'remotion';
+import {Cat, CatTop} from './Cat';
+import {
+  BAG, BAG_PLAN, BODY, BUTTON, CABIN, CANOPY, CANOPY_PLAN, CAT, CAT_GROUND_Y,
+  DASH, ISL, ISL_S, ISL_SEG, ISLAND_TOP, LATCH_TRAVEL, LATCH_X, LEVELS,
+  LID_LEN, LID_TH, PAD_PLAN, PLAN, PLAN_SEAT_L, PLAN_SEAT_W, REACH_CLIP, REACH_R,
+  REAR_SCREEN, ROW_Y, SEAT_X, SECTORS, SIDE_XF, SLOT_W, TETHER, TOP_PLATE,
+  BAG_SCENES, F_DATA, F_UI, T_COLORS as C, bagBottom, bagOp, buttonAt, canopyDeg,
+  cardAnchorScreen, cardsAt, catAt, catClip, handAt, latchAt, levelK, phaseOf, phaseStart,
+  planPt, planXfStr, reachK, roadPhase, stateAt, steerDeg, tetherAt, viewAt, win,
+  type BagKey, type Card, type Pt,
+} from './bag-data';
+
+const N = (v: number) => (Math.round(v * 100) / 100).toString();
+const TONE = {accent: C.accent, ok: C.ok, warn: C.warn, ink: C.ink3} as const;
+
+/** CJK 友好换行：中文按 1 单位、ASCII 按 0.55 单位计宽 */
+const wrapCJK = (s: string, maxUnits: number): string[] => {
+  const out: string[] = [];
+  let cur = '', w = 0;
+  for (const ch of s) {
+    const u = ch.charCodeAt(0) < 0x2e80 ? 0.55 : 1;
+    if (w + u > maxUnits && cur) {out.push(cur); cur = ''; w = 0;}
+    cur += ch; w += u;
+  }
+  if (cur) out.push(cur);
+  return out;
+};
+
+/* ═══ 贴主体信息卡（卡片 + 指向三角 + 虚线引导线 + 端点圆点）═══════════ */
+const InfoCard: React.FC<{c: Card; anchor: Pt; ph: number; nph: number}> = ({c, anchor, ph, nph}) => {
+  if (c.op <= 0.01) return null;
+  const tone = TONE[c.tone];
+  const pad = 16;
+  const mid = {
+    left: {x: c.x, y: c.y + c.h * 0.5},
+    right: {x: c.x + c.w, y: c.y + c.h * 0.5},
+    top: {x: c.x + c.w * 0.5, y: c.y},
+    bottom: {x: c.x + c.w * 0.5, y: c.y + c.h},
+  }[c.edge];
+  const tri = c.edge === 'left'
+    ? `M${N(mid.x)} ${N(mid.y - 9)}L${N(mid.x - 13)} ${N(mid.y)}L${N(mid.x)} ${N(mid.y + 9)}Z`
+    : c.edge === 'right'
+      ? `M${N(mid.x)} ${N(mid.y - 9)}L${N(mid.x + 13)} ${N(mid.y)}L${N(mid.x)} ${N(mid.y + 9)}Z`
+      : c.edge === 'top'
+        ? `M${N(mid.x - 9)} ${N(mid.y)}L${N(mid.x)} ${N(mid.y - 13)}L${N(mid.x + 9)} ${N(mid.y)}Z`
+        : `M${N(mid.x - 9)} ${N(mid.y)}L${N(mid.x)} ${N(mid.y + 13)}L${N(mid.x + 9)} ${N(mid.y)}Z`;
+
+  const body = c.big
+    ? wrapCJK(c.lines[0], (c.w - pad * 2) / 17)
+    : c.lines.flatMap((l) => wrapCJK(l, (c.w - pad * 2) / 14));
+
+  return (
+    <g opacity={c.op}>
+      <line x1={mid.x} y1={mid.y} x2={anchor.x} y2={anchor.y} stroke={tone}
+        strokeWidth={1.5} strokeDasharray="5 5" />
+      <circle cx={anchor.x} cy={anchor.y} r={3.6} fill={tone} />
+      <rect x={c.x} y={c.y} width={c.w} height={c.h} rx={14} fill={C.panel}
+        stroke={tone} strokeWidth={1.6} />
+      <path d={tri} fill={tone} />
+      {c.kicker && (
+        <text x={c.x + pad} y={c.y + 22} fontFamily={F_UI} fontSize={13} fill={C.ink3}>
+          {c.kicker}
+        </text>
+      )}
+      {c.big && (
+        <text x={c.x + c.w - pad} y={c.y + 22} textAnchor="end" fontFamily={F_DATA}
+          fontSize={12.5} fill={C.ink4} letterSpacing="0.08em">
+          {`${String(ph + 1).padStart(2, '0')} / 0${nph}`}
+        </text>
+      )}
+      {body.map((l, i) => (
+        <text key={i} x={c.x + pad}
+          y={c.y + (c.kicker ? 48 : 34) + i * (c.big ? 23 : 20)}
+          fontFamily={F_UI} fontSize={c.big ? 17 : 14}
+          fontWeight={c.big ? 700 : 500} fill={c.big ? C.ink : C.ink2}>
+          {l}
+        </text>
+      ))}
+      {c.big && (
+        <g>
+          {Array.from({length: nph}, (_, i) => (
+            <circle key={i} cx={c.x + pad + 6 + i * 15} cy={c.y + c.h - 15} r={i === ph ? 5.4 : 4.2}
+              fill={i <= ph ? tone : C.line} />
+          ))}
+        </g>
+      )}
+    </g>
+  );
+};
+
+/* ═══ 座舱俯视平面（视角 A）══════════════════════════════════════════════ */
+const Seat: React.FC<{cx: number; yH: number; w: number; l: number; bench?: boolean}> =
+  ({cx, yH, w, l, bench}) => {
+    const x0 = cx - w / 2;
+    return (
+      <g>
+        {/* 坐垫（向车头方向伸出） */}
+        <rect x={x0} y={yH - l * 0.62} width={w} height={l * 0.8} rx={bench ? 10 : 13}
+          fill={C.panel} stroke={C.ink4} strokeWidth={1.3} />
+        {/* 靠背 */}
+        <rect x={x0 - 1.5} y={yH + l * 0.18} width={w + 3} height={l * 0.34} rx={11}
+          fill={C.accentWash} stroke={C.ink4} strokeWidth={1.3} />
+        {/* 头枕 */}
+        <rect x={cx - w * 0.27} y={yH + l * 0.4} width={w * 0.54} height={l * 0.22} rx={8}
+          fill={C.accentDim} stroke={C.ink4} strokeWidth={1.2} />
+        {/* 侧翼 */}
+        {!bench && (
+          <>
+            <rect x={x0} y={yH - l * 0.5} width={w * 0.16} height={l * 0.6} rx={7}
+              fill={C.lineSoft} stroke={C.ink4} strokeWidth={1} />
+            <rect x={x0 + w * 0.84} y={yH - l * 0.5} width={w * 0.16} height={l * 0.6} rx={7}
+              fill={C.lineSoft} stroke={C.ink4} strokeWidth={1} />
+          </>
+        )}
+      </g>
+    );
+  };
+
+const Occupant: React.FC<{cx: number; yH: number; sh: Pt; k: number}> = ({cx, yH, sh, k}) => (
+  <g opacity={0.95}>
+    <rect x={cx - 24} y={yH - 20} width={48} height={17} rx={8.5} fill={C.ink4} opacity={0.3} />
+    <circle cx={cx} cy={yH - 24} r={8.4} fill={C.ink3} opacity={0.72} />
+    {k > 0.01 && <circle cx={sh.x} cy={sh.y} r={4.6} fill={C.accent} opacity={k} />}
+  </g>
+);
+
+const PlanView: React.FC<{scene: BagKey; t: number; op: number}> = ({scene, t, op}) => {
+  if (op <= 0.01) return null;
+  const uid = `p-${scene}`;
+  const s = BAG_SCENES[scene];
+  const ph = phaseOf(s, t);
+  const c3 = scene === 'c3';
+  const padHL = scene === 'c1'
+    ? 0.35 + 0.35 * (0.5 + 0.5 * Math.sin(t * 3.1))
+    : 0.14;
+  const canOpen = c3 ? canopyDeg(scene, t) / CANOPY.openDeg : 0;
+  const rk = reachK(scene, t);
+  const cat = catAt(scene, t);
+  const steer = c3 ? steerDeg(t) : 0;
+  const flow = c3 ? roadPhase(t) : 0;
+
+  // 敞篷（俯视投影）：绕包体前沿翻起，投影长度 = len·cos θ（θ>90° 时翻到前侧）
+  const th = (CANOPY.openDeg * canOpen * Math.PI) / 180;
+  const lidProj = CANOPY_PLAN.len * Math.cos(th);
+
+  return (
+    <g opacity={op}>
+      {/* 路面流动：车头朝上，路面向后（+y）流 */}
+      {c3 && [322, 618].map((x) => (
+        <g key={x} opacity={0.4}>
+          {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+            <rect key={i} x={x} y={-20 + i * 68 + flow * 2} width={6} height={30} rx={3}
+              fill={C.accentDim} />
+          ))}
+        </g>
+      ))}
+
+      {/* 车身外廓（去顶俯视）+ 接地投影 */}
+      <ellipse cx={(BODY.x0 + BODY.x1) / 2} cy={BODY.y1 - 6} rx={(BODY.x1 - BODY.x0) / 2 + 8}
+        ry={16} fill="#5C7070" opacity={0.16} />
+      <rect x={BODY.x0} y={BODY.y0} width={BODY.x1 - BODY.x0} height={BODY.y1 - BODY.y0}
+        rx={54} fill={C.panel} stroke={C.ink3} strokeWidth={2.2} />
+      {/* 前风挡（去顶后能看到的前部） */}
+      <path d={`M${BODY.x0 + 8} ${DASH.y0}L${BODY.x0 + 20} ${BODY.y0 + 20}
+        Q${(BODY.x0 + BODY.x1) / 2} ${BODY.y0 + 4} ${BODY.x1 - 20} ${BODY.y0 + 20}L${BODY.x1 - 8} ${DASH.y0}Z`}
+        fill={C.lineSoft} stroke={C.line} strokeWidth={1.4} />
+
+      {/* 座舱地板 */}
+      <rect x={CABIN.x0} y={CABIN.y0} width={CABIN.x1 - CABIN.x0} height={CABIN.y1 - CABIN.y0}
+        rx={22} fill={C.ground} stroke={C.line} strokeWidth={1.4} />
+
+      {/* 仪表台 + 中控屏 + NOMI */}
+      <rect x={CABIN.x0 - 4} y={DASH.y0} width={CABIN.x1 - CABIN.x0 + 8} height={DASH.y1 - DASH.y0}
+        rx={12} fill={C.accentWash} stroke={C.line} strokeWidth={1.3} />
+      <rect x={PLAN.cx - 34} y={DASH.y0 + 4} width={68} height={8} rx={3} fill={C.ink2} />
+      <rect x={PLAN.cx - 60} y={DASH.y0 + 15} width={120} height={4} rx={2} fill={C.line} />
+      <circle cx={PLAN.cx} cy={DASH.y0 - 8} r={7} fill={C.panel} stroke={C.accent} strokeWidth={2} />
+      <circle cx={PLAN.cx} cy={DASH.y0 - 8} r={2.6} fill={C.accent} />
+      {/* 方向盘（行驶中微动） */}
+      <g transform={`rotate(${N(steer)} ${SEAT_X.l} ${ROW_Y[0] - 46})`}>
+        <rect x={SEAT_X.l - 27} y={ROW_Y[0] - 64} width={54} height={36} rx={15}
+          fill="none" stroke={C.ink2} strokeWidth={5} />
+        <rect x={SEAT_X.l - 8} y={ROW_Y[0] - 51} width={16} height={10} rx={4} fill={C.ink3} />
+      </g>
+      {c3 && (
+        <g opacity={0.9}>
+          <circle cx={SEAT_X.l - 44} cy={DASH.y0 + 16} r={3.4} fill={C.ok}
+            opacity={0.45 + 0.45 * Math.sin(t * 4.2)} />
+          <text x={SEAT_X.l - 36} y={DASH.y0 + 20} fontFamily={F_DATA} fontSize={10.5}
+            fill={C.ink3}>行驶中 · 60 km/h</text>
+        </g>
+      )}
+
+      {/* 座椅：一排 2 + 二排独立 2 + 三排长凳 */}
+      <Seat cx={SEAT_X.l} yH={ROW_Y[0]} w={PLAN_SEAT_W} l={PLAN_SEAT_L} />
+      <Seat cx={SEAT_X.r} yH={ROW_Y[0]} w={PLAN_SEAT_W} l={PLAN_SEAT_L} />
+      <Seat cx={SEAT_X.l} yH={ROW_Y[1]} w={PLAN_SEAT_W} l={PLAN_SEAT_L} />
+      <Seat cx={SEAT_X.r} yH={ROW_Y[1]} w={PLAN_SEAT_W} l={PLAN_SEAT_L} />
+      <Seat cx={PLAN.cx} yH={ROW_Y[2]} w={PLAN_SEAT_W * 2.9} l={PLAN_SEAT_L * 0.92} bench />
+
+      {/* 前排乘员（肩点 = 可及扇形圆心） */}
+      <Occupant cx={SEAT_X.l} yH={ROW_Y[0]} sh={SECTORS[0].c} k={rk} />
+      <Occupant cx={SEAT_X.r} yH={ROW_Y[0]} sh={SECTORS[1].c} k={rk} />
+
+      {/* 中央岛台：托盘/杯架 → 软包扶手 → 二排屏 */}
+      <g>
+        <rect x={ISL.x0} y={ISL.y0} width={ISL.x1 - ISL.x0} height={ISL.y1 - ISL.y0} rx={11}
+          fill={C.panel} stroke={C.ink3} strokeWidth={1.8} />
+        {/* 前段托盘 + 两个杯架 */}
+        <rect x={ISL.x0 + 5} y={ISL_SEG[0] + 8} width={ISL.x1 - ISL.x0 - 10}
+          height={ISL_SEG[1] - ISL_SEG[0] - 16} rx={8} fill={C.lineSoft} stroke={C.line} strokeWidth={1.1} />
+        <circle cx={PLAN.cx - 9.5} cy={(ISL_SEG[0] + ISL_SEG[1]) / 2} r={7.4} fill={C.line}
+          stroke={C.ink4} strokeWidth={1.1} />
+        <circle cx={PLAN.cx + 9.5} cy={(ISL_SEG[0] + ISL_SEG[1]) / 2} r={7.4} fill={C.line}
+          stroke={C.ink4} strokeWidth={1.1} />
+        {/* 中段软包扶手（宠物包放这里） */}
+        <rect x={ISL.x0 + 2} y={PAD_PLAN.y0} width={ISL.x1 - ISL.x0 - 4}
+          height={PAD_PLAN.y1 - PAD_PLAN.y0} rx={9}
+          fill={C.accentWash} stroke={C.accent} strokeWidth={1.6} opacity={padHL} />
+        {[0.3, 0.5, 0.7].map((k) => (
+          <line key={k} x1={ISL.x0 + 8} y1={PAD_PLAN.y0 + (PAD_PLAN.y1 - PAD_PLAN.y0) * k}
+            x2={ISL.x1 - 8} y2={PAD_PLAN.y0 + (PAD_PLAN.y1 - PAD_PLAN.y0) * k}
+            stroke={C.accentDim} strokeWidth={1} strokeDasharray="3 4" />
+        ))}
+        {/* 尾段：二排屏 */}
+        <rect x={ISL.x0 + 3} y={ISL_SEG[2] + 5} width={ISL.x1 - ISL.x0 - 6}
+          height={ISL_SEG[3] - ISL_SEG[2] - 10} rx={6} fill={C.lineSoft} stroke={C.line} strokeWidth={1.1} />
+        <rect x={PLAN.cx - 19} y={ISL.y1 - 9} width={38} height={6} rx={2.5} fill={C.ink2} />
+      </g>
+
+      {/* 第一章：「包放这里」落位指引 */}
+      {scene === 'c1' && (
+        <g opacity={win(t, 0.9, 1.4) * (1 - win(t, 2.9, 3.3))}>
+          <rect x={BAG_PLAN.x} y={BAG_PLAN.y} width={BAG_PLAN.w} height={BAG_PLAN.h} rx={9}
+            fill="none" stroke={C.accent} strokeWidth={2} strokeDasharray="7 6" />
+          {[0, 1].map((i) => (
+            <path key={i}
+              d={`M${PLAN.cx - 11} ${BAG_PLAN.y - 30 + i * 11 + (t * 26) % 11}l11 9l11 -9`}
+              fill="none" stroke={C.accent} strokeWidth={2.4} strokeLinecap="round"
+              strokeLinejoin="round" opacity={0.75 - i * 0.3} />
+          ))}
+        </g>
+      )}
+
+      {/* 第三章：宠物包（俯视）+ 敞篷翻开 + 猫头 */}
+      {c3 && (
+        <g>
+          <rect x={BAG_PLAN.x + 3} y={BAG_PLAN.y + 4} width={BAG_PLAN.w} height={BAG_PLAN.h}
+            rx={10} fill="#5C7070" opacity={0.16} />
+          <rect x={BAG_PLAN.x - 5} y={BAG_PLAN.y - 3} width={BAG_PLAN.w + 10}
+            height={BAG_PLAN.h + 6} rx={12} fill={C.accentDim} opacity={0.55} />
+          <rect x={BAG_PLAN.x} y={BAG_PLAN.y} width={BAG_PLAN.w} height={BAG_PLAN.h} rx={10}
+            fill={C.panel} stroke={C.ink2} strokeWidth={2.4} />
+          {/* 包内（敞篷打开后看得见） */}
+          <rect x={BAG_PLAN.x + 5} y={CANOPY_PLAN.hingeY + 2} width={BAG_PLAN.w - 10}
+            height={BAG_PLAN.y + BAG_PLAN.h - CANOPY_PLAN.hingeY - 7} rx={7}
+            fill={C.lineSoft} stroke={C.line} strokeWidth={1} opacity={canOpen} />
+          {canOpen > 0.35 && (
+            <g transform={`translate(${PLAN.cx} ${BAG_PLAN.y + BAG_PLAN.h * 0.68})`}
+              opacity={(canOpen - 0.35) / 0.65}>
+              <CatTop t={t} r={12.4} />
+            </g>
+          )}
+          {/* 敞篷盖板：绕前沿翻起，俯视里投影长度 = len·cosθ */}
+          <rect x={BAG_PLAN.x + 2} y={lidProj >= 0 ? CANOPY_PLAN.hingeY : CANOPY_PLAN.hingeY + lidProj}
+            width={BAG_PLAN.w - 4} height={Math.max(2.5, Math.abs(lidProj))} rx={7}
+            fill={lidProj >= 0 ? C.accentWash : C.accentDim}
+            stroke={C.ink3} strokeWidth={1.5} />
+          <line x1={BAG_PLAN.x + 2} y1={CANOPY_PLAN.hingeY} x2={BAG_PLAN.x + BAG_PLAN.w - 2}
+            y2={CANOPY_PLAN.hingeY} stroke={C.ink2} strokeWidth={2} />
+        </g>
+      )}
+
+      {/* 第三章：主副驾可及扇形（实际臂展范围，裁到座舱内） */}
+      {c3 && rk > 0.01 && (
+        <g>
+          <defs>
+            <clipPath id={`cab-${uid}`}>
+              <rect x={CABIN.x0} y={CABIN.y0 - 30} width={CABIN.x1 - CABIN.x0}
+                height={CABIN.y1 - CABIN.y0 + 30} rx={22} />
+            </clipPath>
+          </defs>
+          <g clipPath={`url(#cab-${uid})`}>
+            {SECTORS.map((sec, i) => {
+              const mid = (sec.a0 + sec.a1) / 2, half = ((sec.a1 - sec.a0) / 2) * rk;
+              const a0 = (mid - half) * Math.PI / 180, a1 = (mid + half) * Math.PI / 180;
+              const p0 = {x: sec.c.x + REACH_R * Math.cos(a0), y: sec.c.y + REACH_R * Math.sin(a0)};
+              const p1 = {x: sec.c.x + REACH_R * Math.cos(a1), y: sec.c.y + REACH_R * Math.sin(a1)};
+              return (
+                <g key={sec.id}>
+                  <path d={`M${N(sec.c.x)} ${N(sec.c.y)}L${N(p0.x)} ${N(p0.y)}A${N(REACH_R)} ${N(REACH_R)} 0 ${half > 90 ? 1 : 0} 1 ${N(p1.x)} ${N(p1.y)}Z`}
+                    fill={i === 0 ? C.accent : C.ok} fillOpacity={0.14}
+                    stroke={i === 0 ? C.accent : C.ok} strokeWidth={2} strokeDasharray="7 5" />
+                </g>
+              );
+            })}
+          </g>
+        </g>
+      )}
+
+      {/* 第三章：三级固定的三条指向线（端点落在各自部位上） */}
+      {c3 && LEVELS.map((l, i) => {
+        const k = levelK(scene, t, i);
+        if (k <= 0.01) return null;
+        return (
+          <g key={l.id} opacity={k}>
+            <circle cx={l.at.x} cy={l.at.y} r={4.4} fill="none" stroke={C.accent} strokeWidth={1.8} />
+            <circle cx={l.at.x} cy={l.at.y} r={1.8} fill={C.accent} />
+          </g>
+        );
+      })}
+    </g>
+  );
+};
+
+/* ═══ 岛台侧视剖面（视角 B）══════════════════════════════════════════════ */
+const bagShell = (X: number, Y: number, W: number, H: number, rim: number) =>
+  `M${N(X)} ${N(Y - 10)}L${N(X)} ${N(Y - H + 12)}Q${N(X)} ${N(Y - H)} ${N(X + 12)} ${N(Y - H)}` +
+  `L${N(X + W * 0.22)} ${N(Y - H)}` +
+  `C${N(X + W * 0.33)} ${N(Y - H)} ${N(X + W * 0.34)} ${N(rim)} ${N(X + W * 0.45)} ${N(rim)}` +
+  `L${N(X + W * 0.9)} ${N(rim)}` +
+  `C${N(X + W * 0.97)} ${N(rim)} ${N(X + W)} ${N(rim - 14)} ${N(X + W)} ${N(rim - 26)}` +
+  `L${N(X + W)} ${N(Y - 10)}Q${N(X + W)} ${N(Y)} ${N(X + W - 10)} ${N(Y)}` +
+  `L${N(X + 10)} ${N(Y)}Q${N(X)} ${N(Y)} ${N(X)} ${N(Y - 10)}Z`;
+
+const Hand: React.FC<{kind: 'grip' | 'press' | 'finger'; x: number; y: number; rot: number; op: number}> =
+  ({kind, x, y, rot, op}) => {
+    const skin = '#F2E7D8';
+    return (
+      <g opacity={op} transform={`translate(${N(x)} ${N(y)}) rotate(${N(rot)})`}>
+        {kind === 'press' && (
+          <g>
+            <path d="M-30 -6 Q-32 -34 -12 -36 L20 -36 Q34 -34 34 -14 L34 8 Q34 22 18 22 L-12 22 Q-30 22 -30 -6Z"
+              fill={skin} stroke={C.ink3} strokeWidth={1.6} strokeLinejoin="round" />
+            {[-18, -6, 6, 18].map((dx, i) => (
+              <rect key={i} x={dx - 4.6} y={6 - i * 0} width={9.2} height={20 - Math.abs(dx) * 0.22}
+                rx={4.6} fill={skin} stroke={C.ink3} strokeWidth={1.4} />
+            ))}
+          </g>
+        )}
+        {kind === 'grip' && (
+          <g>
+            <path d="M-24 -10 Q-26 -30 -6 -30 L18 -30 Q30 -28 30 -12 L30 10 Q30 22 14 22 L-8 22 Q-24 22 -24 -10Z"
+              fill={skin} stroke={C.ink3} strokeWidth={1.6} strokeLinejoin="round" />
+            {[-12, -1, 10, 20].map((dy, i) => (
+              <rect key={i} x={-22} y={dy - 4} width={26 - i * 1.5} height={8.4} rx={4.2}
+                fill={skin} stroke={C.ink3} strokeWidth={1.3} />
+            ))}
+          </g>
+        )}
+        {kind === 'finger' && (
+          <g>
+            <path d="M-46 -4 Q-50 -26 -28 -26 L-6 -26 Q4 -24 4 -12 L4 6 Q4 20 -14 20 L-32 20 Q-46 20 -46 -4Z"
+              fill={skin} stroke={C.ink3} strokeWidth={1.6} strokeLinejoin="round" />
+            <rect x={-8} y={-8} width={26} height={11} rx={5.5} fill={skin}
+              stroke={C.ink3} strokeWidth={1.5} />
+          </g>
+        )}
+      </g>
+    );
+  };
+
+const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}> =
+  ({scene, t, op, settle}) => {
+    if (op <= 0.01) return null;
+    const uid = `s-${scene}`;
+    const st = stateAt(scene, t);
+    const bagY = bagBottom(scene, t);
+    const bagT = bagY - BAG.h;
+    const rim = bagY - BAG.h * 0.79;
+    const bOp = bagOp(scene, t);
+    const lat = latchAt(scene, t);
+    const deg = canopyDeg(scene, t);
+    const openK = deg / CANOPY.openDeg;
+    const cat = catAt(scene, t);
+    const tv = tetherAt(scene, t);
+    const hand = handAt(scene, t);
+    const btn = buttonAt(scene, t);
+    const lifted = Math.max(0, ISLAND_TOP - bagY);
+    const hingeNow = {x: CANOPY.hinge.x, y: bagT};
+    const clipP = catClip(cat.pose, cat.x0);
+    const arcOp = scene === 'c2' ? win(t, 7.3, 7.9) : 0;
+    const tautK = scene === 'c2'
+      ? Math.max(0, 1 - (TETHER.len - Math.hypot(clipP.x - TETHER.anchor.x, clipP.y - TETHER.anchor.y)) / 8)
+      : 0;
+
+    return (
+      <g opacity={op} transform={`translate(500 280) scale(${N(1 + 0.06 * settle)}) translate(-500 -280)`}>
+        <g transform={SIDE_XF}>
+          <defs>
+            <linearGradient id={`inner-${uid}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#DCEEEE" />
+              <stop offset="62%" stopColor="#AFC9C9" />
+              <stop offset="100%" stopColor="#7E9A9A" />
+            </linearGradient>
+            <clipPath id={`bagIn-${uid}`}>
+              <path d={bagShell(BAG.x + 4, bagY - 4, BAG.w - 8, BAG.h - 8, rim + 4)} />
+            </clipPath>
+            <clipPath id={`reach-${uid}`}>
+              <rect x={REACH_CLIP.x0} y={REACH_CLIP.y0} width={REACH_CLIP.x1 - REACH_CLIP.x0}
+                height={REACH_CLIP.y1 - REACH_CLIP.y0} />
+            </clipPath>
+          </defs>
+
+          {/* 地板 */}
+          <rect x={-80} y={ISL_S.floor} width={1200} height={120} fill={C.line} />
+          <line x1={-80} y1={ISL_S.floor} x2={1120} y2={ISL_S.floor} stroke={C.accentDim} strokeWidth={2} />
+
+          {/* 岛台本体 */}
+          <ellipse cx={(ISL_S.x0 + ISL_S.x1) / 2} cy={ISL_S.floor + 2} rx={(ISL_S.x1 - ISL_S.x0) / 2}
+            ry={9} fill="#5C7070" opacity={0.16} />
+          <path d={`M${N(ISL_S.x0)} ${N(ISL_S.floor)}L${N(ISL_S.x0)} ${N(ISL_S.top + 20)}
+            Q${N(ISL_S.x0)} ${N(ISL_S.top)} ${N(ISL_S.x0 + 20)} ${N(ISL_S.top)}
+            L${N(ISL_S.x1 - 16)} ${N(ISL_S.top)}Q${N(ISL_S.x1)} ${N(ISL_S.top)} ${N(ISL_S.x1)} ${N(ISL_S.top + 16)}
+            L${N(ISL_S.x1)} ${N(ISL_S.floor)}Z`}
+            fill={C.panel} stroke={C.ink3} strokeWidth={2} strokeLinejoin="round" />
+          {/* 顶板（锁舌倒钩卡在它下面） */}
+          <rect x={ISL_S.x0 + 3} y={ISL_S.top} width={ISL_S.x1 - ISL_S.x0 - 6} height={TOP_PLATE}
+            rx={3} fill={C.accentDim} />
+          {/* 岛台下半身：分缝线 + 腿部空间凹槽（避免大面积空白板） */}
+          <line x1={ISL_S.x0 + 3} y1={ISL_S.top + 62} x2={ISL_S.x1 - 3} y2={ISL_S.top + 62}
+            stroke={C.line} strokeWidth={1.6} />
+          <rect x={ISL_S.x0 + 26} y={ISL_S.top + 78} width={ISL_S.x1 - ISL_S.x0 - 52}
+            height={ISL_S.floor - ISL_S.top - 100} rx={14} fill={C.lineSoft}
+            stroke={C.line} strokeWidth={1.3} />
+          <rect x={ISL_S.x0 + 26} y={ISL_S.floor - 30} width={ISL_S.x1 - ISL_S.x0 - 52}
+            height={8} rx={4} fill={C.accentDim} opacity={0.7} />
+          <text x={(ISL_S.x0 + ISL_S.x1) / 2} y={ISL_S.floor - 46} textAnchor="middle"
+            fontFamily={F_UI} fontSize={12.5} fill={C.ink4}>前排中央岛台</text>
+          {/* 前段托盘 + 两只水瓶 */}
+          <rect x={ISL_S.x0 + 16} y={ISL_S.top + TOP_PLATE} width={ISL_S.trayX1 - ISL_S.x0 - 32}
+            height={30} rx={8} fill={C.lineSoft} stroke={C.line} strokeWidth={1.2} />
+          {[300, 340].map((bx) => (
+            <g key={bx}>
+              <rect x={bx - 9} y={ISL_S.top - 44} width={18} height={48} rx={6}
+                fill={C.lineSoft} stroke={C.ink4} strokeWidth={1.2} />
+              <rect x={bx - 4} y={ISL_S.top - 52} width={8} height={10} rx={2.5} fill={C.ink4} />
+            </g>
+          ))}
+          {/* 中段软包扶手（宠物包放这里，与顶面齐平） */}
+          <rect x={ISL_S.padX0} y={ISL_S.top} width={ISL_S.padX1 - ISL_S.padX0} height={TOP_PLATE + 5}
+            rx={4} fill={C.accentWash} stroke={C.accentDim} strokeWidth={1.2} />
+          {/* 尾段：二排屏 */}
+          <g transform={`rotate(-7 ${REAR_SCREEN.x0} ${REAR_SCREEN.y1})`}>
+            <rect x={REAR_SCREEN.x0} y={REAR_SCREEN.y0} width={REAR_SCREEN.x1 - REAR_SCREEN.x0}
+              height={REAR_SCREEN.y1 - REAR_SCREEN.y0} rx={7} fill={C.ink2} />
+            <rect x={REAR_SCREEN.x0 + 5} y={REAR_SCREEN.y0 + 5}
+              width={REAR_SCREEN.x1 - REAR_SCREEN.x0 - 10}
+              height={REAR_SCREEN.y1 - REAR_SCREEN.y0 - 12} rx={4} fill="#26383A" />
+            <text x={(REAR_SCREEN.x0 + REAR_SCREEN.x1) / 2} y={REAR_SCREEN.y0 + 26}
+              textAnchor="middle" fontFamily={F_DATA} fontSize={11} fill={C.accentDim}>二排屏</text>
+          </g>
+
+          {/* 固定点插槽 */}
+          {LATCH_X.map((x, i) => (
+            <rect key={i} x={x - SLOT_W / 2} y={ISL_S.top + 1} width={SLOT_W} height={19} rx={3}
+              fill={C.ink4} opacity={0.85} />
+          ))}
+
+          {/* 物理解锁按键（概念键位：岛台侧面、软包段前缘下方） */}
+          <g>
+            <circle cx={BUTTON.x} cy={BUTTON.y} r={BUTTON.r + 3.4} fill={C.line} stroke={C.ink4}
+              strokeWidth={1.3} />
+            <circle cx={BUTTON.x} cy={BUTTON.y} r={BUTTON.r * (1 - 0.1 * btn.push)}
+              fill={btn.push > 0.35 ? C.accentWash : C.panel} stroke={C.ink3} strokeWidth={1.6} />
+            <path d={`M${N(BUTTON.x - 4.6)} ${N(BUTTON.y + 0.6)}h9.2v6.4h-9.2Z
+              M${N(BUTTON.x - 2.8)} ${N(BUTTON.y + 0.6)}v-3a2.8 2.8 0 0 1 5.6 0`}
+              fill="none" stroke={st === 'released' ? C.warn : C.ink2} strokeWidth={1.5}
+              strokeLinejoin="round" />
+            {btn.ripple > 0 && btn.ripple < 1 && (
+              <circle cx={BUTTON.x} cy={BUTTON.y} r={BUTTON.r + 4 + 26 * btn.ripple}
+                fill="none" stroke={C.warn} strokeWidth={2.4} opacity={1 - btn.ripple} />
+            )}
+            <text x={BUTTON.x} y={BUTTON.y + BUTTON.r + 20} textAnchor="middle" fontFamily={F_UI}
+              fontSize={11} fill={C.ink3}>物理解锁键（概念键位）</text>
+          </g>
+
+          {/* ── 宠物包 ── */}
+          <g opacity={bOp}>
+            {/* 接地投影：提起后变淡变大 */}
+            <ellipse cx={BAG.x + BAG.w / 2} cy={ISL_S.top + 3}
+              rx={BAG.w * 0.46 + lifted * 0.22} ry={5.5}
+              fill="#5C7070" opacity={0.16 * Math.max(0.25, 1 - lifted / 120)} />
+
+            {/* 包内（剖面：看得见内部） */}
+            <g clipPath={`url(#bagIn-${uid})`}>
+              <rect x={BAG.x} y={bagT} width={BAG.w} height={BAG.h} fill={`url(#inner-${uid})`}
+                opacity={0.5} />
+              <rect x={BAG.x + 6} y={bagY - 13} width={BAG.w - 12} height={11} rx={5}
+                fill={C.accentWash} stroke={C.accentDim} strokeWidth={1} />
+            </g>
+
+            {/* 猫（画在包壳之前，剖面里整只可见） */}
+            {cat.op > 0.01 && (
+              <g transform={`translate(${N(cat.x0)} ${N(CAT_GROUND_Y + (bagY - ISLAND_TOP))})`}>
+                <Cat t={t} pose={cat.pose} sit={CAT.sit} op={cat.op} uid={uid} />
+              </g>
+            )}
+
+            {/* 活动范围：以锚点为心、绳长为半径的圆，被包体边界裁剪 —— 画在猫之上才看得见 */}
+            {arcOp > 0.01 && (
+              <g clipPath={`url(#reach-${uid})`} opacity={arcOp}>
+                <circle cx={TETHER.anchor.x} cy={TETHER.anchor.y} r={TETHER.len}
+                  fill={C.accent} opacity={0.13} />
+                <circle cx={TETHER.anchor.x} cy={TETHER.anchor.y} r={TETHER.len}
+                  fill="none" stroke={C.accent} strokeWidth={2.6} strokeDasharray="9 6" />
+                <text x={TETHER.anchor.x + 30} y={TETHER.anchor.y + TETHER.len - 14}
+                  fontFamily={F_UI} fontSize={12} fontWeight={700} fill={C.accent}>活动范围</text>
+              </g>
+            )}
+
+            {/* 栓扣：锚点 + 绳（松弛时下垂，拉直时绷成直线） */}
+            {tv.shown && (
+              <g>
+                <circle cx={TETHER.anchor.x} cy={TETHER.anchor.y} r={5.6} fill={C.panel}
+                  stroke={C.ink2} strokeWidth={1.8} />
+                <circle cx={TETHER.anchor.x} cy={TETHER.anchor.y} r={2.2} fill={C.ink3} />
+                {(() => {
+                  const a = TETHER.anchor, b = tv.end;
+                  const d = Math.hypot(b.x - a.x, b.y - a.y);
+                  const sag = Math.max(0, (TETHER.len * tv.pullK - d)) * 0.36;
+                  return (
+                    <path d={`M${N(a.x)} ${N(a.y)}Q${N((a.x + b.x) / 2)} ${N((a.y + b.y) / 2 + sag)} ${N(b.x)} ${N(b.y)}`}
+                      fill="none" stroke={tautK > 0.5 ? C.warn : C.ink2}
+                      strokeWidth={3.4} strokeLinecap="round" />
+                  );
+                })()}
+                {tautK > 0.5 && (
+                  <text x={(TETHER.anchor.x + tv.end.x) / 2} y={TETHER.anchor.y - 16}
+                    textAnchor="middle" fontFamily={F_UI} fontSize={12} fontWeight={700}
+                    fill={C.warn} opacity={tautK}>绳已拉直 · 到头了</text>
+                )}
+              </g>
+            )}
+
+            {/* 包壳（剖面轮廓 + 通风孔） */}
+            <path d={bagShell(BAG.x, bagY, BAG.w, BAG.h, rim)} fill="none"
+              stroke={C.ink2} strokeWidth={2.4} strokeLinejoin="round" />
+            <rect x={BAG.x + 2} y={bagY - 15} width={BAG.w - 4} height={13} rx={5}
+              fill={C.accentDim} opacity={0.9} />
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <circle key={i} cx={BAG.x + 26 + i * 15} cy={bagY - 32} r={3.1}
+                fill={C.line} stroke={C.ink4} strokeWidth={0.9} />
+            ))}
+
+            {/* 提手/肩带：合盖后才提得起来 */}
+            <g opacity={0.35 + 0.65 * (1 - openK)}>
+              <path d={`M${N(BAG.x + BAG.w * 0.3)} ${N(bagT - LID_TH + 2)}
+                Q${N(BAG.x + BAG.w * 0.52)} ${N(bagT - LID_TH - 34)} ${N(BAG.x + BAG.w * 0.74)} ${N(bagT - LID_TH + 2)}`}
+                fill="none" stroke={C.ink3} strokeWidth={5} strokeLinecap="round" />
+            </g>
+
+            {/* 敞篷盖板：铰链在包体前上沿，绕 hinge 向前上方翻开（openDeg = −108°） */}
+            <g transform={`rotate(${N(deg)} ${N(hingeNow.x)} ${N(hingeNow.y)})`}>
+              <rect x={hingeNow.x} y={hingeNow.y - LID_TH} width={LID_LEN} height={LID_TH} rx={5}
+                fill={C.accentWash} stroke={C.ink2} strokeWidth={2} />
+              <rect x={hingeNow.x + 8} y={hingeNow.y - LID_TH + 3.2} width={LID_LEN - 16}
+                height={LID_TH - 6.4} rx={2.4} fill={C.accentDim} opacity={0.8} />
+              {/* 末端翻边唇口（盖子扣在包沿上的那一圈） */}
+              <rect x={hingeNow.x + LID_LEN - 6} y={hingeNow.y - LID_TH - 2} width={7}
+                height={LID_TH + 13} rx={3} fill={C.accentDim} stroke={C.ink2} strokeWidth={1.8} />
+            </g>
+            <circle cx={hingeNow.x} cy={hingeNow.y} r={4.2} fill={C.panel} stroke={C.ink2}
+              strokeWidth={1.8} />
+            {openK > 0.15 && (
+              <text x={hingeNow.x - 30} y={hingeNow.y + 22} textAnchor="middle" fontFamily={F_UI}
+                fontSize={11.5} fill={C.ink3} opacity={openK}>敞篷（已打开）</text>
+            )}
+
+            {/* 锁舌 ×2：向下伸出插进插槽，倒钩卡到顶板下面 */}
+            {LATCH_X.map((x, i) => {
+              const tip = bagY + LATCH_TRAVEL * lat.ext;
+              const on = lat.ext > 0.9;
+              const col = on ? C.ok : C.ink3;
+              return (
+                <g key={i}>
+                  <rect x={x - 4.6} y={bagY - 4} width={9.2} height={Math.max(0.1, tip - bagY + 4)}
+                    rx={2.4} fill={col} />
+                  {lat.ext > 0.05 && (
+                    <rect x={x - 4.6 - 5.2 * lat.ext} y={tip - 8}
+                      width={9.2 + 10.4 * lat.ext} height={6} rx={2.4} fill={col} />
+                  )}
+                  {lat.ring > 0 && lat.ring < 1 && (
+                    <circle cx={x} cy={ISL_S.top + 6} r={6 + 24 * lat.ring} fill="none"
+                      stroke={C.ok} strokeWidth={2.6} opacity={1 - lat.ring} />
+                  )}
+                </g>
+              );
+            })}
+            {/* 对准引导（放下前） */}
+            {scene === 'c1' && win(t, 3.9, 4.3) * (1 - win(t, 6.9, 7.2)) > 0.01 && (
+              <g opacity={win(t, 3.9, 4.3) * (1 - win(t, 6.9, 7.2))}>
+                {LATCH_X.map((x, i) => (
+                  <line key={i} x1={x} y1={bagY + 4} x2={x} y2={ISL_S.top + 18}
+                    stroke={C.accent} strokeWidth={1.4} strokeDasharray="4 4" />
+                ))}
+              </g>
+            )}
+            {lat.ext > 0.9 && (
+              <text x={(LATCH_X[0] + LATCH_X[1]) / 2} y={ISL_S.top + 36} textAnchor="middle"
+                fontFamily={F_UI} fontSize={11.5} fontWeight={700} fill={C.ok}>锁舌 ×2 已咬合</text>
+            )}
+          </g>
+
+          {/* 手 */}
+          {hand && <Hand {...hand} />}
+        </g>
+      </g>
+    );
+  };
+
+/* ═══ 主组件 ═════════════════════════════════════════════════════════════ */
+export const BagStage: React.FC<{scene: BagKey}> = ({scene}) => {
+  const frame = useCurrentFrame();
+  const {fps} = useVideoConfig();
+  const s = BAG_SCENES[scene];
+  const t = Math.min(frame / fps, s.T - 0.001);
+  const v = viewAt(scene, t);
+  const ph = phaseOf(s, t);
+  const cards = cardsAt(scene, t);
+  const capK = win(t, phaseStart(s, ph), phaseStart(s, ph) + 0.4);
+
+  return (
+    <AbsoluteFill style={{background: C.stageBg, fontFamily: F_UI}}>
+      <svg viewBox="0 0 1000 560" style={{position: 'absolute', inset: 0, width: 1920, height: 1075}}>
+        {v.planOp > 0.01 && (
+          <g transform={planXfStr(scene, t)}>
+            <PlanView scene={scene} t={t} op={v.planOp} />
+          </g>
+        )}
+        <SideView scene={scene} t={t} op={v.sideOp} settle={v.settle} />
+
+        {/* 三级固定：三条指向线（从卡片各行拉到对应部位） */}
+        {scene === 'c3' && cards.filter((c) => c.id === 'three').map((c) => (
+          <g key="lv">
+            {LEVELS.map((l, i) => {
+              const k = levelK(scene, t, i) * c.op;
+              if (k <= 0.01) return null;
+              const a = planPt(scene, t, l.at);
+              return (
+                <line key={l.id} x1={c.x} y1={c.y + 48 + i * 20 - 5} x2={a.x} y2={a.y}
+                  stroke={C.accent} strokeWidth={1.4} strokeDasharray="5 5" opacity={0.85 * k} />
+              );
+            })}
+          </g>
+        ))}
+
+        {/* 贴主体信息卡 */}
+        {cards.map((c) => (
+          <InfoCard key={c.id} c={{...c, op: c.op * (c.big ? Math.max(0.35, capK) : 1)}}
+            anchor={cardAnchorScreen(scene, t, c)} ph={ph} nph={s.ph.length} />
+        ))}
+      </svg>
+
+      {/* 视角标签（非信息内容，允许留在角上） */}
+      <div style={{
+        position: 'absolute', top: 24, left: 32, fontFamily: F_DATA, fontSize: 20,
+        letterSpacing: '0.12em', color: C.ink3,
+      }}>
+        {v.sideOp > 0.5 ? '岛台剖面 · SECTION' : '座舱俯视 · TOP VIEW'}
+      </div>
+
+      {/* 章节标签（开场短暂出现） */}
+      <div style={{
+        position: 'absolute', top: 22, left: 0, right: 0, display: 'flex', justifyContent: 'center',
+        opacity: Math.min(win(t, 0.2, 0.7), 1 - win(t, 2.6, 3.2)),
+      }}>
+        <span style={{
+          fontSize: 21, color: C.ink2, background: C.panel,
+          border: `1.5px solid ${C.line}`, borderRadius: 999, padding: '8px 22px',
+        }}>{s.chip}</span>
+      </div>
+    </AbsoluteFill>
+  );
+};
+
+export const BAG_COMPOSITIONS = (['c1', 'c2', 'c3', 'c4'] as BagKey[]).map((k, i) => ({
+  id: `Bag${'ABCD'[i]}`,
+  scene: k,
+  frames: Math.round(BAG_SCENES[k].T * 30),
+}));
