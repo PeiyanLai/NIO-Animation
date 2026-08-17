@@ -173,10 +173,13 @@ export const RampStage: React.FC<{scene: RampKey}> = ({scene}) => {
           <clipPath id={`gate-${uid}`}>
             <path d={TG_PATH_STAGE} />
           </clipPath>
+          {/* 装载口内景：上半透出远侧玻璃/顶棚（偏亮），越往下越是行李厢阴影。
+              整块画成纯黑会读成「车身被挖掉一块」，不是「看进去了」。 */}
           <linearGradient id={`cavity-${uid}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3A4A4A" />
-            <stop offset="62%" stopColor="#232C2C" />
-            <stop offset="100%" stopColor="#161C1C" />
+            <stop offset="0%" stopColor="#B8CFD0" />
+            <stop offset="34%" stopColor="#6E8384" />
+            <stop offset="70%" stopColor="#334142" />
+            <stop offset="100%" stopColor="#1B2323" />
           </linearGradient>
         </defs>
 
@@ -192,17 +195,18 @@ export const RampStage: React.FC<{scene: RampKey}> = ({scene}) => {
         <ellipse cx={520} cy={GY + 1} rx={62 + 20 * gateK} ry={6} fill="#5C7070"
           opacity={0.06 + 0.07 * gateK} />
 
-        {/* ── 装载口内景（概念示意）：深色内腔 + 浅色载物平面 + 内侧壁暗部 ── */}
+        {/* ── 装载口内景（概念示意）：内腔暗部 + 载物平面 —— 洞很窄，只按比例画 ── */}
         {open && (
           <g clipPath={`url(#hole-${uid})`} opacity={gateK}>
             <rect x={HOLE.x0 - 4} y={HOLE.y0 - 4} width={HOLE.x1 - HOLE.x0 + 8}
               height={HOLE.y1 - HOLE.y0 + 8} fill={`url(#cavity-${uid})`} />
-            {/* 内侧壁（更深处） */}
-            <rect x={HOLE.x0 + 40} y={HOLE.y0 - 4} width={40} height={HOLE.y1 - HOLE.y0 + 8}
-              fill="#0F1414" opacity={0.45} />
+            {/* 更深处（靠车头一侧）压暗，做出纵深 */}
+            <rect x={HOLE.x0 + (HOLE.x1 - HOLE.x0) * 0.55} y={HOLE.y0 - 4}
+              width={(HOLE.x1 - HOLE.x0) * 0.5} height={HOLE.y1 - HOLE.y0 + 8}
+              fill="#0F1414" opacity={0.28} />
             {/* 载物平面：y 落在 LIP 高度 */}
             <rect x={HOLE.x0 - 4} y={LIP.y - 5.6} width={HOLE.x1 - HOLE.x0 + 8} height={6.6}
-              fill={C.ink4} opacity={0.92} />
+              fill={C.ink4} opacity={0.9} />
             <rect x={HOLE.x0 - 4} y={LIP.y - 6.2} width={HOLE.x1 - HOLE.x0 + 8} height={1.4}
               fill={C.line} opacity={0.85} />
           </g>
