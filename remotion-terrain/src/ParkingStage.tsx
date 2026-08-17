@@ -2,22 +2,19 @@ import React from 'react';
 import {AbsoluteFill, Img, useCurrentFrame, useVideoConfig} from 'remotion';
 import {ES9_TOP_URI} from './es9-top-photo';
 import {
-  CAR_BBOX, CAR_SRC, CAR_TOP_BODY, F_DATA, F_MAX, F_UI, NEIGHBORS, PK_SCENES, R_MAX,
-  SLOT, T_COLORS as C, TOP_ANCHORS, buildPark, easeOutBack, win,
+  CARD_H, CARD_W, CAR_BBOX, CAR_H, CAR_SCALE, CAR_SRC, CAR_TOP_BODY, CAR_W, F_DATA, F_UI,
+  NEIGHBORS, PK_SCENES, SLOT, SLOT_L, SLOT_R, T_COLORS as C, TOP_ANCHORS,
+  buildPark, cardBox, easeOutBack, leadPoint, poseAt, win,
 } from './parking-data';
 
-// 车身显示尺寸：车长 236px ↔ 5365mm（22.73 mm/px），车宽由 CAR_BBOX 等比推出 ≈ 90px ↔ 2046mm
-const CAR_H = 236;
-const SCALE = CAR_H / (CAR_BBOX.y1 - CAR_BBOX.y0);
-const CAR_W = (CAR_BBOX.x1 - CAR_BBOX.x0) * SCALE;
-
-/** 车辆贴图（车头朝上），以车身中心为原点 */
-const CarTop: React.FC<{opacity?: number}> = ({opacity = 1}) => (
+/** 车辆贴图（车头朝上），以车身中心为原点；ego=true 时描一圈主色轮廓，与邻车区分 */
+const CarTop: React.FC<{opacity?: number; ego?: boolean}> = ({opacity = 1, ego = false}) => (
   <g
     opacity={opacity}
-    transform={`scale(${SCALE}) translate(${-(CAR_BBOX.x0 + CAR_BBOX.x1) / 2} ${-(CAR_BBOX.y0 + CAR_BBOX.y1) / 2})`}
+    transform={`scale(${CAR_SCALE}) translate(${-(CAR_BBOX.x0 + CAR_BBOX.x1) / 2} ${-(CAR_BBOX.y0 + CAR_BBOX.y1) / 2})`}
   >
     <image href={ES9_TOP_URI} width={CAR_SRC.w} height={CAR_SRC.h} mask="url(#carTopMask)" />
+    {ego && <path d={CAR_TOP_BODY} fill="none" stroke={C.accent} strokeWidth={5} opacity={0.55} />}
   </g>
 );
 
@@ -33,6 +30,33 @@ const SteerWheel: React.FC<{ax: number; ay: number; deg: number}> = ({ax, ay, de
   );
 };
 
+/** 转角标注：车身轴线（虚线）+ 转角圆弧 + 读数（读数反向旋转，保持水平可读） */
+const SteerAnnot: React.FC<{ax: number; ay: number; deg: number; th: number; op: number; side: number}> =
+  ({ax, ay, deg, th, op, side}) => {
+    if (op <= 0.01) return null;
+    const x = (ax - 0.5) * CAR_W;
+    const y = (ay - 0.5) * CAR_H;
+    const R = 38;
+    const a0 = -90, a1 = -90 + deg;
+    const p = (a: number) => `${(R * Math.cos(a * Math.PI / 180)).toFixed(2)},${(R * Math.sin(a * Math.PI / 180)).toFixed(2)}`;
+    return (
+      <g transform={`translate(${x} ${y})`} opacity={op}>
+        <line x1={0} y1={0} x2={0} y2={-R - 4} stroke={C.ink4} strokeWidth={1.4} strokeDasharray="4 4" />
+        <line x1={0} y1={0}
+          x2={(R + 4) * Math.cos(a1 * Math.PI / 180)} y2={(R + 4) * Math.sin(a1 * Math.PI / 180)}
+          stroke={C.accent} strokeWidth={1.8} />
+        <path d={`M${p(a0)} A${R} ${R} 0 0 ${deg > 0 ? 1 : 0} ${p(a1)}`}
+          fill="none" stroke={C.accent} strokeWidth={2.4} />
+        <g transform={`translate(${(side * 46).toFixed(1)} ${-R - 6}) rotate(${(-th).toFixed(2)})`}>
+          <rect x={-30} y={-13} width={60} height={26} rx={13} fill={C.panel} stroke={C.accent} strokeWidth={1.4} />
+          <text x={0} y={5} textAnchor="middle" fontFamily={F_DATA} fontSize={16} fill={C.accent}>
+            {Math.abs(deg).toFixed(0)}°
+          </text>
+        </g>
+      </g>
+    );
+  };
+
 export const ParkingStage: React.FC<{scene: 'a' | 'b'}> = ({scene}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
@@ -40,43 +64,25 @@ export const ParkingStage: React.FC<{scene: 'a' | 'b'}> = ({scene}) => {
   const built = buildPark(s);
   const t = Math.min(frame / fps, built.T - 0.001);
 
-  // 定位当前段
-  let seg = built.segs[built.segs.length - 1];
-  for (const sg of built.segs) if (t < sg.t0 + sg.dur) { seg = sg; break; }
-  const k = win(t, seg.t0, seg.t0 + seg.dur);
-  const ke = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+  const {x, y, th, f, r, rx, ry, ph, seg} = poseAt(built, t);
 
-  let x: number, y: number, a: number;
-  if (seg.type === 'move') {
-    a = seg.a;
-    x = seg.fx + (seg.tx - seg.fx) * ke;
-    y = seg.fy + (seg.ty - seg.fy) * ke;
-  } else if (seg.type === 'steer') {
-    a = seg.from + (seg.to - seg.from) * ke;
-    x = seg.x; y = seg.y;
-  } else {
-    a = 0; x = seg.x; y = seg.y;
-  }
-
-  const ph = seg.ph;
-  const rearA = (a * R_MAX) / F_MAX;
   const showPlan = t >= built.tTap && t < built.tDone;
   const planOp = showPlan ? Math.min(1, win(t, built.tTap, built.tTap + 0.3) * 0.85) : 0;
   const ck = t >= built.tDone + 0.4 ? win(t, built.tDone + 0.4, built.tDone + 0.85) : 0;
-  const tapK = seg.type === 'tap' ? win(t, seg.t0, seg.t0 + 0.8) : -1;
+  const tapK = seg.type === 'still' && seg.tap ? win(t, seg.t0, seg.t0 + 0.8) : -1;
   const phStart = built.phStarts[ph] ?? 0;
   const capK = win(t, phStart, phStart + 0.45);
   const slotState = t < built.tTap ? 'idle' : t < built.tDone ? 'active' : 'done';
+  // 转角标注只在「打角说明」相位出现
+  const p2 = built.phStarts[2], p3 = built.phStarts[3];
+  const annOp = Math.min(win(t, p2 + 0.3, p2 + 0.75), 1 - win(t, p3 - 0.35, p3 - 0.05));
 
-  // 信息卡贴车左下方，随车移动（禁止放画面边角）；stage(1000×560) → css(1920×1075)
+  // stage(1000×560) → css(1920×1075)
   const KX = 1.92, KY = 1075 / 560;
-  const CARD_W = 274, CARD_H = 176;
-  const cardRight = Math.min(Math.max(x - CAR_W / 2 - 28, 202), 500);
-  const cardCY = Math.min(Math.max(y + 140, 130), 466);
-  const cardTop = cardCY - CARD_H / 2;
-  const tipY = cardTop + 36;
-  const leadX = x - CAR_W / 2 - 8;
-  const leadY = y + CAR_H * 0.22;
+  const card = cardBox(x, y, th);
+  const tipY = card.top + 36;
+  const [leadX, leadY] = leadPoint(x, y, th);
+  const accent = ph === 4 ? C.ok : C.accent;
 
   return (
     <AbsoluteFill style={{background: C.stageBg, fontFamily: F_UI}}>
@@ -88,19 +94,19 @@ export const ParkingStage: React.FC<{scene: 'a' | 'b'}> = ({scene}) => {
           </mask>
         </defs>
 
-        {/* 车位列：开口朝左（虚线），右侧封闭 */}
-        <line x1={SLOT.x - SLOT.w / 2} y1={0} x2={SLOT.x - SLOT.w / 2} y2={560}
+        {/* 车位列：开口朝左（虚线，临车道），右侧封闭 */}
+        <line x1={SLOT_L} y1={0} x2={SLOT_L} y2={560}
           stroke={C.ink3} strokeWidth={2} strokeDasharray="10 8" opacity={0.5} />
-        <line x1={SLOT.x + SLOT.w / 2} y1={0} x2={SLOT.x + SLOT.w / 2} y2={560}
+        <line x1={SLOT_R} y1={0} x2={SLOT_R} y2={560}
           stroke={C.ink3} strokeWidth={2.5} opacity={0.55} />
-        <path d={`M${SLOT.x - SLOT.w / 2} ${SLOT.y - SLOT.h / 2} H${SLOT.x + SLOT.w / 2}`}
+        <path d={`M${SLOT_L} ${SLOT.y - SLOT.h / 2} H${SLOT_R}`}
           stroke={C.ink3} strokeWidth={2.5} opacity={0.55} />
-        <path d={`M${SLOT.x - SLOT.w / 2} ${SLOT.y + SLOT.h / 2} H${SLOT.x + SLOT.w / 2}`}
+        <path d={`M${SLOT_L} ${SLOT.y + SLOT.h / 2} H${SLOT_R}`}
           stroke={C.ink3} strokeWidth={2.5} opacity={0.55} />
 
         {/* 目标车位高亮 */}
         <rect
-          x={SLOT.x - SLOT.w / 2 + 3} y={SLOT.y - SLOT.h / 2 + 3}
+          x={SLOT_L + 3} y={SLOT.y - SLOT.h / 2 + 3}
           width={SLOT.w - 6} height={SLOT.h - 6} rx={4}
           fill={slotState === 'done' ? C.okWash : C.accentWash}
           stroke={slotState === 'done' ? C.ok : C.accent}
@@ -115,32 +121,37 @@ export const ParkingStage: React.FC<{scene: 'a' | 'b'}> = ({scene}) => {
           </g>
         ))}
 
-        {/* 规划路径（碎步折线） */}
-        <polyline points={built.plan} fill="none" stroke={C.accent} strokeWidth={2}
-          strokeDasharray="4 7" strokeLinecap="round" opacity={planOp} />
-
         {/* 目标虚影 */}
         <rect x={SLOT.x - CAR_W / 2} y={SLOT.y - CAR_H / 2} width={CAR_W} height={CAR_H} rx={16}
           fill="none" stroke={C.accent} strokeWidth={2} strokeDasharray="7 7" opacity={planOp} />
 
-        {/* 主车 + 转向示意轮 */}
-        <g transform={`translate(${x.toFixed(2)} ${y.toFixed(2)})`}>
+        {/* 主车：整体随航向旋转（接地阴影 / 示意轮 / 车身轴线都跟着转） */}
+        <g transform={`translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${th.toFixed(3)})`}>
           <ellipse cx={0} cy={CAR_H / 2 - 6} rx={CAR_W * 0.42} ry={8} fill="#5C7070" opacity={0.14} />
-          <CarTop />
-          <SteerWheel ax={TOP_ANCHORS['wheel.fl'].x} ay={TOP_ANCHORS['wheel.fl'].y} deg={a} />
-          <SteerWheel ax={TOP_ANCHORS['wheel.fr'].x} ay={TOP_ANCHORS['wheel.fr'].y} deg={a} />
-          <SteerWheel ax={TOP_ANCHORS['wheel.rl'].x} ay={TOP_ANCHORS['wheel.rl'].y} deg={rearA} />
-          <SteerWheel ax={TOP_ANCHORS['wheel.rr'].x} ay={TOP_ANCHORS['wheel.rr'].y} deg={rearA} />
-
+          <CarTop ego />
+          {/* 车身纵轴参考线：与车位竖线对照即可读出偏航 */}
+          <line x1={0} y1={-CAR_H / 2 - 26} x2={0} y2={CAR_H / 2 + 26}
+            stroke={C.accent} strokeWidth={1.4} strokeDasharray="6 6" opacity={planOp ? 0.6 : 0.35} />
+          <SteerWheel ax={TOP_ANCHORS['wheel.fl'].x} ay={TOP_ANCHORS['wheel.fl'].y} deg={f} />
+          <SteerWheel ax={TOP_ANCHORS['wheel.fr'].x} ay={TOP_ANCHORS['wheel.fr'].y} deg={f} />
+          <SteerWheel ax={TOP_ANCHORS['wheel.rl'].x} ay={TOP_ANCHORS['wheel.rl'].y} deg={r} />
+          <SteerWheel ax={TOP_ANCHORS['wheel.rr'].x} ay={TOP_ANCHORS['wheel.rr'].y} deg={r} />
+          <SteerAnnot ax={TOP_ANCHORS['wheel.fr'].x} ay={TOP_ANCHORS['wheel.fr'].y} deg={f} th={th} op={annOp} side={1} />
+          <SteerAnnot ax={TOP_ANCHORS['wheel.rl'].x} ay={TOP_ANCHORS['wheel.rl'].y} deg={r} th={th} op={annOp} side={-1} />
         </g>
 
-        {/* 信息卡指引线：卡片 → 车身左下角 */}
+        {/* 规划路径：后轴点轨迹（画在车身之上，否则会被车体挡住） */}
+        <polyline points={built.plan} fill="none" stroke={C.accent} strokeWidth={2.2}
+          strokeDasharray="5 6" strokeLinecap="round" strokeLinejoin="round" opacity={planOp} />
+        <circle cx={rx} cy={ry} r={4} fill={C.panel} stroke={accent} strokeWidth={2} opacity={planOp ? 1 : 0.5} />
+
+        {/* 信息卡指引线：卡片 → 车身左侧（落点随车身旋转） */}
         <g opacity={0.9}>
-          <path d={`M${cardRight} ${tipY} L${leadX} ${leadY}`} stroke={ph === 4 ? C.ok : C.accent}
+          <path d={`M${card.right} ${tipY} L${leadX.toFixed(2)} ${leadY.toFixed(2)}`} stroke={accent}
             strokeWidth={1.6} strokeDasharray="5 5" fill="none" />
-          <circle cx={leadX} cy={leadY} r={3.5} fill={ph === 4 ? C.ok : C.accent} />
-          <path d={`M${cardRight} ${tipY - 9} L${cardRight + 13} ${tipY} L${cardRight} ${tipY + 9} Z`}
-            fill={ph === 4 ? C.ok : C.accent} />
+          <circle cx={leadX} cy={leadY} r={3.5} fill={accent} />
+          <path d={`M${card.right} ${tipY - 9} L${card.right + 13} ${tipY} L${card.right} ${tipY + 9} Z`}
+            fill={accent} />
         </g>
 
         {/* 完成确认 */}
@@ -163,7 +174,7 @@ export const ParkingStage: React.FC<{scene: 'a' | 'b'}> = ({scene}) => {
       {/* 场景标签 */}
       <div style={{
         position: 'absolute', top: 24, left: 0, right: 0, display: 'flex', justifyContent: 'center',
-        opacity: Math.min(win(t, 0.2, 0.7), 1 - win(t, 3.0, 3.6)),
+        opacity: Math.min(win(t, 0.2, 0.7), 1 - win(t, 3.4, 4.0)),
       }}>
         <span style={{
           fontSize: 22, color: C.ink2, background: C.panel,
@@ -174,13 +185,13 @@ export const ParkingStage: React.FC<{scene: 'a' | 'b'}> = ({scene}) => {
       {/* 贴车信息卡（跟随车身，像弹窗一样从车旁弹出） */}
       <div style={{
         position: 'absolute',
-        left: (cardRight - CARD_W) * KX, top: cardTop * KY,
+        left: card.left * KX, top: card.top * KY,
         width: CARD_W * KX, boxSizing: 'border-box',
-        background: C.panel, border: `1.5px solid ${ph === 4 ? C.ok : C.accent}`,
+        background: C.panel, border: `1.5px solid ${accent}`,
         borderRadius: 20, padding: '20px 26px 22px',
         boxShadow: '0 10px 28px rgba(92,112,112,0.16)',
       }}>
-        {/* 头部：一键泊入状态 + 步骤号 */}
+        {/* 头部：功能状态 + 步骤号 */}
         <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
           <div style={{position: 'relative', display: 'flex', alignItems: 'center', gap: 12}}>
             {tapK >= 0 && (
@@ -193,10 +204,12 @@ export const ParkingStage: React.FC<{scene: 'a' | 'b'}> = ({scene}) => {
             )}
             <i style={{
               width: 14, height: 14, borderRadius: '50%', flex: 'none',
-              background: ph > 0 ? (ph === 4 ? C.ok : C.accent) : C.ink3,
+              background: ph > 0 ? accent : C.ink3,
               boxShadow: ph > 0 ? `0 0 0 5px ${ph === 4 ? C.okWash : C.accentWash}` : 'none',
             }} />
-            <span style={{fontSize: 21, color: ph > 0 ? C.ink : C.ink2}}>一键平移泊入</span>
+            <span style={{fontSize: 21, color: ph > 0 ? C.ink : C.ink2}}>
+              {scene === 'a' ? '四轮转向 · 摆正车头' : '四轮转向 · 平移入位'}
+            </span>
           </div>
           <span style={{fontFamily: F_DATA, fontSize: 17, color: C.ink3, letterSpacing: '0.08em'}}>
             {String(ph + 1).padStart(2, '0')} / 05
@@ -207,18 +220,19 @@ export const ParkingStage: React.FC<{scene: 'a' | 'b'}> = ({scene}) => {
 
         {/* 字幕 */}
         <div style={{
-          fontSize: 26, lineHeight: 1.35, fontWeight: 700,
+          fontSize: 25, lineHeight: 1.35, fontWeight: 700,
           color: ph === 4 ? C.ok : C.ink,
           opacity: capK, transform: `translateY(${(1 - capK) * 8}px)`,
         }}>{s.caps[ph]}</div>
 
-        {/* 转角读数 */}
+        {/* 读数：前轮 / 后轮 / 车身偏航 */}
         <div style={{
-          display: 'flex', gap: 22, marginTop: 16, fontFamily: F_DATA, fontSize: 20,
+          display: 'flex', gap: 18, marginTop: 16, fontFamily: F_DATA, fontSize: 19,
           color: C.ink2, fontVariantNumeric: 'tabular-nums',
         }}>
-          <span>前轮 <b style={{color: C.accent, fontWeight: 600}}>{(a > 0 ? '+' : '') + a.toFixed(0)}°</b></span>
-          <span>后轮 <b style={{color: C.accent, fontWeight: 600}}>{(a > 0 ? '+' : '') + rearA.toFixed(1)}°</b></span>
+          <span>前轮 <b style={{color: C.accent, fontWeight: 600}}>{(f >= 0 ? '+' : '') + f.toFixed(0)}°</b></span>
+          <span>后轮 <b style={{color: C.accent, fontWeight: 600}}>{(r >= 0 ? '+' : '') + r.toFixed(1)}°</b></span>
+          <span>车身 <b style={{color: Math.abs(th) < 0.3 ? C.ok : C.warn, fontWeight: 600}}>{Math.abs(th).toFixed(1)}°</b></span>
         </div>
 
         {/* 进度点 */}
@@ -226,7 +240,7 @@ export const ParkingStage: React.FC<{scene: 'a' | 'b'}> = ({scene}) => {
           {[0, 1, 2, 3, 4].map((i) => (
             <span key={i} style={{
               width: 12, height: 12, borderRadius: '50%',
-              background: i <= ph ? (ph === 4 ? C.ok : C.accent) : C.line,
+              background: i <= ph ? accent : C.line,
               transform: i === ph ? 'scale(1.25)' : 'none',
             }} />
           ))}
