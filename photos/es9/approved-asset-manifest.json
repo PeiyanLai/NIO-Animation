@@ -59,6 +59,34 @@
       "reviewedAt": "2026-08-17",
       "visualFidelity": "reference-only",
       "usageNote": "仅作「大饼轮毂」造型参考（9 孔实心抛光盘 + 中心盖）。照片为 275/45 R22，动画按 ES9 的 275/40 R23 尺寸绘制矢量轮毂，不使用照片本身。"
+    },
+    {
+      "id": "es9-cabin-topdown-ref",
+      "path": "es9-cabin-topdown-ref.jpg",
+      "view": "cabin-top-cutaway",
+      "source": "用户上传 PDF（2026-08-17）第 1 页 · 座舱去顶俯视效果图；原片右下角带小红书水印与账号号码 94119515428",
+      "copyrightClearance": "pending-third-party",
+      "watermarkChecked": true,
+      "watermarkNote": "小红书水印 + 账号号码，未做任何去除/涂抹/裁切；仅作绘制参考，不直接贴图",
+      "marketingOverlayChecked": true,
+      "reviewedBy": "peiyanl@umich.edu",
+      "reviewedAt": "2026-08-17",
+      "visualFidelity": "reference-only",
+      "usageNote": "仅用于校正座舱平面概念图的座位/岛台/屏幕布局（三排座、二排独立座椅、前排中央岛台）。不得内联进交付页。"
+    },
+    {
+      "id": "es9-front-island-ref",
+      "path": "es9-front-island-ref.jpg",
+      "view": "cabin-interior-rear-left",
+      "source": "用户上传 PDF（2026-08-17）第 2 页 · 前排内饰实拍；原片右下角带小红书水印与账号号码 204985664",
+      "copyrightClearance": "pending-third-party",
+      "watermarkChecked": true,
+      "watermarkNote": "小红书水印 + 账号号码，未做任何去除/涂抹/裁切；仅作绘制参考，不直接贴图",
+      "marketingOverlayChecked": true,
+      "reviewedBy": "peiyanl@umich.edu",
+      "reviewedAt": "2026-08-17",
+      "visualFidelity": "reference-only",
+      "usageNote": "仅用于校正中央岛台形态：前段托盘/杯架 → 中段软包扶手 → 后端二排屏；NOMI 位于仪表台中央上方。不得内联进交付页。"
     }
   ],
   "conceptualItems": [

@@ -8,6 +8,8 @@ import {PK_SCENES, buildPark} from './parking-data';
 import {ParkingVideo, PARKING_TOTAL} from './ParkingVideo';
 import {PetStage} from './PetStage';
 import {PET_SCENES} from './pet-data';
+import {RampStage} from './RampStage';
+import {RAMP_SCENES} from './ramp-data';
 
 export const RemotionRoot: React.FC = () => {
   return (
@@ -32,6 +34,10 @@ export const RemotionRoot: React.FC = () => {
       <Composition id="ParkA" component={ParkingStage} durationInFrames={Math.round(buildPark(PK_SCENES.a).T * 30)} width={1920} height={1080} fps={30} defaultProps={{scene: 'a' as const}} />
       <Composition id="ParkB" component={ParkingStage} durationInFrames={Math.round(buildPark(PK_SCENES.b).T * 30)} width={1920} height={1080} fps={30} defaultProps={{scene: 'b' as const}} />
       <Composition id="SceneC" component={Stage} durationInFrames={420} width={1920} height={1080} fps={30} defaultProps={{scene: 'c' as const}} />
+      <Composition id="RampA" component={RampStage} durationInFrames={Math.round(RAMP_SCENES.c1.T * 30)} width={1920} height={1080} fps={30} defaultProps={{scene: 'c1' as const}} />
+      <Composition id="RampB" component={RampStage} durationInFrames={Math.round(RAMP_SCENES.c2.T * 30)} width={1920} height={1080} fps={30} defaultProps={{scene: 'c2' as const}} />
+      <Composition id="RampC" component={RampStage} durationInFrames={Math.round(RAMP_SCENES.c3.T * 30)} width={1920} height={1080} fps={30} defaultProps={{scene: 'c3' as const}} />
+      <Composition id="RampD" component={RampStage} durationInFrames={Math.round(RAMP_SCENES.c4.T * 30)} width={1920} height={1080} fps={30} defaultProps={{scene: 'c4' as const}} />
     </>
   );
 };
