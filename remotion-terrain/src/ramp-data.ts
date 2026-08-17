@@ -294,10 +294,11 @@ export const JUMPS = [J1, J2];
 
 // ── 时间轴：犬 ───────────────────────────────────────────────────────────
 /**
- * 上坡的参数区间：让「后掌落在坡脚」与「前掌落在门槛」都成立。
- * 掌心到犬原点的水平距离 = 0.52·h（Dog 契约），换算成 u 就是 U_PAD。
+ * 上坡的参数区间：让「后掌不踩出坡脚」与「前掌不越过门槛」都成立。
+ * 掌心到犬原点 = 0.52·h（Dog 契约 FORE_PAW0/HIND_PAW0），
+ * 走起来还要再让出半个步幅 0.5×strideHind = 0.17·h（Dog.DOG_GAIT）。
  */
-export const U_PAD = (0.52 * DOG.witherPx) / RAMP_LEN;
+export const U_PAD = ((0.52 + 0.17) * DOG.witherPx) / RAMP_LEN;
 export const U_LO = U_PAD;
 export const U_HI = 1 - U_PAD;
 
@@ -339,14 +340,23 @@ export const dogAt = (scene: RampKey, t: number): DogState => {
     return {...base, x, pose};
   }
   // c4
-  const WALK0 = 0.3, WALK1 = 2.4, CLIMB0 = 2.6, CLIMB1 = 7.2, IN0 = 7.2, IN1 = 8.9;
-  if (t < CLIMB0) {
-    // 走到坡脚：站定时后掌刚好落在 RAMP_FOOT
-    const x = lerp(96, rampPt(U_LO).x, ease(win(t, WALK0, WALK1)));
+  const WALK0 = 0.3, WALK1 = 2.3, STEP0 = 2.4, STEP1 = 3.1, CLIMB1 = 7.2, IN0 = 7.2, IN1 = 8.9;
+  const onFoot = rampPt(U_LO);
+  const X_ON = onFoot.x - 10;                       // 踏上坡面前的站位
+  if (t < STEP0) {
+    const x = lerp(96, X_ON, ease(win(t, WALK0, WALK1)));
     return {...base, x, pose: t < WALK1 ? 'walk' : 'stand'};
   }
+  if (t < STEP1) {
+    // 踏上坡面：身体从水平摆到与坡面平行（连续过渡，不是硬切）
+    const k = ease(win(t, STEP0, STEP1));
+    return {
+      ...base, x: lerp(X_ON, onFoot.x, k), y: lerp(GY, onFoot.y, k),
+      rot: lerp(0, -RAMP_DEG, k), pose: 'walk',
+    };
+  }
   if (t < IN0) {
-    const u = lerp(U_LO, U_HI, ease(win(t, CLIMB0, CLIMB1)));
+    const u = lerp(U_LO, U_HI, ease(win(t, STEP1, CLIMB1)));
     const p = rampPt(u);
     return {...base, x: p.x, y: p.y, rot: -RAMP_DEG, pose: 'walk', onRamp: true};
   }

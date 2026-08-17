@@ -260,7 +260,6 @@ type Rig = {
   headPos: P; headAng: number; earExtra: number;
   tail: P[]; tailWag: number;
   fore: LegSpec; hind: LegSpec;
-  bob: number;
 };
 /** chain 给死四点；否则用 paw + 掌/跖偏移做 IK */
 type LegSpec = {root: P; chain?: P[]; paw?: P; off?: P};
@@ -285,11 +284,10 @@ const buildRig = (pose: DogPose, t: number, senior: boolean): Rig => {
 
   const crouch = pose === 'crouch';
   const crouchDrop = (x: number) => 0.02 + 0.16 * smooth((0.30 - x) / 0.72);
-  const topEnd = pose === 'sit' ? 8 : pose === 'lie' ? 8 : 8;  // 背线段末位
 
   const torso: P[] = src.map((p, i) => {
     let [x, y] = p;
-    const isTop = i >= 1 && i <= topEnd;
+    const isTop = i >= 1 && i <= 8;   // 三套轮廓的 1..8 都是背线段（鬐甲→尾根）
     // 呼吸：胸腔 ±1%（下腹侧扩张 + 背线极轻起伏）
     if (i >= under[0] && i <= under[1]) y += 0.0062 * breathe;
     if (isTop) y -= 0.0034 * breathe;
@@ -355,7 +353,7 @@ const buildRig = (pose: DogPose, t: number, senior: boolean): Rig => {
     hind = {root: [HIND_ROOT[0], HIND_ROOT[1] + bob], paw: HIND_PAW0, off: HIND_META};
   }
 
-  return {torso, under, headPos, headAng, earExtra, tail, tailWag, fore, hind, bob};
+  return {torso, under, headPos, headAng, earExtra, tail, tailWag, fore, hind};
 };
 
 /** 解一条腿：root → j1 → j2 → paw（u 单位） */
