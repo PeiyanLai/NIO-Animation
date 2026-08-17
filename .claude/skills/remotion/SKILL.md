@@ -75,6 +75,13 @@ node scripts/make-shotlist.mjs <manifest.json> > shotlist.md
 产品验证用手机实拍（动画证明不了）。片子里一半画面本来就是蔚来拍的，
 「像蔚来的片子」这件事天然成立。
 
+**用户只能提供 mp4 时**：先用 `python3 scripts/extract-broll.py <参考片.mp4>` 判定它是
+**原片还是录屏**——脚本按有效画面区分辨率、静态叠加物（水印/台标）、镜头时长明暗三项判定，
+输出每个镜头能不能当 B-roll。带第三方水印的一律只能作参考，**不许裁掉水印后使用**。
+能拿到原片的话，混剪**不需要 Premiere**：Remotion 的 `<OffthreadVideo>` 打底 + 我们的动效叠加，
+直接渲一条 MP4。但带视频的混剪**只能是 MP4，不能是单文件 HTML**（视频无法 base64 内联），
+所以交付变成 HTML（纯矢量）+ MP4（混剪）两份。
+
 完整路径分析、参考片分析用法、导出命令、合规清单见 `references/live-action-path.md`。
 **用户问到实拍/宣传片时先读那一份**，不要凭感觉承诺能力。
 
@@ -784,6 +791,7 @@ const AnimatedButton = () => {
 - `scripts/validate-animation-manifest.mjs` — 校验动画决策卡（scope、mechanism、每章 claim/startState/endState）
 - `scripts/assert-self-contained-html.mjs` — 交付前拦截外链依赖（`--fragment` 用于 Artifact 片段）
 - `scripts/make-shotlist.mjs` — 决策卡 → 实拍分镜表（含开拍前必须归零的项、可量化验收清单、合规清单）
+- `scripts/extract-broll.py` — 参考片 → 逐镜可用性判定（有效分辨率/水印/明暗）+ 切好的片段，判断它能当素材还是只能当参考
 - `scripts/analyze-reference-video.py` — 参考片 → `style-spec.json`（镜头时长分布/切点密度/色板/明暗 + 每镜代表帧），把「像某某片子」变成可对齐的参数
 - `references/live-action-path.md` — 走到实拍宣传片的三条路径、对内 vs 对外、参考片风格对齐、带 alpha 叠加层导出
 - `scripts/cutout-trace.py` — 照片抠形工具链（scan / bright / grid / erode / bleed / encode / preview）
