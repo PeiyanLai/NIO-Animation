@@ -18,6 +18,33 @@ description: 用 Remotion（React 帧驱动框架）以代码方式制作动画�
 - 确实要看图时，只在关键节点看 **1 张**，并裁切/缩小到必要区域，不要整帧 1080p 连看多张
 - 让用户当验收人：先发链接，等他指出问题再改，不要自己反复猜
 
+## 交付闭环（强制）：对话框发 HTML → 生成飞书文档 → 动画平铺在文档里
+
+动画定稿后**每次都要走完这两步**，不要只丢一个链接就结束。
+
+**第一步：对话框里先给 HTML 文件**，让人能预览、能点下载（本环境用 `SendUserFile`，
+`display: 'render'` 可直接在侧栏打开）。同时给一句使用说明：**点击画面暂停/继续、
+顶部 chips 切章节**——不说没人会去点。
+
+**第二步：生成飞书文档，把动画平铺进正文。**
+
+⚠️ **飞书文档没有能运行 HTML 的块**，交互 HTML 在文档里跑不起来。文档里唯一能自己动的是
+**GIF 图片块——插进去就自动循环播放，零点击**。所以正文平铺 GIF，HTML 以链接 + 附件跟在旁边，
+给需要暂停逐帧的人用。这是能力边界，先说清楚比让人反复试省时间。
+
+```bash
+python3 scripts/make-gif.py SceneA --out out/terrain-a.gif --scale 0.3 --every 4
+```
+
+**1080p30 直接渲 GIF 会被系统 OOM 杀掉**（实测 exit 137）：必须 `--scale` 降分辨率、
+`--every-nth-frame` 降帧率、`--concurrency=2`。实测全地形第一章 13.6s →
+576×324 · 8fps · **3.9MB**，飞书里流畅。**多章动画一定按章拆成多个 GIF**，
+每章插在自己的小节下——拼成一条长的会同时踩体积超标和「不知道讲到哪章」两个坑。
+
+文档结构、块类型能力边界、OpenAPI 三步走（建空块 → upload_all → PATCH 回填）、
+交付闭环见 `references/feishu-delivery.md`。**GIF 必须走 image 块**才会自动播放，
+走 file 块就只是个要点开的附件。
+
 ## 交付形态：从网页演示到实拍宣传片
 
 决策卡可以带 `deliverable` 字段，默认 `["explainer-html"]`。可选：
@@ -791,6 +818,8 @@ const AnimatedButton = () => {
 - `scripts/validate-animation-manifest.mjs` — 校验动画决策卡（scope、mechanism、每章 claim/startState/endState）
 - `scripts/assert-self-contained-html.mjs` — 交付前拦截外链依赖（`--fragment` 用于 Artifact 片段）
 - `scripts/make-shotlist.mjs` — 决策卡 → 实拍分镜表（含开拍前必须归零的项、可量化验收清单、合规清单）
+- `scripts/make-gif.py` — Remotion 合成 → 飞书文档能自动播放的 GIF（自动控体积，防 OOM 参数已内置）
+- `references/feishu-delivery.md` — 对话框发 HTML + 生成飞书文档的标准两步、块能力边界、OpenAPI 备查
 - `scripts/extract-broll.py` — 参考片 → 逐镜可用性判定（有效分辨率/水印/明暗）+ 切好的片段，判断它能当素材还是只能当参考
 - `scripts/analyze-reference-video.py` — 参考片 → `style-spec.json`（镜头时长分布/切点密度/色板/明暗 + 每镜代表帧），把「像某某片子」变成可对齐的参数
 - `references/live-action-path.md` — 走到实拍宣传片的三条路径、对内 vs 对外、参考片风格对齐、带 alpha 叠加层导出
