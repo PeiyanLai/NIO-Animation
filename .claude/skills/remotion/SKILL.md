@@ -512,9 +512,13 @@ npx remotion render <CompId> out.mp4 \
   --browser-executable=/opt/pw-browsers/chromium --chrome-mode=chrome-for-testing
 ```
 
-**本环境两个坑**（已踩）：
+**本环境三个坑**（已踩）：
 1. 必须指定预装的 `/opt/pw-browsers/chromium`，外网受限，别让 Remotion 自己下载浏览器
 2. 新版 Chromium 移除了旧 headless 模式，**必须加 `--chrome-mode=chrome-for-testing`**；该参数需要 Remotion **4.0.5xx 及以上**，4.0.246 会报 "Old Headless mode has been removed" 且无此参数——先 `npm i remotion@latest @remotion/cli@latest`
+3. **找 Remotion 自带的 ffmpeg 不能靠路径和 `-x` 判断。** npm 会把 `compositor-linux-x64-gnu`
+   和 `compositor-linux-x64-musl` 两个目录都装下来，两个 ffmpeg 都存在、都是 +x，
+   但非本机那个执行时 rc=127（缺动态加载器），Python 还会把它报成
+   「FileNotFoundError：找不到 ffmpeg」——完全误导。**唯一判据是真的跑一次 `-version`**。
 
 npm registry 可用，`npm create video` / 安装 `remotion` 与 `@remotion/*` 均正常。
 

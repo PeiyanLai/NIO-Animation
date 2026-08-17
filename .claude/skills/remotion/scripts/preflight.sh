@@ -38,9 +38,15 @@ else
 fi
 
 echo "== 4. ffmpeg（GIF 重调色板用，随 remotion 附带）=="
-FF="$PROJ/node_modules/@remotion/compositor-linux-x64-gnu/ffmpeg"
-if [ -x "$FF" ] || command -v ffmpeg >/dev/null; then
-  ok "ffmpeg 可用"
+# compositor 包名带平台后缀（linux-x64-gnu / darwin-arm64 / …），必须 glob 而不能写死。
+# 坑：npm 常把 musl 和 gnu 两个目录都装下来，两个 ffmpeg 都存在、都是 +x，
+# 但非本机那个跑起来是 rc=127（缺动态加载器）—— 所以只能靠真的执行一次来判定
+FF=""
+for c in "$PROJ"/node_modules/@remotion/compositor-*/ffmpeg $(command -v ffmpeg || true); do
+  [ -x "$c" ] && "$c" -version >/dev/null 2>&1 && { FF="$c"; break; }
+done
+if [ -n "$FF" ]; then
+  ok "ffmpeg: $FF"
 else
   bad "没有 ffmpeg —— GIF 还能出，但压不下体积，容易超飞书 20MB 上限"
 fi

@@ -26,7 +26,7 @@
 飞书 `upload_all` 单次上限 20MB。单条建议 **12MB 以内、时长 ≤15s**。
 一个功能有四章就做四条，分别插在四个小节下面，比做一条长的好。
 """
-import argparse, os, shutil, subprocess, sys
+import argparse, glob, os, shutil, subprocess, sys
 from PIL import Image
 
 ap = argparse.ArgumentParser()
@@ -44,9 +44,23 @@ proj = os.path.abspath(a.project)
 out = os.path.abspath(a.out)
 os.makedirs(os.path.dirname(out) or '.', exist_ok=True)
 
-FFMPEG = os.path.join(proj, 'node_modules/@remotion/compositor-linux-x64-gnu/ffmpeg')
-if not os.path.exists(FFMPEG):
-    FFMPEG = shutil.which('ffmpeg') or FFMPEG
+# compositor 包名带平台后缀（linux-x64-gnu / darwin-arm64 / …），必须 glob 而不能写死。
+# 坑：npm 会把**多个**平台的目录都装下来，musl 和 gnu 两个 ffmpeg 都存在、都是 +x，
+# 但非本机那个跑起来是 rc=127（缺动态加载器），而 Python 把它报成
+# 「FileNotFoundError: 找不到 ffmpeg」—— 完全误导。
+# 所以判据只能是**真的执行一次 -version**，不能看 os.access(X_OK)。
+def _probe(p: str) -> bool:
+    try:
+        return subprocess.run([p, '-version'], capture_output=True, timeout=20).returncode == 0
+    except Exception:
+        return False
+
+
+FFMPEG = next((p for p in sorted(glob.glob(
+    os.path.join(proj, 'node_modules/@remotion/compositor-*/ffmpeg'))) if _probe(p)), '')
+if not FFMPEG:
+    _sys = shutil.which('ffmpeg')
+    FFMPEG = _sys if _sys and _probe(_sys) else ''
 
 mb_of = lambda p: os.path.getsize(p) / 1024 / 1024
 
@@ -66,6 +80,8 @@ print(f'  原始：{mb_of(out):.1f}MB')
 
 def repalette(colors: int) -> bool:
     """重做调色板。帧延迟与 loop 标记由 ffmpeg 原样带过，不会变速也不会只播一遍。"""
+    if not FFMPEG:
+        return False
     tmp = out + '.tmp.gif'
     p = subprocess.run(
         [FFMPEG, '-y', '-v', 'error', '-i', out, '-filter_complex',
@@ -84,7 +100,9 @@ def repalette(colors: int) -> bool:
 
 
 colors = a.colors
-if repalette(colors):
+if not FFMPEG:
+    print('  ⚠️ 没有可用的 ffmpeg，跳过调色板重编码（体积会大 15%~20%）')
+elif repalette(colors):
     print(f'  调色板 {colors} 色 → {mb_of(out):.1f}MB')
     while mb_of(out) > a.max_mb and colors > 64:
         colors = max(64, colors // 2)
