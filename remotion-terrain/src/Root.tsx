@@ -2,6 +2,7 @@ import React from 'react';
 import {Composition} from 'remotion';
 import {Stage} from './Stage';
 import {TerrainVideo} from './TerrainVideo';
+import {TerrainFilm, TERRAIN_FILM_TOTAL} from './TerrainFilm';
 import {TitleCard} from './TitleCard';
 import {ParkingStage} from './ParkingStage';
 import {PK_SCENES, buildPark} from './parking-data';
@@ -20,6 +21,15 @@ export const RemotionRoot: React.FC = () => {
         id="TerrainMode"
         component={TerrainVideo}
         durationInFrames={75 + 408 + 408 + 420 - 3 * 15}
+        width={1920}
+        height={1080}
+        fps={30}
+        defaultProps={{}}
+      />
+      <Composition
+        id="TerrainFilm"
+        component={TerrainFilm}
+        durationInFrames={TERRAIN_FILM_TOTAL}
         width={1920}
         height={1080}
         fps={30}
