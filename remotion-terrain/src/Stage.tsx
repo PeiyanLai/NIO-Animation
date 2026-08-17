@@ -1,11 +1,11 @@
 import React from 'react';
 import {AbsoluteFill, Img, useCurrentFrame, useVideoConfig} from 'remotion';
 import {
-  Band, CAR_BODY, ARCHES, F_DATA, F_UI, SCENES, SPEED, T_COLORS as C, TERRA, TerrKey, WHEEL_R,
+  Band, CAR_BODY, F_DATA, F_UI, SCENES, SPEED, T_COLORS as C, TERRA, TerrKey, WHEEL_R,
   easeOutBack, frac, modeAt, phaseOf, terrAt, win,
 } from './data';
 
-import {NioLogo} from './NioLogo';
+import {RIM_F_URI, RIM_PHOTO_R, RIM_R_URI} from './wheel-photo';
 import {PHOTO_URI} from './photo';
 
 const PHOTO = PHOTO_URI;
@@ -18,131 +18,10 @@ const rnd = (i: number) => frac(Math.sin(i * 127.1 + 311.7) * 43758.5453);
 const f1 = (n: number) => n.toFixed(1);
 
 // ─── 车轮 ────────────────────────────────────────────────────────────────
-// ES9「大饼轮毂」：整块高抛光实心盘面 + 9 个等分 40° 的四边形镂空。
-// 孔形按 275/45 R22 实拍还原（沿轮毂轮廓走的四边形，不是水滴/圆头）：
-//   外缘 = 一段贴着轮辋走的同心圆弧（最宽的一条边）
-//   内缘 = 一段更短的同心圆弧，靠近中心盖
-//   两侧 = 近乎直线，从外缘两端收到内缘两端
-//   四角 = 极小倒角，保持四边形的硬朗棱角
-// 外径不变：WheelTire 外圈 r=100（275/40R23 胎面）、内圈 r=73（23" 轮辋，0.727）。
-const R_FACE = 69;     // 盘面外缘（r=73 轮辋内，留 4 单位暗色轮辋唇）
-const R_HOLE_O = 65;   // 孔外缘圆弧半径 = 0.95 R_FACE（实拍量得）
-const R_HOLE_I = 48;   // 孔内缘圆弧半径 = 0.70 R_FACE（实拍量得；孔宽/孔长 ≈ 1.7，又矮又胖）
-const A_HOLE_O = 12.8; // 外缘半角 → 25.6° 镂空 / 14.4° 盘面桥（40° 一格）
-const A_HOLE_I = 8.6;  // 内缘半角 → 内缘弦长 / 外缘弦长 = 0.50（实拍量得）
-const HOLE_TILT = 2.5; // 内缘相对外缘的切向偏移（实拍量得约 2.6°，轻微涡轮感）
-const HOLE_R = 2.4;    // 四角倒角：沿两条边各回退的长度（等效圆角半径 ≈ 2）
-
-type Pt = [number, number];
-const pol = (r: number, d: number): Pt => {
-  const a = ((d - 90) * Math.PI) / 180;
-  return [r * Math.cos(a), r * Math.sin(a)];
-};
-const S = (p: Pt) => `${p[0].toFixed(2)} ${p[1].toFixed(2)}`;
-// 从 a 沿 a→b 方向前进 dist 个单位（用于把尖角回退成小倒角）
-const along = (a: Pt, b: Pt, dist: number): Pt => {
-  const L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
-  return [a[0] + ((b[0] - a[0]) * dist) / L, a[1] + ((b[1] - a[1]) * dist) / L];
-};
-const DEG = 180 / Math.PI;
-
-// 单个孔：外缘弧（贴轮辋）→ 顺时针侧边 → 内缘弧 → 逆时针侧边，四角小倒角
-const holePath = (deg: number) => {
-  const oL = deg - A_HOLE_O;              // 外缘逆时针端
-  const oR = deg + A_HOLE_O;              // 外缘顺时针端
-  const iL = deg + HOLE_TILT - A_HOLE_I;  // 内缘逆时针端
-  const iR = deg + HOLE_TILT + A_HOLE_I;  // 内缘顺时针端
-  const dO = (HOLE_R / R_HOLE_O) * DEG;   // 外弧上的回退角
-  const dI = (HOLE_R / R_HOLE_I) * DEG;   // 内弧上的回退角
-
-  const CoL = pol(R_HOLE_O, oL);          // 四个尖角（倒角的控制点）
-  const CoR = pol(R_HOLE_O, oR);
-  const CiR = pol(R_HOLE_I, iR);
-  const CiL = pol(R_HOLE_I, iL);
-
-  const arcO0 = pol(R_HOLE_O, oL + dO);   // 外缘弧起止
-  const arcO1 = pol(R_HOLE_O, oR - dO);
-  const arcI0 = pol(R_HOLE_I, iR - dI);   // 内缘弧起止（反向走）
-  const arcI1 = pol(R_HOLE_I, iL + dI);
-
-  const sR0 = along(CoR, CiR, HOLE_R);    // 顺时针侧边两端
-  const sR1 = along(CiR, CoR, HOLE_R);
-  const sL0 = along(CiL, CoL, HOLE_R);    // 逆时针侧边两端
-  const sL1 = along(CoL, CiL, HOLE_R);
-
-  return (
-    `M${S(arcO0)}` +
-    ` A${R_HOLE_O} ${R_HOLE_O} 0 0 1 ${S(arcO1)}` + // 外缘：沿轮辋的圆弧
-    ` Q${S(CoR)} ${S(sR0)}` +
-    ` L${S(sR1)}` +                                  // 顺时针侧边（直线）
-    ` Q${S(CiR)} ${S(arcI0)}` +
-    ` A${R_HOLE_I} ${R_HOLE_I} 0 0 0 ${S(arcI1)}` +  // 内缘：同心短弧
-    ` Q${S(CiL)} ${S(sL0)}` +
-    ` L${S(sL1)}` +                                  // 逆时针侧边（直线）
-    ` Q${S(CoL)} ${S(arcO0)} Z`
-  );
-};
-const RIM_HOLES = Array.from({length: 9}, (_, i) => holePath(i * 40));
-
-// 静态层：胎圈 + 暗色轮辋唇 + 孔内可见的轮腔 / 制动盘 / 卡钳
-const WheelTire: React.FC = () => (
-  <g>
-    <circle r={104} fill="#0B0D10" opacity={0.4} />
-    <circle r={100} fill="#141619" />
-    <circle r={100} fill="none" stroke="#2A2E33" strokeWidth={3} />
-    <circle r={73} fill="#1B2222" />
-    <circle r={70} fill={C.ink} />
-    <circle r={51} fill="none" stroke="#2B3838" strokeWidth={24} />
-    <circle r={51} fill="none" stroke="#41595A" strokeWidth={1.4} opacity={0.75} />
-    <path d="M-50 16 A52 52 0 0 0 -16 50" fill="none" stroke="#54696B"
-      strokeWidth={17} strokeLinecap="round" />
-    <circle r={26} fill="#202B2A" />
-  </g>
-);
-
-// 旋转层：抛光盘面（被 9 孔 mask 镂空）+ 孔缘倒角 + 中心盖
-const WheelSpokes: React.FC = () => (
-  <g>
-    <g mask="url(#rimHoles)">
-      <circle r={R_FACE} fill="url(#rimFace)" />
-      <circle r={R_FACE - 1.8} fill="none" stroke="#F4FCFC" strokeWidth={2.2} opacity={0.9} />
-      <circle r={R_HOLE_I - 4} fill="none" stroke={WHITE} strokeWidth={1.3} opacity={0.45} />
-    </g>
-    {/* 孔缘：暗色凹陷 + 亮银倒角高光 */}
-    {RIM_HOLES.map((d, i) => (
-      <g key={i}>
-        <path d={d} fill="none" stroke={C.ink2} strokeWidth={3} opacity={0.55} />
-        <path d={d} fill="none" stroke="#F4FCFC" strokeWidth={1.2} opacity={0.85} />
-      </g>
-    ))}
-  </g>
-);
-
-/**
- * 中心盖 —— **必须画在 rotate 组之外**，跟 WheelGloss 一样是静态层。
- *
- * 真车的中心盖是固定在轮辋上的，会跟着转；但品牌标一旦转起来就完全认不出，
- * 教学动画里没有任何价值。**这里是有意偏离物理事实**：轮辐照转，标保持正立。
- * （渲出来的证据：跟着转时整帧 10–20px 的标只是一团噪点，读不出拱门和人字。）
- */
-export const WheelCap: React.FC = () => (
-  <g>
-    {/* 细暗环 + 浅色盘底 + 蔚来 Logo（拱门=天空，人字=道路）
-        几何由实拍中心盖二值化拟合而来（IoU 0.87），别改回「一条弧+一个梯形」的简化版。
-        盘面占比：实拍中心盖 / 轮辋 = 0.13，这里放到 0.19 —— **故意不照抄实拍**：
-        照抄的话整帧里 logo 只有 10px，拱门与人字之间的细缝直接糊掉。
-        教学动画里「一眼可辨」优先于比例严格 */}
-    <circle r={20} fill="none" stroke={C.ink2} strokeWidth={1.3} opacity={0.75} />
-    <circle r={17} fill="url(#rimFace)" opacity={0.9} />
-    <circle r={13} fill={C.ink} stroke={"#A9C4C4"} strokeWidth={0.9} />
-    <NioLogo r={11.5} fill="#F4FCFC" />
-  </g>
-);
-
-// 静态高光：抛光盘的穹面反射（不随轮转动，保持光源固定）
-const WheelGloss: React.FC = () => (
-  <circle r={R_FACE} fill="url(#rimDome)" />
-);
+// **不再画矢量轮**：照片自带的大饼轮毂在孔形、质感、中心盖 Logo 上都比手画的准。
+// 车身遮罩不挖轮拱洞让轮胎露出来，再叠一张单独抠出来的轮辋圆盘按滚动距离旋转
+//（见 wheel-photo.ts）。矢量版仍保留在 skill 资产库 assets/nio-vehicle/Wheel.tsx，
+// 供拿不到可用侧视照片时兜底。
 
 // ─── 地形纹理 pattern（底纹） ─────────────────────────────────────────────
 const Patterns: React.FC = () => (
@@ -725,30 +604,16 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
         style={{position: 'absolute', left: 0, top: 2, width: 1920, height: 1075}}
       >
         <defs>
+          {/* 车身抠形。**不再挖轮拱洞**——照片自带的大饼轮毂比手画的矢量轮准得多，
+              让它自己露出来；行驶感靠上层单独旋转的轮辋圆盘（见 wheel-photo.ts） */}
           <mask id="carMask">
             <path d={CAR_BODY} fill="#fff" />
-            {ARCHES.map((a, i) => (
-              <circle key={i} cx={a.cx} cy={a.cy} r={a.r} fill="#000" />
-            ))}
           </mask>
-          {/* 大饼轮毂：抛光盘面渐变 + 9 孔镂空 mask + 静态穹面高光 */}
-          <radialGradient id="rimFace" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="#F4FCFC" />
-            <stop offset="50%" stopColor="#E8FAFA" />
-            <stop offset="82%" stopColor="#B8DEDE" />
-            <stop offset="100%" stopColor="#8AABAB" />
-          </radialGradient>
           <radialGradient id="rimDome" cx="36%" cy="28%" r="80%">
             <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.42" />
             <stop offset="46%" stopColor="#FFFFFF" stopOpacity="0.04" />
             <stop offset="100%" stopColor="#2E3D3D" stopOpacity="0.26" />
           </radialGradient>
-          <mask id="rimHoles" maskUnits="userSpaceOnUse" x={-90} y={-90} width={180} height={180}>
-            <circle r={R_FACE + 1} fill="#fff" />
-            {RIM_HOLES.map((d, i) => (
-              <path key={i} d={d} fill="#000" />
-            ))}
-          </mask>
           <Patterns />
         </defs>
 
@@ -778,24 +643,6 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
         <circle cx={573.2} cy={376.6} r={46.8} fill="#151A1A" />
         <circle cx={257.5} cy={376.6} r={47.3} fill="#151A1A" />
 
-        {/* 矢量车轮：画在车身下层；位置/尺寸取放大网格实测（前 196,318 r74；后 770,318 r76） */}
-        <g transform="translate(573.2 376.6) scale(0.407)">
-          <WheelTire />
-          <g transform={`rotate(${deg.toFixed(1)})`}>
-            <WheelSpokes />
-          </g>
-          <WheelCap />
-          <WheelGloss />
-        </g>
-        <g transform="translate(257.5 376.6) scale(0.418)">
-          <WheelTire />
-          <g transform={`rotate(${deg.toFixed(1)})`}>
-            <WheelSpokes />
-          </g>
-          <WheelCap />
-          <WheelGloss />
-        </g>
-
         {/* 车身照片（抠形 + 镜像 + 微浮动）——最后绘制，覆盖轮子上沿 */}
         <g transform={`translate(120 ${(201.7 + bob).toFixed(2)})`}>
           <g transform="scale(0.55)">
@@ -809,6 +656,22 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
             </g>
           </g>
         </g>
+
+        {/* 旋转轮辋：叠在车身之上，位置随车身一起浮动（bob），转角与滚动距离一致。
+            轮拱下缘在 y≈238（照片坐标），轮辋顶在 y≈257，不重叠，所以可以直接盖上去。 */}
+        {([[573.75, RIM_F_URI], [257.5, RIM_R_URI]] as const).map(([cx, href], i) => (
+          <g key={i} transform={`translate(${cx} ${(376.6 + bob).toFixed(2)}) rotate(${deg.toFixed(1)}) scale(-1 1)`}>
+            <image href={href as string}
+              x={-RIM_PHOTO_R * 0.55} y={-RIM_PHOTO_R * 0.55}
+              width={RIM_PHOTO_R * 1.1} height={RIM_PHOTO_R * 1.1} />
+          </g>
+        ))}
+        {/* 静态高光：照片轮辋自带的高光会跟着转，叠一层不转的穹面反射把它压住，
+            否则高速滚动时会出现频闪感。光源固定在左上，与车身照片一致。 */}
+        {([573.75, 257.5] as const).map((cx, i) => (
+          <circle key={i} cx={cx} cy={376.6 + bob} r={RIM_PHOTO_R * 0.55}
+            fill="url(#rimDome)" opacity={0.5} />
+        ))}
 
         {/* 近景飘雪 / 扬沙（车前） */}
         <Snowfall t={t} op={snowOp} n={26} sd={91} big />
