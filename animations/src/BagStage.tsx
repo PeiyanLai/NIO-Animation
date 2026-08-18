@@ -423,7 +423,7 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
                 opacity={1 - btn.ripple} />
             )}
             <text x={BUTTON.x} y={BUTTON.y + BUTTON.h + 22} textAnchor="middle" fontFamily={F_UI}
-              fontSize={11} fill={C.ink2} stroke="#FFFFFF" strokeWidth={3} strokeOpacity={0.82}
+              fontSize={15} fill={C.ink2} stroke="#FFFFFF" strokeWidth={4} strokeOpacity={0.82}
               paintOrder="stroke">岛台储物开关 · 固定/解锁共用</text>
           </g>
 
@@ -460,8 +460,8 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
                 <circle cx={TETHER.anchor.x} cy={TETHER.anchor.y} r={TETHER.len}
                   fill="none" stroke={C.accent} strokeWidth={2.6} strokeDasharray="9 6" />
                 <text x={BAG.x + 12} y={TETHER.anchor.y + TETHER.len * 0.62}
-                  fontFamily={F_UI} fontSize={12} fontWeight={700} fill={C.accent}
-                  stroke="#FFFFFF" strokeWidth={3} strokeOpacity={0.82} paintOrder="stroke">活动范围</text>
+                  fontFamily={F_UI} fontSize={16} fontWeight={700} fill={C.accent}
+                  stroke="#FFFFFF" strokeWidth={4} strokeOpacity={0.82} paintOrder="stroke">活动范围</text>
               </g>
             )}
 
@@ -484,8 +484,8 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
                 })()}
                 {tautK > 0.5 && (
                   <text x={BAG.x + 4} y={bagY - BAG.h - 13} textAnchor="start"
-                    fontFamily={F_UI} fontSize={12} fontWeight={700}
-                    fill={C.warn} opacity={tautK} stroke="#FFFFFF" strokeWidth={3}
+                    fontFamily={F_UI} fontSize={16} fontWeight={700}
+                    fill={C.warn} opacity={tautK} stroke="#FFFFFF" strokeWidth={4}
                     strokeOpacity={0.82} paintOrder="stroke">绳已拉直 · 到头了</text>
                 )}
               </g>
@@ -523,7 +523,7 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
               strokeWidth={1.8} />
             {openK > 0.15 && (
               <text x={hingeNow.x + 34} y={hingeNow.y + 22} textAnchor="middle" fontFamily={F_UI}
-                fontSize={11.5} fill={C.ink2} opacity={openK} stroke="#FFFFFF" strokeWidth={3}
+                fontSize={15} fill={C.ink2} opacity={openK} stroke="#FFFFFF" strokeWidth={4}
                 strokeOpacity={0.82} paintOrder="stroke">敞篷（已打开）</text>
             )}
 
@@ -558,8 +558,8 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
             )}
             {lat.ext > 0.9 && st !== 'released' && (
               <text x={(LATCH_X[0] + LATCH_X[1]) / 2} y={ISLAND_TOP + 36} textAnchor="middle"
-                fontFamily={F_UI} fontSize={11.5} fontWeight={700} fill={C.ok} stroke="#FFFFFF"
-                strokeWidth={3} strokeOpacity={0.82} paintOrder="stroke">锁舌 ×2 已咬合</text>
+                fontFamily={F_UI} fontSize={15} fontWeight={700} fill={C.ok} stroke="#FFFFFF"
+                strokeWidth={4} strokeOpacity={0.82} paintOrder="stroke">锁舌 ×2 已咬合</text>
             )}
           </g>
 
