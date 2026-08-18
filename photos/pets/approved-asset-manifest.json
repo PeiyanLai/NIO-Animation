@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "1.0",
+  "collection": "宠物照片（灵动宠物包 / 坡道动画用）",
+  "assets": [
+    {
+      "id": "cat-sheet",
+      "path": "cat-sheet.jpg",
+      "view": "multi-pose-sheet",
+      "source": "用户上传《宠物图片》PDF（9cdcbe11）第 1 页嵌入原图提取，1506×850，影棚灰底橘猫三坐姿",
+      "copyrightClearance": "user-supplied-internal-demo",
+      "watermarkChecked": true,
+      "marketingOverlayChecked": true,
+      "reviewedBy": "peiyanl@umich.edu",
+      "reviewedAt": "2026-08-18",
+      "visualFidelity": "photo",
+      "usageNote": "抠图源片。疑似图库/宣传类素材，具体授权链路未核实：内部演示可用，对外发布前需重新确认版权。"
+    },
+    {
+      "id": "dog-sheet",
+      "path": "dog-sheet.jpg",
+      "view": "multi-pose-sheet",
+      "source": "用户上传《宠物图片》PDF（9cdcbe11）第 2 页嵌入原图提取，1122×1490，影棚灰底边牧多角度",
+      "copyrightClearance": "user-supplied-internal-demo",
+      "watermarkChecked": true,
+      "marketingOverlayChecked": true,
+      "reviewedBy": "peiyanl@umich.edu",
+      "reviewedAt": "2026-08-18",
+      "visualFidelity": "photo",
+      "usageNote": "抠图源片。同上：内部演示可用，对外发布前需重新确认版权。"
+    },
+    {
+      "id": "cat-cut",
+      "path": "cat-cut.png",
+      "view": "sit-side-facing-left",
+      "source": "cat-sheet.jpg 中间坐姿裁剪 (495,85)-(1015,800)，软羽化抠图（颜色距离 smoothstep lo=14 hi=46 + 最大连通域 + MaxFilter(41) 许可区），等比缩至 407×560",
+      "copyrightClearance": "user-supplied-internal-demo",
+      "watermarkChecked": true,
+      "marketingOverlayChecked": true,
+      "reviewedBy": "peiyanl@umich.edu",
+      "reviewedAt": "2026-08-18",
+      "visualFidelity": "photo-cutout",
+      "usageNote": "宠物包动画的猫（BagStage 侧视，镜像成头朝 +x）。标定与内联 base64 见 animations/src/pets-photo.ts——改这张图必须同步重测标定并重嵌。"
+    },
+    {
+      "id": "dog-cut",
+      "path": "dog-cut.png",
+      "view": "stand-side-facing-right",
+      "source": "dog-sheet.jpg 站姿裁剪 (10,505)-(660,995)，软羽化抠图后按「低饱和中灰 + 限定区域」清除影棚地面过渡带灰雾与投影核（见 pets-photo.ts 文件头），等比缩至 520×392",
+      "copyrightClearance": "user-supplied-internal-demo",
+      "watermarkChecked": true,
+      "marketingOverlayChecked": true,
+      "reviewedBy": "peiyanl@umich.edu",
+      "reviewedAt": "2026-08-18",
+      "visualFidelity": "photo-cutout",
+      "usageNote": "坡道动画的犬（RampStage，剪纸式动效；senior 用 SVG 滤镜压饱和表现）。⚠️ 清灰后地线 y≈373 不再是图底——标定常量在 pets-photo.ts DOG_PHOTO，改图必须重测。"
+    }
+  ]
+}

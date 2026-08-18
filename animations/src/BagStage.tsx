@@ -1,21 +1,24 @@
-// 灵动宠物包 · 四章舞台（1000×560 概念矢量，无网格纯色底）
+// 灵动宠物包 · 四章舞台（1000×560）
 //
-// 视角 A 座舱俯视平面（第 1、3 章）：座舱布局按官方参考图校正的**比例化概念图**
-//   —— 参考图带第三方水印，只作绘制参考，不内联进交付页。
-// 视角 B 岛台侧视剖面（第 1、2、4 章）：讲固定接口、栓扣、按键。
+// 视角 A 座舱俯视平面（第 1、3 章）：ES8 全舱俯视实拍打底（标定见 PLAN_PHOTO）。
+// 视角 B 前排实拍舞台（第 1、2、4 章）：ES8 前排照片当舞台，
+//   固定接口/栓扣/按键等机构直接画在照片岛台上（相机标定见 SIDE_CAM）。
+// 猫为真实照片剪纸动效（PetsPhoto）。
 // 所有位置只依赖当前秒数，与 bag-data.ts 的纯函数一一对应，禁止 Math.random。
 
 import React from 'react';
 import {AbsoluteFill, useCurrentFrame, useVideoConfig} from 'remotion';
-import {Cat, CatTop} from './Cat';
+import {CatTop} from './Cat';
+import {PhotoCat} from './PetsPhoto';
 import {ES8_CABIN_SIDE_URI, ES8_CABIN_TOP_URI} from './es8-cabin-photo';
 import {
   BAG, BAG_PLAN, BODY, BUTTON, CABIN, CANOPY, CANOPY_PLAN, CAT, CAT_GROUND_Y,
-  DASH, ISL, ISL_S, ISL_SEG, ISLAND_TOP, LATCH_TRAVEL, LATCH_X, LEVELS,
+  DASH, ISL, ISLAND_TOP, LATCH_TRAVEL, LATCH_X, LEVELS,
   LID_LEN, LID_TH, PAD_PLAN, PLAN, PLAN_PHOTO, REACH_CLIP, REACH_R,
-  REAR_SCREEN, ROW_Y, SEAT_X, SECTORS, SIDE_XF, SLOT_W, TETHER, TOP_PLATE,
+  ROW_Y, SEAT_X, SECTORS, SIDE_XF, SLOT_W, TETHER,
   BAG_SCENES, F_DATA, F_UI, T_COLORS as C, bagBottom, bagOp, buttonAt, canopyDeg,
-  cardAnchorScreen, cardsAt, catAt, catClip, handAt, latchAt, levelK, phaseOf, phaseStart,
+  cardAnchorScreen, cardsAt, catAt, catClip, catPhotoXf, handAt, latchAt, levelK,
+  phaseOf, phaseStart,
   planPt, planXfStr, reachK, roadPhase, stateAt, steerDeg, tetherAt, viewAt, win,
   type BagKey, type Card, type Pt,
 } from './bag-data';
@@ -363,15 +366,12 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
 
     return (
       <g opacity={op} transform={`translate(500 280) scale(${N(1 + 0.06 * settle)}) translate(-500 -280)`}>
-        {/* ES8 前排正侧透视：环境背景（镜像成与叙事一致的车头朝右）。
-            ⚠️ 这张是透视图不是正投影，只做氛围打底 + 盖白纱把矢量机构顶到前景——
-            所有几何主张（岛台高、锁舌、可及范围）仍由矢量层承担，照片不参与标定 */}
-        <g>
-          <g transform="translate(1000 0) scale(-1 1)">
-            <image href={ES8_CABIN_SIDE_URI} x={-3} y={-6} width={1006} height={566} />
-          </g>
-          <rect x={-3} y={-6} width={1006} height={566} fill={C.panel} opacity={0.65} />
-        </g>
+        {/* ES8 前排实拍 = 舞台本体（用户指定：不画岛台剖面，直接在照片的真实岛台上演示）。
+            不镜像——照片车头在 −x，与视角 B 方向约定一致；只罩一层极轻的纱让机构线条读得清。
+            ⚠️ 透视照片，只锚定「台面接触线」这一条几何（SIDE_CAM 按它标定），
+            毫米级主张（绳长/锁舌行程/可及范围）仍由矢量机构层承担 */}
+        <image href={ES8_CABIN_SIDE_URI} x={-3} y={-6} width={1006} height={566} />
+        <rect x={-3} y={-6} width={1006} height={566} fill={C.panel} opacity={0.13} />
         <g transform={SIDE_XF}>
           <defs>
             <linearGradient id={`inner-${uid}`} x1="0" y1="0" x2="0" y2="1">
@@ -388,59 +388,14 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
             </clipPath>
           </defs>
 
-          {/* 地板 */}
-          <rect x={-80} y={ISL_S.floor} width={1200} height={120} fill={C.line} />
-          <line x1={-80} y1={ISL_S.floor} x2={1120} y2={ISL_S.floor} stroke={C.accentDim} strokeWidth={2} />
-
-          {/* 岛台本体 */}
-          <ellipse cx={(ISL_S.x0 + ISL_S.x1) / 2} cy={ISL_S.floor + 2} rx={(ISL_S.x1 - ISL_S.x0) / 2}
-            ry={9} fill="#5C7070" opacity={0.16} />
-          <path d={`M${N(ISL_S.x0)} ${N(ISL_S.floor)}L${N(ISL_S.x0)} ${N(ISL_S.top + 20)}
-            Q${N(ISL_S.x0)} ${N(ISL_S.top)} ${N(ISL_S.x0 + 20)} ${N(ISL_S.top)}
-            L${N(ISL_S.x1 - 16)} ${N(ISL_S.top)}Q${N(ISL_S.x1)} ${N(ISL_S.top)} ${N(ISL_S.x1)} ${N(ISL_S.top + 16)}
-            L${N(ISL_S.x1)} ${N(ISL_S.floor)}Z`}
-            fill={C.panel} stroke={C.ink3} strokeWidth={2} strokeLinejoin="round" />
-          {/* 顶板（锁舌倒钩卡在它下面） */}
-          <rect x={ISL_S.x0 + 3} y={ISL_S.top} width={ISL_S.x1 - ISL_S.x0 - 6} height={TOP_PLATE}
-            rx={3} fill={C.accentDim} />
-          {/* 岛台下半身：分缝线 + 腿部空间凹槽（避免大面积空白板） */}
-          <line x1={ISL_S.x0 + 3} y1={ISL_S.top + 62} x2={ISL_S.x1 - 3} y2={ISL_S.top + 62}
-            stroke={C.line} strokeWidth={1.6} />
-          <rect x={ISL_S.x0 + 26} y={ISL_S.top + 78} width={ISL_S.x1 - ISL_S.x0 - 52}
-            height={ISL_S.floor - ISL_S.top - 100} rx={14} fill={C.lineSoft}
-            stroke={C.line} strokeWidth={1.3} />
-          <rect x={ISL_S.x0 + 26} y={ISL_S.floor - 30} width={ISL_S.x1 - ISL_S.x0 - 52}
-            height={8} rx={4} fill={C.accentDim} opacity={0.7} />
-          <text x={(ISL_S.x0 + ISL_S.x1) / 2} y={ISL_S.floor - 46} textAnchor="middle"
-            fontFamily={F_UI} fontSize={12.5} fill={C.ink4}>前排中央岛台</text>
-          {/* 前段托盘 + 两只水瓶 */}
-          <rect x={ISL_S.x0 + 16} y={ISL_S.top + TOP_PLATE} width={ISL_S.trayX1 - ISL_S.x0 - 32}
-            height={30} rx={8} fill={C.lineSoft} stroke={C.line} strokeWidth={1.2} />
-          {[300, 340].map((bx) => (
-            <g key={bx}>
-              <rect x={bx - 9} y={ISL_S.top - 44} width={18} height={48} rx={6}
-                fill={C.lineSoft} stroke={C.ink4} strokeWidth={1.2} />
-              <rect x={bx - 4} y={ISL_S.top - 52} width={8} height={10} rx={2.5} fill={C.ink4} />
-            </g>
-          ))}
-          {/* 中段软包扶手（宠物包放这里，与顶面齐平） */}
-          <rect x={ISL_S.padX0} y={ISL_S.top} width={ISL_S.padX1 - ISL_S.padX0} height={TOP_PLATE + 5}
-            rx={4} fill={C.accentWash} stroke={C.accentDim} strokeWidth={1.2} />
-          {/* 尾段：二排屏 */}
-          <g transform={`rotate(-7 ${REAR_SCREEN.x0} ${REAR_SCREEN.y1})`}>
-            <rect x={REAR_SCREEN.x0} y={REAR_SCREEN.y0} width={REAR_SCREEN.x1 - REAR_SCREEN.x0}
-              height={REAR_SCREEN.y1 - REAR_SCREEN.y0} rx={7} fill={C.ink2} />
-            <rect x={REAR_SCREEN.x0 + 5} y={REAR_SCREEN.y0 + 5}
-              width={REAR_SCREEN.x1 - REAR_SCREEN.x0 - 10}
-              height={REAR_SCREEN.y1 - REAR_SCREEN.y0 - 12} rx={4} fill="#26383A" />
-            <text x={(REAR_SCREEN.x0 + REAR_SCREEN.x1) / 2} y={REAR_SCREEN.y0 + 26}
-              textAnchor="middle" fontFamily={F_DATA} fontSize={11} fill={C.accentDim}>二排屏</text>
-          </g>
-
-          {/* 固定点插槽 */}
+          {/* 岛台/地板/座舱全部由照片承担，矢量只画「机构」：固定点插槽（照片台面上的概念接口） */}
           {LATCH_X.map((x, i) => (
-            <rect key={i} x={x - SLOT_W / 2} y={ISL_S.top + 1} width={SLOT_W} height={19} rx={3}
-              fill={C.ink4} opacity={0.85} />
+            <g key={i}>
+              <rect x={x - SLOT_W / 2 - 2.2} y={ISLAND_TOP - 2.2} width={SLOT_W + 4.4} height={5}
+                rx={2.4} fill="#FFFFFF" opacity={0.55} />
+              <rect x={x - SLOT_W / 2} y={ISLAND_TOP + 1} width={SLOT_W} height={16} rx={3}
+                fill={C.ink4} opacity={0.88} />
+            </g>
           ))}
 
           {/* 物理解锁按键（概念键位：岛台侧面、软包段前缘下方） */}
@@ -458,15 +413,19 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
                 fill="none" stroke={C.warn} strokeWidth={2.4} opacity={1 - btn.ripple} />
             )}
             <text x={BUTTON.x} y={BUTTON.y + BUTTON.r + 20} textAnchor="middle" fontFamily={F_UI}
-              fontSize={11} fill={C.ink3}>物理解锁键（概念键位）</text>
+              fontSize={11} fill={C.ink2} stroke="#FFFFFF" strokeWidth={3} strokeOpacity={0.82}
+              paintOrder="stroke">物理解锁键（概念键位）</text>
           </g>
 
           {/* ── 宠物包 ── */}
           <g opacity={bOp}>
             {/* 接地投影：提起后变淡变大 */}
-            <ellipse cx={BAG.x + BAG.w / 2} cy={ISL_S.top + 3}
+            <ellipse cx={BAG.x + BAG.w / 2} cy={ISLAND_TOP + 3}
               rx={BAG.w * 0.46 + lifted * 0.22} ry={5.5}
               fill="#5C7070" opacity={0.16 * Math.max(0.25, 1 - lifted / 120)} />
+
+            {/* 包壳实体打底：照片舞台上包必须是实的，否则照片透出来像鬼影 */}
+            <path d={bagShell(BAG.x, bagY, BAG.w, BAG.h, rim)} fill={C.panel} opacity={0.93} />
 
             {/* 包内（剖面：看得见内部） */}
             <g clipPath={`url(#bagIn-${uid})`}>
@@ -476,12 +435,9 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
                 fill={C.accentWash} stroke={C.accentDim} strokeWidth={1} />
             </g>
 
-            {/* 猫（画在包壳之前，剖面里整只可见） */}
-            {cat.op > 0.01 && (
-              <g transform={`translate(${N(cat.x0)} ${N(CAT_GROUND_Y + (bagY - ISLAND_TOP))})`}>
-                <Cat t={t} pose={cat.pose} sit={CAT.sit} op={cat.op} uid={uid} />
-              </g>
-            )}
+            {/* 猫：真实照片剪纸（头朝 +x 镜像、前掌对齐矢量猫标定，见 PetsPhoto） */}
+            <PhotoCat x0={cat.x0} gy={CAT_GROUND_Y + (bagY - ISLAND_TOP)} sit={CAT.sit}
+              xf={catPhotoXf(scene, t)} op={cat.op} />
 
             {/* 活动范围：以锚点为心、绳长为半径的圆，被包体边界裁剪 —— 画在猫之上才看得见 */}
             {arcOp > 0.01 && (
@@ -490,14 +446,16 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
                   fill={C.accent} opacity={0.13} />
                 <circle cx={TETHER.anchor.x} cy={TETHER.anchor.y} r={TETHER.len}
                   fill="none" stroke={C.accent} strokeWidth={2.6} strokeDasharray="9 6" />
-                <text x={TETHER.anchor.x + 30} y={TETHER.anchor.y + TETHER.len - 14}
-                  fontFamily={F_UI} fontSize={12} fontWeight={700} fill={C.accent}>活动范围</text>
+                <text x={TETHER.anchor.x + 8} y={TETHER.anchor.y + TETHER.len * 0.62}
+                  fontFamily={F_UI} fontSize={12} fontWeight={700} fill={C.accent}
+                  stroke="#FFFFFF" strokeWidth={3} strokeOpacity={0.82} paintOrder="stroke">活动范围</text>
               </g>
             )}
 
-            {/* 栓扣：锚点 + 绳（松弛时下垂，拉直时绷成直线） */}
+            {/* 栓扣：锚点 + 绳（松弛时下垂，拉直时绷成直线）。
+                锚点在包内壁上 —— 包被提起时整组跟着包位移（c4 修过的 bug：不跟会脱在半空） */}
             {tv.shown && (
-              <g>
+              <g transform={`translate(0 ${N(bagY - ISLAND_TOP)})`}>
                 <circle cx={TETHER.anchor.x} cy={TETHER.anchor.y} r={5.6} fill={C.panel}
                   stroke={C.ink2} strokeWidth={1.8} />
                 <circle cx={TETHER.anchor.x} cy={TETHER.anchor.y} r={2.2} fill={C.ink3} />
@@ -512,9 +470,10 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
                   );
                 })()}
                 {tautK > 0.5 && (
-                  <text x={(TETHER.anchor.x + tv.end.x) / 2} y={TETHER.anchor.y - 16}
-                    textAnchor="middle" fontFamily={F_UI} fontSize={12} fontWeight={700}
-                    fill={C.warn} opacity={tautK}>绳已拉直 · 到头了</text>
+                  <text x={BAG.x + 4} y={bagY - BAG.h - 13} textAnchor="start"
+                    fontFamily={F_UI} fontSize={12} fontWeight={700}
+                    fill={C.warn} opacity={tautK} stroke="#FFFFFF" strokeWidth={3}
+                    strokeOpacity={0.82} paintOrder="stroke">绳已拉直 · 到头了</text>
                 )}
               </g>
             )}
@@ -551,7 +510,8 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
               strokeWidth={1.8} />
             {openK > 0.15 && (
               <text x={hingeNow.x + 34} y={hingeNow.y + 22} textAnchor="middle" fontFamily={F_UI}
-                fontSize={11.5} fill={C.ink3} opacity={openK}>敞篷（已打开）</text>
+                fontSize={11.5} fill={C.ink2} opacity={openK} stroke="#FFFFFF" strokeWidth={3}
+                strokeOpacity={0.82} paintOrder="stroke">敞篷（已打开）</text>
             )}
 
             {/* 锁舌 ×2：向下伸出插进插槽，倒钩卡到顶板下面 */}
@@ -568,7 +528,7 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
                       width={9.2 + 10.4 * lat.ext} height={6} rx={2.4} fill={col} />
                   )}
                   {lat.ring > 0 && lat.ring < 1 && (
-                    <circle cx={x} cy={ISL_S.top + 6} r={6 + 24 * lat.ring} fill="none"
+                    <circle cx={x} cy={ISLAND_TOP + 6} r={6 + 24 * lat.ring} fill="none"
                       stroke={C.ok} strokeWidth={2.6} opacity={1 - lat.ring} />
                   )}
                 </g>
@@ -578,14 +538,15 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
             {scene === 'c1' && win(t, 3.9, 4.3) * (1 - win(t, 6.9, 7.2)) > 0.01 && (
               <g opacity={win(t, 3.9, 4.3) * (1 - win(t, 6.9, 7.2))}>
                 {LATCH_X.map((x, i) => (
-                  <line key={i} x1={x} y1={bagY + 4} x2={x} y2={ISL_S.top + 18}
+                  <line key={i} x1={x} y1={bagY + 4} x2={x} y2={ISLAND_TOP + 18}
                     stroke={C.accent} strokeWidth={1.4} strokeDasharray="4 4" />
                 ))}
               </g>
             )}
             {lat.ext > 0.9 && (
-              <text x={(LATCH_X[0] + LATCH_X[1]) / 2} y={ISL_S.top + 36} textAnchor="middle"
-                fontFamily={F_UI} fontSize={11.5} fontWeight={700} fill={C.ok}>锁舌 ×2 已咬合</text>
+              <text x={(LATCH_X[0] + LATCH_X[1]) / 2} y={ISLAND_TOP + 36} textAnchor="middle"
+                fontFamily={F_UI} fontSize={11.5} fontWeight={700} fill={C.ok} stroke="#FFFFFF"
+                strokeWidth={3} strokeOpacity={0.82} paintOrder="stroke">锁舌 ×2 已咬合</text>
             )}
           </g>
 
@@ -644,7 +605,7 @@ export const BagStage: React.FC<{scene: BagKey}> = ({scene}) => {
         position: 'absolute', top: 24, left: 32, fontFamily: F_DATA, fontSize: 20,
         letterSpacing: '0.12em', color: C.ink3,
       }}>
-        {v.sideOp > 0.5 ? '岛台剖面 · SECTION' : '座舱俯视 · TOP VIEW'}
+        {v.sideOp > 0.5 ? '前排实拍 · FRONT ROW' : '座舱俯视 · TOP VIEW'}
       </div>
 
       {/* 章节标签（开场短暂出现） */}

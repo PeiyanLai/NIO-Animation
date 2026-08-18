@@ -5,7 +5,8 @@
 // 禁止 Math.random。
 //
 // ⚠️ 侧视方向约定（由 bag-geo 常量自洽性推定，全工程只此一处写死）：
-//   视角 B = 岛台剖面，**车头在 −x（左）、二排在 +x（右）**。依据：
+//   视角 B = 前排实拍舞台（ES8 前排照片不镜像铺底，机构画在照片岛台上），
+//   **车头在 −x（左）、二排在 +x（右）**——照片车头朝左，与此约定一致。依据：
 //     · SIDE.frontTrayMM 从 x0 起算 —— 托盘/杯架在最前，其后是软包段，最后是二排屏；
 //     · BUTTON.x = PAD_X0 − smm(40) 落在软包段「前缘」之前，只有 −x 为前才成立。
 //   于是：猫（头朝 +x）朝向二排；CANOPY.hinge 在包体**前**上沿，开盖时向前上方翻起
@@ -52,10 +53,18 @@ export const CORNERS = [
 ];
 
 /**
- * 视角 B 相机：把岛台剖面（含掀开到 −108° 的敞篷，世界 y 最高 ≈ −82）压进 1000×560。
- * screen = world * s + (tx, ty)
+ * 视角 B 相机：screen = world * s + (tx, ty)。
+ *
+ * **由 ES8 前排实拍照片标定**（用户指定：直接在照片的真实岛台上演示，不画剖面）。
+ * 照片按 (x=-3, y=-6, 1006×566) 铺满舞台后，岛台可见台面段（方向盘之后、
+ * 前排座椅椅背遮挡之前）实测为舞台 x 418…647、台面接触线 y≈314
+ * （照片 px：x 700…1080、近侧沿 y≈537，×0.6017）。
+ * 解出：ISLAND_TOP(218.667)→314 且包体(世界 x 425…616.7)落在台面段内、
+ * 右移 8px 让包左沿基本让开方向盘轮缘（目检定案）→ s=0.95, tx=45.2, ty=106.27。
+ * 敞篷开到 −108° 时世界 y 最高 ≈ −82 → 舞台 y≈28，仍在画面内（断言里有这条）。
+ * ⚠️ 换照片或挪包位必须重量台面段再解一次，不许目测凑数。
  */
-export const SIDE_CAM = {s: 0.9, tx: 66, ty: 100};
+export const SIDE_CAM = {s: 0.95, tx: 45.2, ty: 106.27};
 export const sideX = (x: number) => x * SIDE_CAM.s + SIDE_CAM.tx;
 export const sideY = (y: number) => y * SIDE_CAM.s + SIDE_CAM.ty;
 export const sidePt = (p: Pt): Pt => ({x: sideX(p.x), y: sideY(p.y)});
@@ -104,7 +113,12 @@ export const CANOPY_PLAN = {
   len: BAG_PLAN.h * 0.92,
 };
 
-// ── 视角 B 派生几何（岛台侧视剖面）──────────────────────────────────────
+// ── 视角 B 派生几何（前排实拍舞台）──────────────────────────────────────
+/**
+ * 照片岛台的世界坐标占位盒：卡片避让/贴主体断言用。
+ * 岛台本体不再用矢量画（照片就是岛台），但「卡片不许压在岛台照片上」仍要成立。
+ * top = ISLAND_TOP 与照片台面接触线严格对齐（SIDE_CAM 就是按这条解的）。
+ */
 export const ISL_S = {
   x0: SIDE.x0,
   x1: SIDE.x0 + ISLAND_LEN,
@@ -114,8 +128,6 @@ export const ISL_S = {
   padX0: PAD_X0,
   padX1: PAD_X0 + PAD_LEN,
 };
-/** 二排屏（装在岛台尾端，向后立起）*/
-export const REAR_SCREEN = {x0: 636, x1: 724, y0: 158, y1: ISLAND_TOP};
 /** 岛台顶板厚度（锁舌的倒钩要卡到它下面）*/
 export const TOP_PLATE = 8;
 /** 固定点插槽（岛台顶面上的两个孔）*/
@@ -237,7 +249,7 @@ export const BAG_SCENES: Record<BagKey, BagScene> = {
     title: '放上岛台 · 一按固定',
     caps: [
       '前排中央岛台贯通仪表台到二排，中段软包扶手就是宠物包的位置',
-      '视角推近到岛台剖面 —— 看清固定接口在哪',
+      '视角切到前排实拍 —— 包就固定在岛台台面上',
       '把包放到软包段上，包底两处锁舌对准岛台固定点',
       '往下一按 —— 锁舌伸出、倒钩卡进岛台顶板',
       '已锁定：车固定包，行驶中不会乱动',
@@ -404,6 +416,37 @@ export const catAt = (scene: BagKey, t: number): {pose: CatPose; x0: number; op:
   if (scene === 'c3') return {pose: t < 5.0 ? 'curl' : 'sit', x0: CAT_X0, op: 1};
   // c4：合盖前先蜷起来（盖板落下时猫头必须已经收回包内）
   return {pose: t < 1.6 ? 'sit' : 'curl', x0: CAT_X0, op: 1};
+};
+
+// ── 照片猫的剪纸位姿（PhotoCat 用）────────────────────────────────────────
+// 照片是单一坐姿抠图,位姿差异用整体 平移/倾角/压缩 表达(剪纸偶),
+// 切换时刻与 catAt 的离散位姿切换一致,但这里做 0.5s 平滑过渡。
+export type PetXf = {dy: number; rot: number; sx: number; sy: number};
+const CAT_PXF: Record<CatPose, PetXf> = {
+  sit: {dy: 0, rot: 0, sx: 1, sy: 1},
+  lookout: {dy: -5, rot: -4, sx: 1, sy: 1.02},
+  turn: {dy: 2, rot: 7, sx: 1, sy: 0.97},
+  curl: {dy: 0, rot: 0, sx: 1.08, sy: 0.72},
+};
+const mixXf = (a: PetXf, b: PetXf, k: number): PetXf => ({
+  dy: lerp(a.dy, b.dy, k), rot: lerp(a.rot, b.rot, k),
+  sx: lerp(a.sx, b.sx, k), sy: lerp(a.sy, b.sy, k),
+});
+export const catPhotoXf = (scene: BagKey, t: number): PetXf => {
+  let xf: PetXf;
+  if (scene === 'c2') {
+    xf = mixXf(
+      mixXf(CAT_PXF.sit, CAT_PXF.turn, smooth(win(t, 4.6, 5.1))),
+      CAT_PXF.lookout, smooth(win(t, 7.6, 8.1)));
+  } else if (scene === 'c3') {
+    xf = mixXf(CAT_PXF.curl, CAT_PXF.sit, smooth(win(t, 5.0, 5.5)));
+  } else if (scene === 'c4') {
+    xf = mixXf(CAT_PXF.sit, CAT_PXF.curl, smooth(win(t, 1.6, 2.1)));
+  } else {
+    xf = CAT_PXF.sit;
+  }
+  // 呼吸(以地线为轴,肉眼可感但不抢戏)
+  return {...xf, sy: xf.sy + 0.008 * Math.sin((2 * Math.PI * t) / 2.6)};
 };
 
 // ── 栓扣 ─────────────────────────────────────────────────────────────────
@@ -690,14 +733,10 @@ export const subjectsAt = (scene: BagKey, t: number): Rect[] => {
     out.push({x: a.x, y: a.y, w: b.x - a.x, h: b.y - a.y});
   }
   if (v.sideOp > 0.02) {
+    // 照片岛台区域（含其下的座椅/中控带）：卡片不许压上去
     out.push({
       x: sideX(ISL_S.x0), y: sideY(ISL_S.top),
       w: (ISL_S.x1 - ISL_S.x0) * SIDE_CAM.s, h: (ISL_S.floor - ISL_S.top) * SIDE_CAM.s,
-    });
-    out.push({
-      x: sideX(REAR_SCREEN.x0), y: sideY(REAR_SCREEN.y0),
-      w: (REAR_SCREEN.x1 - REAR_SCREEN.x0) * SIDE_CAM.s,
-      h: (REAR_SCREEN.y1 - REAR_SCREEN.y0) * SIDE_CAM.s,
     });
     const br = bagRect(scene, t);
     out.push({x: sideX(br.x), y: sideY(br.y), w: br.w * SIDE_CAM.s, h: br.h * SIDE_CAM.s});
@@ -720,6 +759,7 @@ export const CONCEPTUAL: string[] = [
   '适用宠物体型区间未定义（文档只写「小型动物，比如猫」）',
   '承重与碰撞工况下的固定强度未定义',
   '行驶中是否有车机侧提示/状态卡未定义，动画中的状态卡为概念 UI',
-  '座舱为按官方参考图校正的比例化概念平面，非实拍或 CAD',
+  '座舱底图为 ES8 官方实拍（俯视 + 前排侧视），侧视为透视照片：只锚定台面接触线，毫米级几何主张由矢量机构层承担；固定插槽/按键画在照片上为概念示意',
+  '猫/狗为真实宠物照片抠图的剪纸式动效（单一姿态整体运动），非逐帧动物动画',
   '「车外便携」形态（手提/肩背/单肩带长度）未定义，动画只表现「提起带走」这一步',
 ];

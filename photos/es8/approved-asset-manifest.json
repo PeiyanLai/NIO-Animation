@@ -49,7 +49,7 @@
       "reviewedAt": "2026-08-18",
       "visualFidelity": "official-photo",
       "orthographic": false,
-      "usageNote": "宠物包侧视场景环境背景（镜像+白纱打底）。**透视图**：只做氛围背景，不参与任何几何标定，几何主张全部由矢量层承担。"
+      "usageNote": "宠物包侧视场景的**实拍舞台**（用户指定：不画岛台剖面，机构直接画在照片岛台上）。不镜像（照片车头朝左 = 视角 B 约定的 −x）。**透视图**：只锚定「岛台台面接触线」这一条几何——照片铺满舞台后台面段实测为舞台 x 418…647 / y≈314，SIDE_CAM(s=0.95, tx=45.2, ty=106.27) 由此解出（见 animations/src/bag-data.ts）；毫米级主张（绳长/锁舌行程/可及范围）仍由矢量机构层承担。"
     },
     {
       "id": "es8-cabin-topdown-front2rows",

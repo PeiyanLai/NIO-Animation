@@ -2,7 +2,7 @@ import React from 'react';
 import {AbsoluteFill, Img, useCurrentFrame, useVideoConfig} from 'remotion';
 import {PHOTO_URI} from './photo';
 import {CAR_BODY} from './data';
-import {Dog} from './Dog';
+import {PhotoDog} from './PetsPhoto';
 import {
   AP_PATH_PHOTO, AP_PATH_STAGE, CARD_H, CARD_W, CLEATS, DOG, GY, HINGE, HOLE, JUMPS, KX, KY, LIP,
   PILL, PLACE, RAMP_DEG, RAMP_DEG_TXT, RAMP_FOOT, RAMP_LEN, RAMP_THICK,
@@ -181,6 +181,23 @@ export const RampStage: React.FC<{scene: RampKey}> = ({scene}) => {
             <stop offset="70%" stopColor="#334142" />
             <stop offset="100%" stopColor="#1B2323" />
           </linearGradient>
+          {/* 洞内犬提亮：边牧背部是黑毛，在暗腔里会隐形；把暗部抬起来才看得出「趴着的犬」 */}
+          <filter id={`inlight-${uid}`}>
+            <feComponentTransfer>
+              <feFuncR type="linear" slope="1.5" intercept="0.09" />
+              <feFuncG type="linear" slope="1.5" intercept="0.09" />
+              <feFuncB type="linear" slope="1.5" intercept="0.09" />
+            </feComponentTransfer>
+          </filter>
+          {/* 老年犬：压饱和度 + 略降对比（毛色发灰）——跳跃高度差异由数据层给 */}
+          <filter id={`senior-${uid}`}>
+            <feColorMatrix type="saturate" values="0.42" />
+            <feComponentTransfer>
+              <feFuncR type="linear" slope="0.92" intercept="0.06" />
+              <feFuncG type="linear" slope="0.92" intercept="0.06" />
+              <feFuncB type="linear" slope="0.92" intercept="0.06" />
+            </feComponentTransfer>
+          </filter>
         </defs>
 
         {/* 地面（纯色，无网格线） */}
@@ -223,13 +240,15 @@ export const RampStage: React.FC<{scene: RampKey}> = ({scene}) => {
         )}
         {dog.inside < 0.995 && (
           <g transform={`translate(${N(dog.x)} ${N(dog.y)}) rotate(${N(dog.rot)})`}>
-            <Dog t={t} pose={dog.pose} h={DOG.witherPx} senior={dog.senior} op={1 - dog.inside} />
+            <PhotoDog t={t} pose={dog.pose} h={DOG.witherPx} senior={dog.senior}
+              op={1 - dog.inside} seniorFilter={`senior-${uid}`} />
           </g>
         )}
         {dog.inside > 0.005 && (
-          <g clipPath={`url(#hole-${uid})`}>
+          <g clipPath={`url(#hole-${uid})`} filter={`url(#inlight-${uid})`}>
             <g transform={`translate(${N(dog.x)} ${N(dog.y)}) rotate(${N(dog.rot)})`}>
-              <Dog t={t} pose={dog.pose} h={DOG.witherPx} senior={dog.senior} op={dog.inside} />
+              <PhotoDog t={t} pose={dog.pose} h={DOG.witherPx} senior={dog.senior}
+                op={dog.inside} seniorFilter={`senior-${uid}`} />
             </g>
           </g>
         )}
@@ -238,7 +257,7 @@ export const RampStage: React.FC<{scene: RampKey}> = ({scene}) => {
         {open && (
           <g clipPath={`url(#hole-${uid})`}>
             <rect x={HOLE.x0 - 4} y={HOLE.y0 - 4} width={HOLE.x1 - HOLE.x0 + 8}
-              height={HOLE.y1 - HOLE.y0 + 8} fill={C.ink} opacity={0.34 * gateK} />
+              height={HOLE.y1 - HOLE.y0 + 8} fill={C.ink} opacity={0.2 * gateK} />
           </g>
         )}
 

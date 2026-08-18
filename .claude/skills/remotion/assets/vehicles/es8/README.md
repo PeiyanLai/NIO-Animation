@@ -6,7 +6,7 @@
 |---|---|---|
 | 实车规格 | ✅ 官方数据（轮辋/轮胎规格未给） | `spec.ts` |
 | **座舱俯视** | ✅ 全舱实拍（仪表台→后备箱） | `photos/es8/es8-cabin-topdown.jpg`，标定见 `animations/src/bag-data.ts` PLAN_PHOTO |
-| 前排正侧透视 | ⚠️ 透视图，只做氛围背景 | `photos/es8/es8-front-row-side.jpg` |
+| 前排正侧透视 | ✅ 实拍舞台（透视图，只锚定台面接触线） | `photos/es8/es8-front-row-side.jpg`，相机标定见 `animations/src/bag-data.ts` SIDE_CAM |
 | 车外正俯视 | ❌ 手上那张是透视，判废 | — |
 | 车外正侧视 | ❌ 没有 | — |
 | 轮毂 | ❌ 没有 | — |
