@@ -564,7 +564,7 @@ assets/vehicles/
 靠矢量轮补上）。直接去掉轮拱洞的话，轮胎下三分之一会被整齐切掉。
 整车缩略图上看不出来（接地阴影正好盖住），放大一眼就露馅。
 
-配套脚本：`scripts/extract-rim.py`（从侧视照片抠可旋转轮辋圆盘）、`scripts/build-player.py`（打包单文件交互 HTML，**改完组件必须重跑**，否则发出去的还是旧快照）、`scripts/cutout-trace.py`（照片抠形：扫边界/找设计线/逐点内缩/渗出体检/网格读数/编码/预览）、`scripts/assert-timeline.mjs`（全时间轴断言原语：SAT 间距/单调性/终点精度/值域/出界重叠，`--selftest` 自测）。
+配套脚本：`scripts/assert-assets-in-sync.py`（**改完素材必跑**：逐项比 md5，防止资产库与已交付动画各自往前走，这种漂移肉眼发现不了）、`scripts/extract-rim.py`（从侧视照片抠可旋转轮辋圆盘）、`scripts/build-player.py`（打包单文件交互 HTML，**改完组件必须重跑**，否则发出去的还是旧快照）、`scripts/cutout-trace.py`（照片抠形：扫边界/找设计线/逐点内缩/渗出体检/网格读数/编码/预览）、`scripts/assert-timeline.mjs`（全时间轴断言原语：SAT 间距/单调性/终点精度/值域/出界重叠，`--selftest` 自测）。
 
 **每个资产的硬性约束、落位公式、换车型改动清单一律见 `references/vehicle-assets.md`，动手前必读那一份。**
 
