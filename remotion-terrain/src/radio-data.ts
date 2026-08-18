@@ -231,6 +231,30 @@ export const phaseOf = (s: RadioScene, t: number) => {
 };
 
 /** 场景四：任意时刻的车 i 的 x（错误队形 → 掉队 → 归位 → 换到推荐队形） */
+/**
+ * 场景四换队形时的**横向让位**。
+ *
+ * 不加这个的话车会直接从对方身上穿过去：车 1 从 slot1(660) 退到 slot3(260)，
+ * 车 2 从 slot2(460) 顶到 slot1(660)，两条轨迹在同一条线上对穿——
+ * 全时间轴断言实测最小间距 **−101.6px**（t=9.66s），等于两台车几乎完全重叠。
+ *
+ * 做法：**往前超越的车**（good 槽位比 wrong 靠前）在换位期间拉出去 36，过完再并回；
+ * 被超的那台同时避让 14。只让超车的一方避是不够的——两车半宽和就有 41.4，
+ * 单侧 36 仍会判定相交（实测残留 −7.4px），而单侧拉到 50 又会开出路面。
+ */
+/** 换位时的横向让位量：超车的拉上去 36，被超的避下来 14，合计 50 > 两车半宽和 41.4 */
+export const D_LANE_UP = -36;
+export const D_LANE_DOWN = 14;
+
+export function dCarY(i: number, t: number) {
+  const dx = D_CFG.slot[D_CFG.good[i]] - D_CFG.slot[D_CFG.wrong[i]];
+  if (dx === 0) return GEO.carY;
+  const k = clamp01((t - D_CFG.swap[0]) / (D_CFG.swap[1] - D_CFG.swap[0]));
+  // 出道 → 保持 → 并回（各占换位时长的 25%）
+  const pull = k < 0.25 ? smooth(k / 0.25) : k > 0.75 ? smooth((1 - k) / 0.25) : 1;
+  return GEO.carY + (dx > 0 ? D_LANE_UP : D_LANE_DOWN) * pull;
+}
+
 export function dCarX(i: number, t: number) {
   const k = smooth(clamp01((t - D_CFG.swap[0]) / (D_CFG.swap[1] - D_CFG.swap[0])));
   const base = lerp(D_CFG.slot[D_CFG.wrong[i]], D_CFG.slot[D_CFG.good[i]], k);

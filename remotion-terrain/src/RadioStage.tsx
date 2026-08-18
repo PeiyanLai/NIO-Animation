@@ -2,7 +2,7 @@ import React from 'react';
 import {AbsoluteFill, useCurrentFrame, useVideoConfig} from 'remotion';
 import {
   A_CFG, B_CFG, C_CFG, D_CFG, GEO, RADIO_SCENES, R, T_COLORS as C,
-  F_DATA, F_UI, type RadioKey, dCarX, frac, qPath, qPt, radioState, textW, win,
+  F_DATA, F_UI, type RadioKey, dCarX, dCarY, frac, qPath, qPt, radioState, textW, win,
 } from './radio-data';
 import {CAR_BBOX, CAR_SRC, CAR_TOP_BODY, HEADLIGHTS, HEADLIGHT_FILLS} from './parking-data';
 import {ES9_TOP_URI} from './es9-top-photo';
@@ -67,46 +67,88 @@ const Cloud: React.FC<{x: number; y: number; live: number; t: number}> = ({x, y,
 /* ═══ 俯视车（车头朝右）═════════════════════════════════════════════ */
 
 /**
- * 正俯视一律复用泊车动画那张实拍图（`es9-top-photo.ts` + `CAR_TOP_BODY` 遮罩），
- * 不再画矢量简图——同一个车型在不同动画里必须长一样。
+ * **蔚来车**用泊车动画那张实拍图（`es9-top-photo.ts` + `CAR_TOP_BODY` 遮罩）。
+ * 「正俯视统一用同一张图」这条规则**只管我们自己的车**——
+ * 保证 ES9 在各个动画里长一样。
  *
  * 两处必须注意：
  * 1. 原图**车头朝上**，这里车队是横向的，所以整组 `rotate(90)`（SVG 正角=顺时针，
  *    (0,-1) 转 90° 得 (1,0)，正好朝右）。灯条路径在图坐标系里，跟着一起转，不用另算。
- * 2. 尺寸按**实车比例** 5365:2029 = 2.644 定，不能沿用原来矢量简图的 112×52（2.15）。
- *    车长定 120 → 车宽 45.4，车距 190 仍留 70 的间隙，队形不受影响。
+ * 2. 尺寸按**实车比例** 5365:2029 = 2.644 定，不能沿用早先矢量简图的 112×52（2.15）。
  */
-const CAR_L = 120;                                   // 舞台车长（前后向）
+const CAR_L = 120;                                   // ES9 舞台车长（5365mm）
 const RADIO_CAR_SCALE = CAR_L / (CAR_BBOX.y1 - CAR_BBOX.y0);
+const MM_PER_STAGE_PX = 5365 / CAR_L;                // 44.7 mm/px，两种车共用这把尺子
+
+const NioCarTop: React.FC = () => (
+  <g
+    transform={`rotate(90) scale(${RADIO_CAR_SCALE}) translate(${-(CAR_BBOX.x0 + CAR_BBOX.x1) / 2} ${-(CAR_BBOX.y0 + CAR_BBOX.y1) / 2})`}
+  >
+    <image href={ES9_TOP_URI} width={CAR_SRC.w} height={CAR_SRC.h} mask="url(#carTopMask)" />
+    {/* 前大灯：三层实心刀锋（暗壳 → 暖白灯体 → 高亮灯芯）。
+        照片里的灯带只有几像素，在浅底上会糊掉，叠这一层让它读得出来 */}
+    {HEADLIGHT_FILLS.map((L) => (
+      <g key={L.key} fill={L.fill} opacity={L.opacity}>
+        <path d={HEADLIGHTS.left[L.key]} />
+        <path d={HEADLIGHTS.right[L.key]} />
+      </g>
+    ))}
+  </g>
+);
+
+/**
+ * **朋友的非蔚来车** —— 中性矢量车，**绝对不能用 ES9 那张图**。
+ *
+ * 这一版之前的做法是「同一张 ES9 照片 + 不同描边色」，被一眼看穿：
+ * 画面上就是同一台车，标签写「朋友的车」也没用。本片的叙事主线正是
+ * 「非蔚来车也能入队」，主体长一样，这条主线就垮了。
+ *
+ * 三个维度同时拉开差距，任意一个单独用都不够：
+ * - **尺寸**：4700×1850mm（常见中型车），对 ES9 的 5365×2029 明显短一截、窄一圈。
+ *   两者共用 `MM_PER_STAGE_PX` 这把尺子换算，不是随手缩小。
+ * - **颜色**：浅蓝灰实心，对 ES9 那张近黑的实拍图反差极大。
+ * - **造型**：普通方正三厢轮廓 + 矩形前后灯，**不画 ES9 的刀锋灯带**。
+ *
+ * 中性车不带任何品牌特征，也不影射具体车型——这是合规要求，别加标识。
+ */
+const OTH_MM = {len: 4700, wid: 1850};
+const OTH_L = OTH_MM.len / MM_PER_STAGE_PX;          // ≈ 105.1
+const OTH_W = OTH_MM.wid / MM_PER_STAGE_PX;          // ≈ 41.4
+
+const OtherCarTop: React.FC = () => (
+  <g>
+    {/* 车身 */}
+    <rect x={-OTH_L / 2} y={-OTH_W / 2} width={OTH_L} height={OTH_W} rx={13}
+      fill={R.oth} stroke={R.othLine} strokeWidth={1.8} />
+    {/* 座舱：一整块玻璃区（中间宽、前后窄），**不要把前后风挡拆成两个梯形**——
+        拆开画会变成两个朝内的深色蝴蝶结，中间的车顶像另贴上去的一块板。
+        车顶不单独填色，直接让车身色透出来就是车顶。 */}
+    <path d="M20,-10 L7,-13.6 L-15,-13.6 L-27,-10 L-27,10 L-15,13.6 L7,13.6 L20,10 Z"
+      fill={R.othRoof} opacity={0.72} />
+    {/* 车顶：只用一条淡描边勾出来，不填色 */}
+    <rect x={-15} y={-11.5} width={22} height={23} rx={4}
+      fill={R.oth} opacity={0.5} stroke={R.othLine} strokeWidth={0.8} />
+    {/* 机盖 / 尾厢分缝 */}
+    <path d="M20,-16 L20,16 M-27,-16 L-27,16"
+      stroke={R.othLine} strokeWidth={0.9} opacity={0.4} />
+    {/* 后视镜（贴在前风挡根部两侧） */}
+    <rect x={16} y={-23.5} width={8} height={3.6} rx={1.8} fill={R.othLine} />
+    <rect x={16} y={19.9} width={8} height={3.6} rx={1.8} fill={R.othLine} />
+    {/* 前灯：普通矩形灯，刻意不用 ES9 的刀锋造型 */}
+    <rect x={46.5} y={-15} width={4.5} height={8.5} rx={2} fill="#FFF6E2" />
+    <rect x={46.5} y={6.5} width={4.5} height={8.5} rx={2} fill="#FFF6E2" />
+    {/* 尾灯 */}
+    <rect x={-51} y={-15} width={4} height={8.5} rx={2} fill="#D14545" opacity={0.7} />
+    <rect x={-51} y={6.5} width={4} height={8.5} rx={2} fill="#D14545" opacity={0.7} />
+  </g>
+);
 
 const Car: React.FC<{x: number; y?: number; kind: 'nio' | 'oth'; op?: number}> = ({
   x, y = GEO.carY, kind, op = 1,
 }) => (
   <g transform={`translate(${x} ${y})`} opacity={op}>
-    <ellipse cx={0} cy={26} rx={58} ry={7} fill="#5C7070" opacity={0.11} />
-    <g
-      transform={`rotate(90) scale(${RADIO_CAR_SCALE}) translate(${-(CAR_BBOX.x0 + CAR_BBOX.x1) / 2} ${-(CAR_BBOX.y0 + CAR_BBOX.y1) / 2})`}
-    >
-      <image href={ES9_TOP_URI} width={CAR_SRC.w} height={CAR_SRC.h} mask="url(#carTopMask)" />
-      {/* 车型统一后，「哪台是蔚来」只能靠轮廓色区分。
-          原先是靠车身色（金 / 蓝灰），换成实拍图后四台全是黑车，
-          去色滤镜对黑车等于没做——所以改用描边，这是唯一还能读出来的通道。 */}
-      <path
-        d={CAR_TOP_BODY}
-        fill="none"
-        stroke={kind === 'nio' ? C.accent : R.oth}
-        strokeWidth={7}
-        opacity={kind === 'nio' ? 0.85 : 0.7}
-      />
-      {/* 前大灯：三层实心刀锋（暗壳 → 暖白灯体 → 高亮灯芯）。
-          照片里的灯带只有几像素，在浅底上会糊掉，叠这一层让它读得出来 */}
-      {HEADLIGHT_FILLS.map((L) => (
-        <g key={L.key} fill={L.fill} opacity={L.opacity}>
-          <path d={HEADLIGHTS.left[L.key]} />
-          <path d={HEADLIGHTS.right[L.key]} />
-        </g>
-      ))}
-    </g>
+    <ellipse cx={0} cy={26} rx={kind === 'nio' ? 58 : 51} ry={7} fill="#5C7070" opacity={0.11} />
+    {kind === 'nio' ? <NioCarTop /> : <OtherCarTop />}
   </g>
 );
 
@@ -290,6 +332,8 @@ export const RadioStage: React.FC<{scene: RadioKey}> = ({scene}) => {
   const ph = st.ph;
 
   const xs = s.cars.map((c, i) => (scene === 'd' ? dCarX(i, t) : c.x));
+  // 场景四换队形时超车的那台会拉到邻道，其余场景恒为 GEO.carY
+  const ys = s.cars.map((_, i) => (scene === 'd' ? dCarY(i, t) : GEO.carY));
   const phStart = ph === 0 ? 0 : s.ph[ph - 1];
   const capK = win(t, phStart, phStart + 0.4);
   const tipX = scene === 'd' && ph === 1 ? xs[3] : s.capTip[ph];
@@ -470,7 +514,7 @@ export const RadioStage: React.FC<{scene: RadioKey}> = ({scene}) => {
         )}
 
         {/* ── 车 ── */}
-        {s.cars.map((c, i) => <Car key={i} x={xs[i]} kind={c.kind} />)}
+        {s.cars.map((c, i) => <Car key={i} x={xs[i]} y={ys[i]} kind={c.kind} />)}
 
         {/* ── 贴车徽标 ── */}
         {s.cars.map((c, i) => {
