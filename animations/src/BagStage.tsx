@@ -20,6 +20,7 @@ import {
   BAG_SCENES, F_DATA, F_UI, T_COLORS as C, bagBottom, bagOp, buttonAt, canopyDeg,
   cardAnchorScreen, cardsAt, catAt, catClip, catPhotoXf, handAt, latchAt, levelK,
   phaseOf, phaseStart,
+  SEAT_OCC_POLY,
   planPt, planXfStr, reachK, roadPhase, stateAt, steerDeg, tetherAt, viewAt, win,
   type BagKey, type Card, type Pt,
 } from './bag-data';
@@ -379,20 +380,8 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
       ? Math.max(0, 1 - (TETHER.len - Math.hypot(clipP.x - TETHER.anchor.x, clipP.y - TETHER.anchor.y)) / 8)
       : 0;
 
-    return (
-      <g opacity={op} transform={`translate(500 280) scale(${N(1 + 0.06 * settle)}) translate(-500 -280)`}>
-        {/* ES8 前排实拍 = 舞台本体（用户指定：不画岛台剖面，直接在照片的真实岛台上演示）。
-            不镜像——照片车头在 −x，与视角 B 方向约定一致；只罩一层极轻的纱让机构线条读得清。
-            ⚠️ 透视照片，只锚定「台面接触线」这一条几何（SIDE_CAM 按它标定），
-            毫米级主张（绳长/锁舌行程/可及范围）仍由矢量机构层承担 */}
-        <image href={ES8_CABIN_SIDE_URI} x={-3} y={-6} width={1006} height={566} />
-        {/* 照片轮毂中心盖不是蔚来标——盖一层深色盘 + 实测比例的 NioLogo(舞台坐标由轮毂放大读数标定) */}
-        <g transform="translate(57.2 523.5)">
-          <circle r={11.2} fill="#26282B" stroke="#3A3D40" strokeWidth={1.2} />
-          <NioLogo r={7.4} fill="#C9CED4" />
-        </g>
-        <rect x={-3} y={-6} width={1006} height={566} fill={C.panel} opacity={0.13} />
-        <g transform={SIDE_XF}>
+    const world = (
+      <g transform={SIDE_XF}>
           <defs>
             <linearGradient id={`inner-${uid}`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={BAGC.inner0} />
@@ -576,7 +565,37 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
 
           {/* 手 */}
           {hand && <Hand {...hand} />}
+      </g>
+    );
+
+    return (
+      <g opacity={op} transform={`translate(500 280) scale(${N(1 + 0.06 * settle)}) translate(-500 -280)`}>
+        {/* ES8 前排实拍 = 舞台本体（用户指定：不画岛台剖面，直接在照片的真实岛台上演示）。
+            不镜像——照片车头在 −x，与视角 B 方向约定一致；只罩一层极轻的纱让机构线条读得清。
+            ⚠️ 透视照片，只锚定「台面接触线」这一条几何（SIDE_CAM 按它标定），
+            毫米级主张（绳长/锁舌行程/可及范围）仍由矢量机构层承担 */}
+        <image href={ES8_CABIN_SIDE_URI} x={-3} y={-6} width={1006} height={566} />
+        {/* 照片轮毂中心盖不是蔚来标——盖一层深色盘 + 实测比例的 NioLogo(舞台坐标由轮毂放大读数标定) */}
+        <g transform="translate(57.2 523.5)">
+          <circle r={11.2} fill="#26282B" stroke="#3A3D40" strokeWidth={1.2} />
+          <NioLogo r={7.4} fill="#C9CED4" />
         </g>
+        <rect x={-3} y={-6} width={1006} height={566} fill={C.panel} opacity={0.13} />
+
+        {/* 虚实结合（用户要求）：被近侧座椅遮挡的区域不许生硬叠画。
+            同一份世界内容画两层——「实」层用亮度遮罩剔除座椅区,「虚」层裁进座椅区、34% 透明,
+            读作「在座椅后面透出来」。SEAT_OCC_POLY 来自照片逐点实测的座椅前缘。 */}
+        <defs>
+          <mask id={`seatvis-${uid}`}>
+            <rect x={-3} y={-6} width={1006} height={566} fill="#FFFFFF" />
+            <polygon points={SEAT_OCC_POLY} fill="#000000" />
+          </mask>
+          <clipPath id={`seatocc-${uid}`}>
+            <polygon points={SEAT_OCC_POLY} />
+          </clipPath>
+        </defs>
+        <g mask={`url(#seatvis-${uid})`}>{world}</g>
+        <g clipPath={`url(#seatocc-${uid})`} opacity={0.34}>{world}</g>
       </g>
     );
   };
