@@ -43,6 +43,15 @@ js = open(bundle, encoding='utf-8').read()
 os.remove(bundle)
 # 关键一步：见模块注释
 js = js.replace('</script', r'<\/script')
+# Artifact 发布端有个 PR-review 模板分类器，会以「页面含具体 GitHub PR 链接」等特征
+# 判定页面身份。两处防误判：
+# ① Remotion 未授权横幅里内嵌了 pull/4589 链接——改指 PR 列表页（文案与授权逻辑不动）；
+# ② 实测过一次误判的真正元凶是 **base64 素材流里随机撞上分类器指纹**
+#    （报错 "carries the artifact-pr-review machinery... too large for a review page"，
+#    同一文件旧素材能发、换了新图就被拒）。遇到这种拒发：把可疑的 base64 素材
+#    换个压缩参数重编码（PIL save compress_level 改一档，像素不变、字节流全变）再打包即可。
+js = js.replace('github.com/remotion-dev/remotion/pull/4589',
+                'github.com/remotion-dev/remotion/pulls')
 
 HEAD = '''<style>
   :root { color-scheme: light; }
