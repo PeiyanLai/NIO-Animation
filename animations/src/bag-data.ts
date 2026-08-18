@@ -8,9 +8,9 @@
 //   视角 B = 前排实拍舞台（ES8 前排照片不镜像铺底，机构画在照片岛台上），
 //   **车头在 −x（左）、二排在 +x（右）**——照片车头朝左，与此约定一致。依据：
 //     · SIDE.frontTrayMM 从 x0 起算 —— 托盘/杯架在最前，其后是软包段，最后是二排屏；
-//     · BUTTON.x = PAD_X0 − smm(40) 落在软包段「前缘」之前，只有 −x 为前才成立。
-//   于是：猫（头朝 +x）朝向二排；CANOPY.hinge 在包体**前**上沿，开盖时向前上方翻起
-//   （已手算：远端点旋转 −108° 后落在铰链的左上方 = 向车头方向掀开，符合直觉）。
+//     · BUTTON.x 落在软包段「前缘」之前，只有 −x 为前才成立。
+//   猫**头朝 −x（车头）**——用户指定；栓扣锚点在包内车尾侧壁（+x），
+//   猫往车头走绳才会拉直。包壳舀口也开向车头（镜像壳），敞篷铰链仍在车尾上沿。
 
 import {
   BAG, BUTTON, CANOPY, CAT, ISLAND_LEN, ISLAND_PLAN, ISLAND_PLAN_W, ISLAND_TOP,
@@ -59,12 +59,13 @@ export const CORNERS = [
  * 照片按 (x=-3, y=-6, 1006×566) 铺满舞台后，岛台可见台面段（方向盘之后、
  * 前排座椅椅背遮挡之前）实测为舞台 x 418…647、台面接触线 y≈314
  * （照片 px：x 700…1080、近侧沿 y≈537，×0.6017）。
- * 解出：ISLAND_TOP(218.667)→314 且包体(世界 x 425…616.7)落在台面段内、
- * 右移 8px 让包左沿基本让开方向盘轮缘（目检定案）→ s=0.95, tx=45.2, ty=106.27。
- * 敞篷开到 −108° 时世界 y 最高 ≈ −82 → 舞台 y≈28，仍在画面内（断言里有这条）。
+ * 解出：ISLAND_TOP(218.667)→314；**s 按用户反馈压到 0.75（包别做太大）**，
+ * 包体(世界 x 425…616.7)整体放到方向盘轮缘(舞台 x≈458)与座椅前缘(≈630)之间
+ * → 包左沿落 470：s=0.75, tx=151.25, ty=150。
+ * 敞篷开到 108° 时世界 y 最高 ≈ −82 → 舞台 y≈88，仍在画面内（断言里有这条）。
  * ⚠️ 换照片或挪包位必须重量台面段再解一次，不许目测凑数。
  */
-export const SIDE_CAM = {s: 0.95, tx: 45.2, ty: 106.27};
+export const SIDE_CAM = {s: 0.75, tx: 151.25, ty: 150};
 export const sideX = (x: number) => x * SIDE_CAM.s + SIDE_CAM.tx;
 export const sideY = (y: number) => y * SIDE_CAM.s + SIDE_CAM.ty;
 export const sidePt = (p: Pt): Pt => ({x: sideX(p.x), y: sideY(p.y)});
@@ -198,32 +199,42 @@ export const CAT_POSE: Record<CatPose, CatPoseDef> = {
 export const CAT_BODY_RATIO = CAT.body / CAT.sit;      // ≈ 1.3636
 /** 猫坐在包内软垫上：坐骨着地点的 y */
 export const CAT_GROUND_Y = BAG.y - 5;
-/** 猫的静止 x（坐骨着地点）——包内偏后，头朝 +x 开口一侧 */
-export const CAT_X0 = 472;
+/**
+ * 猫朝向：**头朝 −x（车头，用户指定）**。CAT_POSE 数据仍按「头朝 +x」定义
+ * （矢量兜底不动），这里统一用 CAT_DIR 做 x 镜像——
+ * catClip / catBox / 绳长限位全走同一个符号，别各自翻。
+ */
+export const CAT_DIR = -1;
+/** 猫的静止 x（坐骨着地点）——包内偏车尾侧，头朝车头舀口 */
+export const CAT_X0 = 560;
 
 /** 胸背带扣点的世界坐标 */
 export const catClip = (pose: CatPose, x0: number, groundY = CAT_GROUND_Y): Pt => ({
-  x: x0 + CAT_POSE[pose].clip[0] * CAT.sit,
+  x: x0 + CAT_DIR * CAT_POSE[pose].clip[0] * CAT.sit,
   y: groundY + CAT_POSE[pose].clip[1] * CAT.sit,
 });
 /** 猫的外接盒（世界坐标）——断言用它检查信息卡不压主体 */
 export const catBox = (pose: CatPose, x0: number, groundY = CAT_GROUND_Y): Rect => {
   const p = CAT_POSE[pose];
-  const left = x0 + Math.min(p.hip[0] - p.hipR[0], ...p.tail.map((q) => q[0])) * CAT.sit;
-  const right = x0 + p.nose * CAT.sit;
+  const tailEnd = Math.min(p.hip[0] - p.hipR[0], ...p.tail.map((q) => q[0]));
+  const a = x0 + CAT_DIR * tailEnd * CAT.sit;
+  const b = x0 + CAT_DIR * p.nose * CAT.sit;
+  const left = Math.min(a, b), right = Math.max(a, b);
   const top = groundY + Math.min(p.top, ...p.tail.map((q) => q[1])) * CAT.sit;
   return {x: left, y: top, w: right - left, h: groundY + 0.03 * CAT.sit - top};
 };
 /**
- * 绳长约束：给定位姿，坐骨 x 的上限 —— 保证胸背带扣点到锚点的距离 ≤ len − margin。
+ * 绳长约束：给定位姿，坐骨 x 的**下限**（猫朝 −x 走，锚点在 +x 侧壁）——
+ * 保证胸背带扣点到锚点的距离 ≤ len − margin。
  * 「绳不许被拉长」是硬约束，所以限位在数据层解析求出，不靠画的时候凑。
  */
-export const catX0Max = (pose: CatPose, margin = 0.8): number => {
+export const catX0Min = (pose: CatPose, margin = 0.8): number => {
   const c = CAT_POSE[pose].clip;
   const dy = CAT_GROUND_Y + c[1] * CAT.sit - TETHER.anchor.y;
   const R = TETHER.len - margin;
   const dx = Math.sqrt(Math.max(0, R * R - dy * dy));
-  return TETHER.anchor.x - c[0] * CAT.sit + dx;
+  // clip.x = x0 + CAT_DIR·c0·sit ≥ anchor.x − dx
+  return TETHER.anchor.x - dx - CAT_DIR * c[0] * CAT.sit;
 };
 
 // ── 场景配置 ─────────────────────────────────────────────────────────────
@@ -251,7 +262,7 @@ export const BAG_SCENES: Record<BagKey, BagScene> = {
       '前排中央岛台贯通仪表台到二排，中段软包扶手就是宠物包的位置',
       '视角切到前排实拍 —— 包就固定在岛台台面上',
       '把包放到软包段上，包底两处锁舌对准岛台固定点',
-      '往下一按 —— 锁舌伸出、倒钩卡进岛台顶板',
+      '按一下岛台储物开关 —— 锁舌伸出、咬合岛台',
       '已锁定：车固定包，行驶中不会乱动',
     ],
   },
@@ -292,7 +303,7 @@ export const BAG_SCENES: Record<BagKey, BagScene> = {
     caps: [
       '到达目的地，包仍然是固定状态',
       '先合上敞篷 —— 这一步不解锁',
-      '再按岛台侧面的物理按键 —— 锁舌缩回，解锁',
+      '再按同一个岛台储物开关 —— 锁舌缩回，解锁',
       '提起提手，整只包带走',
       '车内固定 / 车外便携，两个动作各管各的',
     ],
@@ -327,7 +338,7 @@ export type Action = {id: string; label: string; t0: number; t1: number};
 export const ACTIONS: Record<BagKey, Action[]> = {
   c1: [
     {id: 'place', label: '把包放到软包段', t0: 4.1, t1: 5.4},
-    {id: 'press', label: '往下一按', t0: 5.9, t1: 7.4},
+    {id: 'press', label: '按下岛台开关', t0: 5.9, t1: 7.4},
   ],
   c2: [
     {id: 'pull', label: '拉出栓扣', t0: 1.9, t1: 3.4},
@@ -336,7 +347,7 @@ export const ACTIONS: Record<BagKey, Action[]> = {
   c3: [{id: 'canopy', label: '打开敞篷', t0: 4.4, t1: 5.6}],
   c4: [
     {id: 'canopy', label: '合上敞篷', t0: 1.9, t1: 3.8},
-    {id: 'press', label: '按下解锁键', t0: 4.4, t1: 6.0},
+    {id: 'press', label: '按岛台开关解锁', t0: 4.4, t1: 6.0},
     {id: 'lift', label: '提起带走', t0: 6.9, t1: 9.0},
   ],
 };
@@ -410,8 +421,8 @@ export const catAt = (scene: BagKey, t: number): {pose: CatPose; x0: number; op:
       k = ease(win(t, 4.6, 6.0)) - 0.32 * ease(win(t, 6.0, 6.5))
         + 0.3 * ease(win(t, 6.5, 7.0)) - 0.72 * ease(win(t, 7.4, 8.4));
     }
-    const dMax = catX0Max(pose) - CAT_X0;
-    return {pose, x0: CAT_X0 + dMax * clamp01(k), op: 1};
+    const dMax = CAT_X0 - catX0Min(pose);        // 朝车头（−x）能走的最大距离
+    return {pose, x0: CAT_X0 - dMax * clamp01(k), op: 1};
   }
   if (scene === 'c3') return {pose: t < 5.0 ? 'curl' : 'sit', x0: CAT_X0, op: 1};
   // c4：合盖前先蜷起来（盖板落下时猫头必须已经收回包内）
@@ -422,10 +433,11 @@ export const catAt = (scene: BagKey, t: number): {pose: CatPose; x0: number; op:
 // 照片是单一坐姿抠图,位姿差异用整体 平移/倾角/压缩 表达(剪纸偶),
 // 切换时刻与 catAt 的离散位姿切换一致,但这里做 0.5s 平滑过渡。
 export type PetXf = {dy: number; rot: number; sx: number; sy: number};
+// 转角符号按「头朝 −x」定：抬头（鼻尖向上）= 正转角，前倾（朝行进方向压低）= 负转角
 const CAT_PXF: Record<CatPose, PetXf> = {
   sit: {dy: 0, rot: 0, sx: 1, sy: 1},
-  lookout: {dy: -5, rot: -4, sx: 1, sy: 1.02},
-  turn: {dy: 2, rot: 7, sx: 1, sy: 0.97},
+  lookout: {dy: -5, rot: 4, sx: 1, sy: 1.02},
+  turn: {dy: 2, rot: -7, sx: 1, sy: 0.97},
   curl: {dy: 0, rot: 0, sx: 1.08, sy: 0.72},
 };
 const mixXf = (a: PetXf, b: PetXf, k: number): PetXf => ({
@@ -456,7 +468,7 @@ export const tetherAt = (scene: BagKey, t: number) => {
   if (scene !== 'c2') return {shown: scene === 'c3' || scene === 'c4', connected: 1, end: clip, clip, pullK: 1};
   const pullK = ease(win(t, 1.9, 3.4));
   const connected = smooth(win(t, 3.4, 4.2));
-  const coil = {x: TETHER.anchor.x + 9, y: TETHER.anchor.y + 12};
+  const coil = {x: TETHER.anchor.x - 9, y: TETHER.anchor.y + 12};
   const end = {
     x: lerp(coil.x, clip.x, pullK * 0.86 + connected * 0.14),
     y: lerp(coil.y, clip.y, pullK * 0.86 + connected * 0.14),
@@ -476,13 +488,13 @@ export const handAt = (scene: BagKey, t: number): HandSpec | null => {
     const gripOp = win(t, 3.6, 4.0) * (1 - win(t, 5.35, 5.75));
     if (gripOp > 0.01) {
       const y = bagBottom(scene, t) - BAG.h - LID_TH - 30;
-      return {kind: 'grip', x: BAG.x + BAG.w * 0.52, y, rot: 0, op: gripOp};
+      return {kind: 'grip', x: BAG.x + BAG.w * 0.75, y, rot: 0, op: gripOp};
     }
     const pressOp = win(t, 5.9, 6.25) * (1 - win(t, 7.5, 7.9));
     if (pressOp > 0.01) {
+      // 按岛台储物开关(指尖朝下):落指 → 按压到位 → 抬起
       const down = ease(win(t, 6.15, 6.95)) - ease(win(t, 7.3, 7.7));
-      const top = BAG.y - BAG.h - LID_TH;
-      return {kind: 'press', x: BAG.x + BAG.w * 0.58, y: top - 62 + 56 * down, rot: 0, op: pressOp};
+      return {kind: 'finger', x: BUTTON.x, y: BUTTON.y - 46 + 40 * down, rot: 90, op: pressOp};
     }
     return null;
   }
@@ -496,12 +508,12 @@ export const handAt = (scene: BagKey, t: number): HandSpec | null => {
     const pressOp = win(t, 4.35, 4.7) * (1 - win(t, 6.2, 6.6));
     if (pressOp > 0.01) {
       const push = ease(win(t, 4.75, T_RELEASE)) - ease(win(t, 5.6, 5.95));
-      return {kind: 'finger', x: BUTTON.x - BUTTON.r - 30 + 26 * push, y: BUTTON.y, rot: 0, op: pressOp};
+      return {kind: 'finger', x: BUTTON.x, y: BUTTON.y - 46 + 40 * push, rot: 90, op: pressOp};
     }
     const gripOp = win(t, 6.55, 6.95);
     if (gripOp > 0.01) {
       const y = bagBottom(scene, t) - BAG.h - LID_TH - 30;
-      return {kind: 'grip', x: BAG.x + BAG.w * 0.52, y, rot: 0, op: gripOp};
+      return {kind: 'grip', x: BAG.x + BAG.w * 0.75, y, rot: 0, op: gripOp};
     }
     return null;
   }
@@ -509,6 +521,10 @@ export const handAt = (scene: BagKey, t: number): HandSpec | null => {
 };
 /** 按键：按压位移 + 涟漪 */
 export const buttonAt = (scene: BagKey, t: number) => {
+  if (scene === 'c1') {
+    const push = ease(win(t, 6.15, 6.95)) - ease(win(t, 7.3, 7.7));
+    return {push: clamp01(push), ripple: win(t, T_LOCK, 7.7)};
+  }
   if (scene !== 'c4') return {push: 0, ripple: 0};
   const push = ease(win(t, 4.75, T_RELEASE)) - ease(win(t, 5.6, 5.95));
   return {push: clamp01(push), ripple: win(t, T_RELEASE, 5.9)};
@@ -612,14 +628,14 @@ export const focusAt = (scene: BagKey, t: number): {p: Pt; view: 'plan' | 'side'
   }
   if (scene === 'c2') {
     const c = catAt(scene, t);
-    if (ph === 0) return {p: {x: c.x0 + 0.42 * CAT.sit, y: CAT_GROUND_Y - 0.86 * CAT.sit}, view: 'side'};
+    if (ph === 0) return {p: {x: c.x0 + CAT_DIR * 0.42 * CAT.sit, y: CAT_GROUND_Y - 0.86 * CAT.sit}, view: 'side'};
     if (ph === 1) return {p: TETHER.anchor, view: 'side'};
     if (ph === 2) return {p: catClip(c.pose, c.x0), view: 'side'};
     if (ph === 3) {
       const cl = catClip(c.pose, c.x0);
       return {p: {x: (TETHER.anchor.x + cl.x) / 2, y: (TETHER.anchor.y + cl.y) / 2 - 4}, view: 'side'};
     }
-    return {p: {x: TETHER.anchor.x + TETHER.len * 0.72, y: TETHER.anchor.y + 46}, view: 'side'};
+    return {p: {x: TETHER.anchor.x - TETHER.len * 0.72, y: TETHER.anchor.y + 46}, view: 'side'};
   }
   if (scene === 'c3') {
     if (ph === 2) return {p: {x: PLAN.cx, y: CANOPY_PLAN.hingeY - 8}, view: 'plan'};
@@ -658,7 +674,7 @@ export const cardsAt = (scene: BagKey, t: number): Card[] => {
     if (stOp > 0.01) {
       const st = stateAt(scene, t);
       out.push({
-        id: 'state', view: 'side', x: 660, y: 70, w: 220, h: 88, op: stOp,
+        id: 'state', view: 'side', x: 648, y: 84, w: 220, h: 88, op: stOp,
         anchor: {x: BAG.x + BAG.w, y: bagBottom(scene, t) - BAG.h * 0.42}, edge: 'left',
         kicker: '固定状态', lines: [STATE_LABEL[st]],
         tone: st === 'locked' ? 'ok' : 'accent',
@@ -674,7 +690,7 @@ export const cardsAt = (scene: BagKey, t: number): Card[] => {
         ? ['活动范围 · 半径 260mm']
         : [tv.connected > 0.99 ? '已连接 · 绳长 260mm' : '未连接'];
       out.push({
-        id: 'tether', view: 'side', x: 660, y: 70, w: 220, h: 88, op: stOp,
+        id: 'tether', view: 'side', x: 648, y: 84, w: 220, h: 88, op: stOp,
         anchor: {x: BAG.x + BAG.w, y: BAG_RIM_Y + 10}, edge: 'left',
         kicker: '包内栓扣', lines, tone: tv.connected > 0.99 ? 'ok' : 'accent',
       });
@@ -708,7 +724,7 @@ export const cardsAt = (scene: BagKey, t: number): Card[] => {
   if (scene === 'c4') {
     const st = stateAt(scene, t);
     out.push({
-      id: 'state', view: 'side', x: 660, y: 70, w: 220, h: 88, op: 1,
+      id: 'state', view: 'side', x: 648, y: 84, w: 220, h: 88, op: 1,
       anchor: {x: BAG.x + BAG.w, y: bagBottom(scene, t) - BAG.h * 0.42}, edge: 'left',
       kicker: '固定状态', lines: [STATE_LABEL[st]],
       tone: st === 'released' ? 'warn' : 'ok',
@@ -754,7 +770,7 @@ export const CONCEPTUAL: string[] = [
   '宠物包外观 —— 尺寸、材质、开口形式、敞篷是否可开合均未定义，动画用中性概念件表现',
   '敞篷开合方式未定义 —— 内部文档提到「到达目的地～关闭敞篷」，动画按「行驶中打开、下车前合上」表现，具体铰接与锁止形式待定',
   '岛台固定接口形式未定义（卡扣/磁吸/滑轨/锁舌？），动画以「固定点 + 落锁」概念表现',
-  '物理解锁按键的位置、形态、是否需要长按/双击均未定义，动画放在岛台侧面并标注为概念键位',
+  '固定/解锁开关按用户指定与岛台储物空间的物理开关共用（动画画在岛台上表面储物盖板处）；确切交互形式（短按/长按/双击）未定义',
   '栓扣形式未定义（挂钩/D 环/伸缩绳？）、绳长与限位范围未定义',
   '适用宠物体型区间未定义（文档只写「小型动物，比如猫」）',
   '承重与碰撞工况下的固定强度未定义',

@@ -9,6 +9,7 @@
 import React from 'react';
 import {AbsoluteFill, useCurrentFrame, useVideoConfig} from 'remotion';
 import {CatTop} from './Cat';
+import {NioLogo} from './NioLogo';
 import {PhotoCat} from './PetsPhoto';
 import {ES8_CABIN_SIDE_URI, ES8_CABIN_TOP_URI} from './es8-cabin-photo';
 import {
@@ -293,13 +294,27 @@ const PlanView: React.FC<{scene: BagKey; t: number; op: number}> = ({scene, t, o
   );
 };
 
-/* ═══ 岛台侧视剖面（视角 B）══════════════════════════════════════════════ */
+/* ═══ 前排实拍舞台（视角 B）══════════════════════════════════════════════ */
+/**
+ * 包壳配色：**跟座舱内饰走**（用户定的硬规则：车内物件必须适配内饰配色）。
+ * ES8 前排是米白/浅驼 + 深棕点缀，包体取同族暖色；
+ * 主题色 teal 只留给「指引/状态」这类 UI 标注,不上包体。
+ */
+const BAGC = {
+  shell: '#F5EFE4', edge: '#5C4E3D',
+  inner0: '#F4ECDE', inner1: '#DFD0B9', inner2: '#BCA684',
+  cushion: '#EADCC4', cushionEdge: '#C9B58F',
+  band: '#DACAAE', lid: '#F1E9DA', lidInner: '#DBCBAF',
+  handle: '#71604C', vent: '#EFE5D2', ventEdge: '#B1A07F',
+  latch: '#6B5B47',
+};
+/** 包壳剖面轮廓：高墙在**车尾侧（右）**，舀口开向**车头（左）**——猫头朝车头 */
 const bagShell = (X: number, Y: number, W: number, H: number, rim: number) =>
-  `M${N(X)} ${N(Y - 10)}L${N(X)} ${N(Y - H + 12)}Q${N(X)} ${N(Y - H)} ${N(X + 12)} ${N(Y - H)}` +
-  `L${N(X + W * 0.22)} ${N(Y - H)}` +
-  `C${N(X + W * 0.33)} ${N(Y - H)} ${N(X + W * 0.34)} ${N(rim)} ${N(X + W * 0.45)} ${N(rim)}` +
-  `L${N(X + W * 0.9)} ${N(rim)}` +
-  `C${N(X + W * 0.97)} ${N(rim)} ${N(X + W)} ${N(rim - 14)} ${N(X + W)} ${N(rim - 26)}` +
+  `M${N(X)} ${N(Y - 10)}L${N(X)} ${N(rim - 26)}` +
+  `C${N(X)} ${N(rim - 14)} ${N(X + W * 0.03)} ${N(rim)} ${N(X + W * 0.1)} ${N(rim)}` +
+  `L${N(X + W * 0.55)} ${N(rim)}` +
+  `C${N(X + W * 0.66)} ${N(rim)} ${N(X + W * 0.67)} ${N(Y - H)} ${N(X + W * 0.78)} ${N(Y - H)}` +
+  `L${N(X + W - 12)} ${N(Y - H)}Q${N(X + W)} ${N(Y - H)} ${N(X + W)} ${N(Y - H + 12)}` +
   `L${N(X + W)} ${N(Y - 10)}Q${N(X + W)} ${N(Y)} ${N(X + W - 10)} ${N(Y)}` +
   `L${N(X + 10)} ${N(Y)}Q${N(X)} ${N(Y)} ${N(X)} ${N(Y - 10)}Z`;
 
@@ -371,13 +386,18 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
             ⚠️ 透视照片，只锚定「台面接触线」这一条几何（SIDE_CAM 按它标定），
             毫米级主张（绳长/锁舌行程/可及范围）仍由矢量机构层承担 */}
         <image href={ES8_CABIN_SIDE_URI} x={-3} y={-6} width={1006} height={566} />
+        {/* 照片轮毂中心盖不是蔚来标——盖一层深色盘 + 实测比例的 NioLogo(舞台坐标由轮毂放大读数标定) */}
+        <g transform="translate(57.2 523.5)">
+          <circle r={11.2} fill="#26282B" stroke="#3A3D40" strokeWidth={1.2} />
+          <NioLogo r={7.4} fill="#C9CED4" />
+        </g>
         <rect x={-3} y={-6} width={1006} height={566} fill={C.panel} opacity={0.13} />
         <g transform={SIDE_XF}>
           <defs>
             <linearGradient id={`inner-${uid}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#DCEEEE" />
-              <stop offset="62%" stopColor="#AFC9C9" />
-              <stop offset="100%" stopColor="#7E9A9A" />
+              <stop offset="0%" stopColor={BAGC.inner0} />
+              <stop offset="62%" stopColor={BAGC.inner1} />
+              <stop offset="100%" stopColor={BAGC.inner2} />
             </linearGradient>
             <clipPath id={`bagIn-${uid}`}>
               <path d={bagShell(BAG.x + 4, bagY - 4, BAG.w - 8, BAG.h - 8, rim + 4)} />
@@ -398,23 +418,24 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
             </g>
           ))}
 
-          {/* 物理解锁按键（概念键位：岛台侧面、软包段前缘下方） */}
+          {/* 岛台储物开关（实车按键，用户指定固定/解锁共用）：台面上的槽形拨扣。
+              不再画概念圆键——按压时内芯下沉 + 微光,解锁/落锁的涟漪从槽心散开 */}
           <g>
-            <circle cx={BUTTON.x} cy={BUTTON.y} r={BUTTON.r + 3.4} fill={C.line} stroke={C.ink4}
-              strokeWidth={1.3} />
-            <circle cx={BUTTON.x} cy={BUTTON.y} r={BUTTON.r * (1 - 0.1 * btn.push)}
-              fill={btn.push > 0.35 ? C.accentWash : C.panel} stroke={C.ink3} strokeWidth={1.6} />
-            <path d={`M${N(BUTTON.x - 4.6)} ${N(BUTTON.y + 0.6)}h9.2v6.4h-9.2Z
-              M${N(BUTTON.x - 2.8)} ${N(BUTTON.y + 0.6)}v-3a2.8 2.8 0 0 1 5.6 0`}
-              fill="none" stroke={st === 'released' ? C.warn : C.ink2} strokeWidth={1.5}
-              strokeLinejoin="round" />
+            <rect x={BUTTON.x - BUTTON.w / 2 - 2} y={BUTTON.y - 2.6} width={BUTTON.w + 4}
+              height={BUTTON.h + 4} rx={(BUTTON.h + 4) / 2} fill="#CBBBA0" opacity={0.9} />
+            <rect x={BUTTON.x - BUTTON.w / 2} y={BUTTON.y - 0.8} width={BUTTON.w}
+              height={BUTTON.h} rx={BUTTON.h / 2} fill="#8F8069" />
+            <rect x={BUTTON.x - BUTTON.w / 2 + 3} y={BUTTON.y + 0.6 + 1.6 * btn.push}
+              width={BUTTON.w - 6} height={BUTTON.h - 3.4} rx={(BUTTON.h - 3.4) / 2}
+              fill={btn.push > 0.35 ? '#FFF6E2' : '#EFE4CF'} stroke="#6E5F4B" strokeWidth={0.9} />
             {btn.ripple > 0 && btn.ripple < 1 && (
-              <circle cx={BUTTON.x} cy={BUTTON.y} r={BUTTON.r + 4 + 26 * btn.ripple}
-                fill="none" stroke={C.warn} strokeWidth={2.4} opacity={1 - btn.ripple} />
+              <circle cx={BUTTON.x} cy={BUTTON.y + BUTTON.h / 2} r={8 + 26 * btn.ripple}
+                fill="none" stroke={st === 'released' ? C.warn : C.ok} strokeWidth={2.4}
+                opacity={1 - btn.ripple} />
             )}
-            <text x={BUTTON.x} y={BUTTON.y + BUTTON.r + 20} textAnchor="middle" fontFamily={F_UI}
+            <text x={BUTTON.x} y={BUTTON.y + BUTTON.h + 22} textAnchor="middle" fontFamily={F_UI}
               fontSize={11} fill={C.ink2} stroke="#FFFFFF" strokeWidth={3} strokeOpacity={0.82}
-              paintOrder="stroke">物理解锁键（概念键位）</text>
+              paintOrder="stroke">岛台储物开关 · 固定/解锁共用</text>
           </g>
 
           {/* ── 宠物包 ── */}
@@ -425,17 +446,17 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
               fill="#5C7070" opacity={0.16 * Math.max(0.25, 1 - lifted / 120)} />
 
             {/* 包壳实体打底：照片舞台上包必须是实的，否则照片透出来像鬼影 */}
-            <path d={bagShell(BAG.x, bagY, BAG.w, BAG.h, rim)} fill={C.panel} opacity={0.93} />
+            <path d={bagShell(BAG.x, bagY, BAG.w, BAG.h, rim)} fill={BAGC.shell} opacity={0.94} />
             {/* 舀口补板：敞篷合上时舀口不再透出照片（否则像包顶破了个洞）；开盖时淡出让猫头露出 */}
-            <rect x={BAG.x + BAG.w * 0.3 + 1} y={bagT - 1} width={BAG.w * 0.7 - 4}
-              height={rim - bagT + 1} fill={C.panel} opacity={0.93 * (1 - openK)} />
+            <rect x={BAG.x + 2} y={bagT - 1} width={BAG.w * 0.7 - 3}
+              height={rim - bagT + 1} fill={BAGC.shell} opacity={0.94 * (1 - openK)} />
 
             {/* 包内（剖面：看得见内部） */}
             <g clipPath={`url(#bagIn-${uid})`}>
               <rect x={BAG.x} y={bagT} width={BAG.w} height={BAG.h} fill={`url(#inner-${uid})`}
                 opacity={0.5} />
               <rect x={BAG.x + 6} y={bagY - 13} width={BAG.w - 12} height={11} rx={5}
-                fill={C.accentWash} stroke={C.accentDim} strokeWidth={1} />
+                fill={BAGC.cushion} stroke={BAGC.cushionEdge} strokeWidth={1} />
             </g>
 
             {/* 猫：真实照片剪纸（头朝 +x 镜像、前掌对齐矢量猫标定，见 PetsPhoto） */}
@@ -449,7 +470,7 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
                   fill={C.accent} opacity={0.13} />
                 <circle cx={TETHER.anchor.x} cy={TETHER.anchor.y} r={TETHER.len}
                   fill="none" stroke={C.accent} strokeWidth={2.6} strokeDasharray="9 6" />
-                <text x={TETHER.anchor.x + 8} y={TETHER.anchor.y + TETHER.len * 0.62}
+                <text x={BAG.x + 12} y={TETHER.anchor.y + TETHER.len * 0.62}
                   fontFamily={F_UI} fontSize={12} fontWeight={700} fill={C.accent}
                   stroke="#FFFFFF" strokeWidth={3} strokeOpacity={0.82} paintOrder="stroke">活动范围</text>
               </g>
@@ -483,33 +504,33 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
 
             {/* 包壳（剖面轮廓 + 通风孔） */}
             <path d={bagShell(BAG.x, bagY, BAG.w, BAG.h, rim)} fill="none"
-              stroke={C.ink2} strokeWidth={2.4} strokeLinejoin="round" />
+              stroke={BAGC.edge} strokeWidth={2.2} strokeLinejoin="round" />
             <rect x={BAG.x + 2} y={bagY - 15} width={BAG.w - 4} height={13} rx={5}
-              fill={C.accentDim} opacity={0.9} />
+              fill={BAGC.band} opacity={0.9} />
             {[0, 1, 2, 3, 4, 5].map((i) => (
               <circle key={i} cx={BAG.x + 26 + i * 15} cy={bagY - 32} r={3.1}
-                fill={C.line} stroke={C.ink4} strokeWidth={0.9} />
+                fill={BAGC.vent} stroke={BAGC.ventEdge} strokeWidth={0.9} />
             ))}
 
             {/* 提手/肩带：合盖后才提得起来 */}
             <g opacity={0.35 + 0.65 * (1 - openK)}>
-              <path d={`M${N(BAG.x + BAG.w * 0.3)} ${N(bagT - LID_TH + 2)}
-                Q${N(BAG.x + BAG.w * 0.52)} ${N(bagT - LID_TH - 34)} ${N(BAG.x + BAG.w * 0.74)} ${N(bagT - LID_TH + 2)}`}
-                fill="none" stroke={C.ink3} strokeWidth={5} strokeLinecap="round" />
+              <path d={`M${N(BAG.x + BAG.w * 0.55)} ${N(bagT - LID_TH + 2)}
+                Q${N(BAG.x + BAG.w * 0.75)} ${N(bagT - LID_TH - 34)} ${N(BAG.x + BAG.w * 0.95)} ${N(bagT - LID_TH + 2)}`}
+                fill="none" stroke={BAGC.handle} strokeWidth={5} strokeLinecap="round" />
             </g>
 
             {/* 敞篷盖板：铰链在包体**车尾**上沿，绕 hinge 向车尾上方翻开（openDeg = +108°）——
                 前排的人从车头侧伸手，盖板往车头翻会挡手 */}
             <g transform={`rotate(${N(deg)} ${N(hingeNow.x)} ${N(hingeNow.y)})`}>
               <rect x={hingeNow.x - LID_LEN} y={hingeNow.y - LID_TH} width={LID_LEN} height={LID_TH} rx={5}
-                fill={C.accentWash} stroke={C.ink2} strokeWidth={2} />
+                fill={BAGC.lid} stroke={BAGC.edge} strokeWidth={2} />
               <rect x={hingeNow.x - LID_LEN + 8} y={hingeNow.y - LID_TH + 3.2} width={LID_LEN - 16}
-                height={LID_TH - 6.4} rx={2.4} fill={C.accentDim} opacity={0.8} />
+                height={LID_TH - 6.4} rx={2.4} fill={BAGC.lidInner} opacity={0.8} />
               {/* 末端翻边唇口（盖子扣在包沿上的那一圈） */}
               <rect x={hingeNow.x - LID_LEN - 1} y={hingeNow.y - LID_TH - 2} width={7}
-                height={LID_TH + 13} rx={3} fill={C.accentDim} stroke={C.ink2} strokeWidth={1.8} />
+                height={LID_TH + 13} rx={3} fill={BAGC.lidInner} stroke={BAGC.edge} strokeWidth={1.8} />
             </g>
-            <circle cx={hingeNow.x} cy={hingeNow.y} r={4.2} fill={C.panel} stroke={C.ink2}
+            <circle cx={hingeNow.x} cy={hingeNow.y} r={4.2} fill={BAGC.shell} stroke={BAGC.edge}
               strokeWidth={1.8} />
             {openK > 0.15 && (
               <text x={hingeNow.x + 34} y={hingeNow.y + 22} textAnchor="middle" fontFamily={F_UI}
@@ -521,7 +542,7 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
             {LATCH_X.map((x, i) => {
               const tip = bagY + LATCH_TRAVEL * lat.ext;
               const on = lat.ext > 0.9;
-              const col = on ? C.ok : C.ink3;
+              const col = on ? C.ok : BAGC.latch;
               return (
                 <g key={i}>
                   <rect x={x - 4.6} y={bagY - 4} width={9.2} height={Math.max(0.1, tip - bagY + 4)}

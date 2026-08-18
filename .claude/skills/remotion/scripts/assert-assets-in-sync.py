@@ -59,6 +59,8 @@ CHECKS = [
      'es9/top.ts', r"ES9_TOP_BODY =\s*\n?\s*'([^']+)'"),
     ('ES9 正俯视 · 大灯', 'src/parking-data.ts', r"left: \{\s*case: '([^']+)'",
      'es9/top.ts', r"left: \{\s*case: '([^']+)'"),
+    ('蔚来 Logo（IoU 实测比例）', 'src/NioLogo.tsx', r"const arch =\s*(.+?);",
+     '_shared/NioLogo.tsx', r"const arch =\s*(.+?);"),
 ]
 
 bad = 0

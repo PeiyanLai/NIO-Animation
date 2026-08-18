@@ -50,8 +50,8 @@ export const SHOULDER = {
 export const REACH_MM = 700;
 export const REACH_R = pmm(REACH_MM);                    // ≈ 106.1
 
-// ── 视角 B：岛台侧视剖面 ────────────────────────────────────────────────
-// 舞台 1000×560，车头朝右（与侧视车身一致的叙事方向）。
+// ── 视角 B：前排实拍舞台 ────────────────────────────────────────────────
+// 舞台 1000×560，**车头在 −x（左）**——与 ES8 前排实拍照片方向一致（bag-data 顶部有推定）。
 // 高度基准：座舱地板 = FLOOR，向上为负 y。
 export const SIDE = {
   mmPerPx: 2.4,                 // 岛台段特写，比平面视放大约 2.75 倍
@@ -82,13 +82,17 @@ export const BAG = {
 /** 岛台固定点（概念接口）：包底两处锁舌，落锁后与岛台咬合 */
 export const LATCH_X = [BAG.x + BAG.w * 0.26, BAG.x + BAG.w * 0.74];
 
-/** 物理解锁按键（概念键位）：岛台侧面、软包段前缘下方，坐在前排伸手即可按到 */
-export const BUTTON = {x: PAD_X0 - smm(40), y: ISLAND_TOP + smm(90), r: smm(34)};
+/** 固定/解锁开关 = **岛台储物空间的物理开关**（用户指定共用，不再画概念圆键）：
+ *  岛台上表面、软包段前缘之前的储物盖板上，槽形拨扣。固定与解锁都按它。 */
+export const BUTTON = {
+  x: PAD_X0 - smm(60), y: ISLAND_TOP,
+  w: smm(70), h: smm(16),
+};
 
-/** 包内栓扣：固定端在包内后壁，绳长限制宠物活动范围 */
+/** 包内栓扣：固定端在包内**车尾侧**壁（+x）——猫朝车头（−x），往车头走绳才会拉直 */
 export const TETHER_MM = 260;                            // 绳长（概念值，待产品定义）
 export const TETHER = {
-  anchor: {x: BAG.x + BAG.w * 0.16, y: BAG.y - BAG.h * 0.62},
+  anchor: {x: BAG.x + BAG.w * 0.84, y: BAG.y - BAG.h * 0.62},
   len: smm(TETHER_MM),                                   // ≈ 108.3
 };
 
