@@ -151,14 +151,14 @@ export const Cat: React.FC<{
     const c: P = [P.fPaw[0], P.fPaw[1]];
     const l1 = 0.5 * Math.hypot(c[0] - a[0], c[1] - a[1]) + 0.09;
     const k = ik2(a, c, l1, l1, 1);
-    return taper([a, k, c], 0.16, 0.105);
+    return taper([a, k, c], 0.115, 0.075);
   })();
   const legH = (() => {
     const a: P = [hip[0] + 0.03, hip[1] + 0.02];
     const c: P = [P.hPaw[0], P.hPaw[1]];
     const l1 = 0.5 * Math.hypot(c[0] - a[0], c[1] - a[1]) + 0.1;
     const k = ik2(a, c, l1, l1, -1);
-    return taper([a, k, c], 0.2, 0.115);
+    return taper([a, k, c], 0.165, 0.100);
   })();
 
   // ── 颈（把头和肩胛连起来，否则头看着是浮空的）──
@@ -183,20 +183,27 @@ export const Cat: React.FC<{
   const faceD = closedPath(face);
 
   // ── 竖耳（耳尖抵达 P.earTip；轻微抖动）──
-  const ear = (bx: number, tipDx: number, tw: number): string => {
+  const ear = (bx: number, tipDx: number, tw: number): {outer: string; inner: string} => {
     const bY = head[1] - hr * 0.72;
     const base: P = [head[0] + bx, bY];
     const tip: P = [head[0] + bx + tipDx + tw * 0.012, P.earTip * breathe];
-    const out: P = [base[0] + (tipDx > 0 ? 0.062 : -0.062), bY + 0.012];
-    return `M${pt(base)}L${pt(tip)}L${pt(out)}Z`;
+    const out: P = [base[0] + (tipDx > 0 ? 0.085 : -0.085), bY + 0.016];
+    // 外耳带一点弧度（不是死三角），内耳缩进 38% 填浅色
+    const outer = `M${pt(base)}Q${pt([(base[0] + tip[0]) / 2 - 0.012, (base[1] + tip[1]) / 2])} ${pt(tip)}` +
+      `Q${pt([(tip[0] + out[0]) / 2 + 0.012, (tip[1] + out[1]) / 2])} ${pt(out)}Z`;
+    const mid = (a: P, b: P, k: number): P => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
+    const c: P = [(base[0] + tip[0] + out[0]) / 3, (base[1] + tip[1] + out[1]) / 3];
+    const inner = `M${pt(mid(c, base, 0.62))}L${pt(mid(c, tip, 0.62))}L${pt(mid(c, out, 0.62))}Z`;
+    return {outer, inner};
   };
   const earNear = ear(0.03, 0.055, earTw);
   const earFar = ear(-0.085, -0.03, -earTw);
 
   // ── 胡须 ──
   const muz: P = [head[0] + hr * 0.62, head[1] + hr * 0.38];
-  const whisk = [-0.055, 0.005, 0.06].map((dy, i) =>
-    `M${pt([muz[0] - 0.01, muz[1] + dy * 0.5])}Q${pt([muz[0] + 0.18, muz[1] + dy - 0.01])} ${pt([muz[0] + 0.3, muz[1] + dy * 1.5 - 0.012 + 0.006 * Math.sin(t * 1.6 + i)])}`,
+  // 胡须：短、微下垂。横着平伸 0.3u 长像天线
+  const whisk = [-0.04, 0.01, 0.055].map((dy, i) =>
+    `M${pt([muz[0] - 0.005, muz[1] + dy * 0.5])}Q${pt([muz[0] + 0.12, muz[1] + dy])} ${pt([muz[0] + 0.20, muz[1] + dy * 1.8 + 0.015 + 0.005 * Math.sin(t * 1.6 + i)])}`,
   );
 
   // ── 胸背带（栓扣扣在 clip 上）──
@@ -246,20 +253,36 @@ export const Cat: React.FC<{
       <path d={legH} fill={FUR.mid} stroke={C.ink2} strokeWidth={sw} strokeLinejoin="round" />
       <path d={legF} fill={FUR.light} stroke={C.ink2} strokeWidth={sw} strokeLinejoin="round" />
 
-      {/* 胸背带：#00bebe 只出现在扣点 */}
-      <g fill="none" stroke={C.ink3} strokeWidth={0.052} strokeLinecap="round">
-        <path d={strapD} />
-        <path d={strapB} />
-      </g>
-      <circle cx={F(clip[0])} cy={F(clip[1])} r={0.046} fill={C.panel}
-        stroke={C.accent} strokeWidth={0.024} />
-      <circle cx={F(clip[0])} cy={F(clip[1])} r={0.019} fill={C.accent} />
+      {/* 胸背带：细带（0.052 的深粗带像领带）。只在坐/张望时画——
+          蜷卧、转身时锚点几何对不上，两条带子会在肩上叠成一团碎片，而且这两个
+          姿态出现在栓扣已解开的章节，叙事上也不需要它 */}
+      {(pose === 'sit' || pose === 'lookout') && (
+        <>
+          <g fill="none" stroke={mix(TERRA.gravel.dk, C.ink3, 0.5)} strokeWidth={0.028}
+            strokeLinecap="round" opacity={0.9}>
+            <path d={strapD} />
+            <path d={strapB} />
+          </g>
+          <circle cx={F(clip[0])} cy={F(clip[1])} r={0.040} fill={C.panel}
+            stroke={C.accent} strokeWidth={0.020} />
+          <circle cx={F(clip[0])} cy={F(clip[1])} r={0.016} fill={C.accent} />
+        </>
+      )}
 
       {/* 颈 → 远耳 → 头 → 近耳 */}
       <path d={neckD} fill={FUR.light} stroke={C.ink2} strokeWidth={sw} strokeLinejoin="round" />
-      <path d={earFar} fill={FUR.dark} stroke={C.ink2} strokeWidth={sw} strokeLinejoin="round" />
+      <path d={earFar.outer} fill={FUR.dark} stroke={C.ink2} strokeWidth={sw} strokeLinejoin="round" />
       <path d={faceD} fill={FUR.light} stroke={C.ink2} strokeWidth={sw} strokeLinejoin="round" />
-      <path d={earNear} fill={FUR.mid} stroke={C.ink2} strokeWidth={sw} strokeLinejoin="round" />
+      <path d={earNear.outer} fill={FUR.mid} stroke={C.ink2} strokeWidth={sw} strokeLinejoin="round" />
+      <path d={earNear.inner} fill={FUR.ear} opacity={0.85} />
+
+      {/* 颊毛：两侧各两根，脸的轮廓就不再是光滑鸡蛋 */}
+      <g fill="none" stroke={FUR.mid} strokeWidth={0.016} strokeLinecap="round" opacity={0.7}>
+        <path d={`M${pt([head[0] + hr * 0.94, head[1] + hr * 0.30])}l0.045,0.024`} />
+        <path d={`M${pt([head[0] + hr * 0.86, head[1] + hr * 0.52])}l0.040,0.032`} />
+        <path d={`M${pt([head[0] - hr * 0.96, head[1] + hr * 0.28])}l-0.042,0.026`} />
+        <path d={`M${pt([head[0] - hr * 0.88, head[1] + hr * 0.50])}l-0.038,0.034`} />
+      </g>
 
       {/* 额纹（虎斑的 M 纹） */}
       <g fill="none" stroke={FUR.dark} strokeWidth={0.026} strokeLinecap="round" opacity={0.65}>
@@ -267,16 +290,18 @@ export const Cat: React.FC<{
         <path d={`M${pt([head[0] + 0.006, head[1] - hr * 0.84])}l0.012 0.066`} />
       </g>
 
-      {/* 眼（竖瞳） */}
+      {/* 眼：杏仁形、别画大——大眼睛是「玩偶感」的主要来源。上睑线压住上缘 */}
       <g>
-        <ellipse cx={F(head[0] + hr * 0.34)} cy={F(head[1] - hr * 0.06)} rx={0.048} ry={0.04}
-          fill={mix(TERRA.sand.base, '#FFFFFF', 0.35)} stroke={C.ink2} strokeWidth={0.014} />
-        <ellipse cx={F(head[0] + hr * 0.34)} cy={F(head[1] - hr * 0.06)} rx={0.013}
-          ry={0.03 + 0.006 * Math.sin(t * 1.3)} fill={C.ink} />
-        <ellipse cx={F(head[0] - hr * 0.3)} cy={F(head[1] - hr * 0.02)} rx={0.04} ry={0.034}
-          fill={mix(TERRA.sand.base, '#FFFFFF', 0.35)} stroke={C.ink2} strokeWidth={0.014}
+        <ellipse cx={F(head[0] + hr * 0.34)} cy={F(head[1] - hr * 0.06)} rx={0.036} ry={0.028}
+          fill={mix(TERRA.sand.base, '#FFFFFF', 0.35)} stroke={C.ink2} strokeWidth={0.013} />
+        <ellipse cx={F(head[0] + hr * 0.34)} cy={F(head[1] - hr * 0.06)} rx={0.011}
+          ry={0.022 + 0.005 * Math.sin(t * 1.3)} fill={C.ink} />
+        <path d={`M${pt([head[0] + hr * 0.34 - 0.036, head[1] - hr * 0.06 - 0.010])}q0.036,-0.026 0.072,-0.002`}
+          fill="none" stroke={C.ink2} strokeWidth={0.014} strokeLinecap="round" />
+        <ellipse cx={F(head[0] - hr * 0.3)} cy={F(head[1] - hr * 0.02)} rx={0.030} ry={0.024}
+          fill={mix(TERRA.sand.base, '#FFFFFF', 0.35)} stroke={C.ink2} strokeWidth={0.013}
           opacity={0.75} />
-        <ellipse cx={F(head[0] - hr * 0.3)} cy={F(head[1] - hr * 0.02)} rx={0.011} ry={0.026}
+        <ellipse cx={F(head[0] - hr * 0.3)} cy={F(head[1] - hr * 0.02)} rx={0.009} ry={0.019}
           fill={C.ink} opacity={0.75} />
       </g>
 

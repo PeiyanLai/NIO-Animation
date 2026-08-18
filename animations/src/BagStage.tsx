@@ -8,10 +8,11 @@
 import React from 'react';
 import {AbsoluteFill, useCurrentFrame, useVideoConfig} from 'remotion';
 import {Cat, CatTop} from './Cat';
+import {ES8_CABIN_SIDE_URI, ES8_CABIN_TOP_URI} from './es8-cabin-photo';
 import {
   BAG, BAG_PLAN, BODY, BUTTON, CABIN, CANOPY, CANOPY_PLAN, CAT, CAT_GROUND_Y,
   DASH, ISL, ISL_S, ISL_SEG, ISLAND_TOP, LATCH_TRAVEL, LATCH_X, LEVELS,
-  LID_LEN, LID_TH, PAD_PLAN, PLAN, PLAN_SEAT_L, PLAN_SEAT_W, REACH_CLIP, REACH_R,
+  LID_LEN, LID_TH, PAD_PLAN, PLAN, PLAN_PHOTO, REACH_CLIP, REACH_R,
   REAR_SCREEN, ROW_Y, SEAT_X, SECTORS, SIDE_XF, SLOT_W, TETHER, TOP_PLATE,
   BAG_SCENES, F_DATA, F_UI, T_COLORS as C, bagBottom, bagOp, buttonAt, canopyDeg,
   cardAnchorScreen, cardsAt, catAt, catClip, handAt, latchAt, levelK, phaseOf, phaseStart,
@@ -174,68 +175,35 @@ const PlanView: React.FC<{scene: BagKey; t: number; op: number}> = ({scene, t, o
         Q${(BODY.x0 + BODY.x1) / 2} ${BODY.y0 + 4} ${BODY.x1 - 20} ${BODY.y0 + 20}L${BODY.x1 - 8} ${DASH.y0}Z`}
         fill={C.lineSoft} stroke={C.line} strokeWidth={1.4} />
 
-      {/* 座舱地板 */}
-      <rect x={CABIN.x0} y={CABIN.y0} width={CABIN.x1 - CABIN.x0} height={CABIN.y1 - CABIN.y0}
-        rx={22} fill={C.ground} stroke={C.line} strokeWidth={1.4} />
-
-      {/* 仪表台 + 中控屏 + NOMI */}
-      <rect x={CABIN.x0 - 4} y={DASH.y0} width={CABIN.x1 - CABIN.x0 + 8} height={DASH.y1 - DASH.y0}
-        rx={12} fill={C.accentWash} stroke={C.line} strokeWidth={1.3} />
-      <rect x={PLAN.cx - 34} y={DASH.y0 + 4} width={68} height={8} rx={3} fill={C.ink2} />
-      <rect x={PLAN.cx - 60} y={DASH.y0 + 15} width={120} height={4} rx={2} fill={C.line} />
-      <circle cx={PLAN.cx} cy={DASH.y0 - 8} r={7} fill={C.panel} stroke={C.accent} strokeWidth={2} />
-      <circle cx={PLAN.cx} cy={DASH.y0 - 8} r={2.6} fill={C.accent} />
-      {/* 方向盘（行驶中微动） */}
-      <g transform={`rotate(${N(steer)} ${SEAT_X.l} ${ROW_Y[0] - 46})`}>
-        <rect x={SEAT_X.l - 27} y={ROW_Y[0] - 64} width={54} height={36} rx={15}
-          fill="none" stroke={C.ink2} strokeWidth={5} />
-        <rect x={SEAT_X.l - 8} y={ROW_Y[0] - 51} width={16} height={10} rx={4} fill={C.ink3} />
+      {/* 座舱：ES8 全舱俯视实拍打底（仪表台/方向盘/座椅/岛台全在照片里，
+          不再叠矢量仪表台与座椅——照片是真车，矢量画上去是第二套现实）。
+          裁进圆角矩形，挡掉照片四周的暗色车身 */}
+      <clipPath id={`cab-${uid}`}>
+        <rect x={CABIN.x0 - 6} y={60} width={CABIN.x1 - CABIN.x0 + 12} height={CABIN.y1 - 60}
+          rx={24} />
+      </clipPath>
+      <g clipPath={`url(#cab-${uid})`}>
+        <image href={ES8_CABIN_TOP_URI} x={PLAN_PHOTO.tx} y={PLAN_PHOTO.ty}
+          width={PLAN_PHOTO.w * PLAN_PHOTO.s} height={PLAN_PHOTO.h * PLAN_PHOTO.s} />
       </g>
+
       {c3 && (
         <g opacity={0.9}>
-          <circle cx={SEAT_X.l - 44} cy={DASH.y0 + 16} r={3.4} fill={C.ok}
+          <circle cx={SEAT_X.l - 44} cy={28} r={3.4} fill={C.ok}
             opacity={0.45 + 0.45 * Math.sin(t * 4.2)} />
-          <text x={SEAT_X.l - 36} y={DASH.y0 + 20} fontFamily={F_DATA} fontSize={10.5}
+          <text x={SEAT_X.l - 36} y={32} fontFamily={F_DATA} fontSize={10.5}
             fill={C.ink3}>行驶中 · 60 km/h</text>
         </g>
       )}
 
-      {/* 座椅：一排 2 + 二排独立 2 + 三排长凳 */}
-      <Seat cx={SEAT_X.l} yH={ROW_Y[0]} w={PLAN_SEAT_W} l={PLAN_SEAT_L} />
-      <Seat cx={SEAT_X.r} yH={ROW_Y[0]} w={PLAN_SEAT_W} l={PLAN_SEAT_L} />
-      <Seat cx={SEAT_X.l} yH={ROW_Y[1]} w={PLAN_SEAT_W} l={PLAN_SEAT_L} />
-      <Seat cx={SEAT_X.r} yH={ROW_Y[1]} w={PLAN_SEAT_W} l={PLAN_SEAT_L} />
-      <Seat cx={PLAN.cx} yH={ROW_Y[2]} w={PLAN_SEAT_W * 2.9} l={PLAN_SEAT_L * 0.92} bench />
-
-      {/* 前排乘员（肩点 = 可及扇形圆心） */}
+      {/* 前排乘员（肩点 = 可及扇形圆心）——叠在照片座椅上的人员标记 */}
       <Occupant cx={SEAT_X.l} yH={ROW_Y[0]} sh={SECTORS[0].c} k={rk} />
       <Occupant cx={SEAT_X.r} yH={ROW_Y[0]} sh={SECTORS[1].c} k={rk} />
 
-      {/* 中央岛台：托盘/杯架 → 软包扶手 → 二排屏 */}
-      <g>
-        <rect x={ISL.x0} y={ISL.y0} width={ISL.x1 - ISL.x0} height={ISL.y1 - ISL.y0} rx={11}
-          fill={C.panel} stroke={C.ink3} strokeWidth={1.8} />
-        {/* 前段托盘 + 两个杯架 */}
-        <rect x={ISL.x0 + 5} y={ISL_SEG[0] + 8} width={ISL.x1 - ISL.x0 - 10}
-          height={ISL_SEG[1] - ISL_SEG[0] - 16} rx={8} fill={C.lineSoft} stroke={C.line} strokeWidth={1.1} />
-        <circle cx={PLAN.cx - 9.5} cy={(ISL_SEG[0] + ISL_SEG[1]) / 2} r={7.4} fill={C.line}
-          stroke={C.ink4} strokeWidth={1.1} />
-        <circle cx={PLAN.cx + 9.5} cy={(ISL_SEG[0] + ISL_SEG[1]) / 2} r={7.4} fill={C.line}
-          stroke={C.ink4} strokeWidth={1.1} />
-        {/* 中段软包扶手（宠物包放这里） */}
-        <rect x={ISL.x0 + 2} y={PAD_PLAN.y0} width={ISL.x1 - ISL.x0 - 4}
-          height={PAD_PLAN.y1 - PAD_PLAN.y0} rx={9}
-          fill={C.accentWash} stroke={C.accent} strokeWidth={1.6} opacity={padHL} />
-        {[0.3, 0.5, 0.7].map((k) => (
-          <line key={k} x1={ISL.x0 + 8} y1={PAD_PLAN.y0 + (PAD_PLAN.y1 - PAD_PLAN.y0) * k}
-            x2={ISL.x1 - 8} y2={PAD_PLAN.y0 + (PAD_PLAN.y1 - PAD_PLAN.y0) * k}
-            stroke={C.accentDim} strokeWidth={1} strokeDasharray="3 4" />
-        ))}
-        {/* 尾段：二排屏 */}
-        <rect x={ISL.x0 + 3} y={ISL_SEG[2] + 5} width={ISL.x1 - ISL.x0 - 6}
-          height={ISL_SEG[3] - ISL_SEG[2] - 10} rx={6} fill={C.lineSoft} stroke={C.line} strokeWidth={1.1} />
-        <rect x={PLAN.cx - 19} y={ISL.y1 - 9} width={38} height={6} rx={2.5} fill={C.ink2} />
-      </g>
+      {/* 岛台软包段高亮（照片上的放包位置指引；照片本身已有真岛台，只叠指引） */}
+      <rect x={ISL.x0 + 2} y={PAD_PLAN.y0} width={ISL.x1 - ISL.x0 - 4}
+        height={PAD_PLAN.y1 - PAD_PLAN.y0} rx={9}
+        fill={C.accentWash} stroke={C.accent} strokeWidth={1.6} opacity={padHL} />
 
       {/* 第一章：「包放这里」落位指引 */}
       {scene === 'c1' && (
@@ -395,6 +363,15 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
 
     return (
       <g opacity={op} transform={`translate(500 280) scale(${N(1 + 0.06 * settle)}) translate(-500 -280)`}>
+        {/* ES8 前排正侧透视：环境背景（镜像成与叙事一致的车头朝右）。
+            ⚠️ 这张是透视图不是正投影，只做氛围打底 + 盖白纱把矢量机构顶到前景——
+            所有几何主张（岛台高、锁舌、可及范围）仍由矢量层承担，照片不参与标定 */}
+        <g>
+          <g transform="translate(1000 0) scale(-1 1)">
+            <image href={ES8_CABIN_SIDE_URI} x={-3} y={-6} width={1006} height={566} />
+          </g>
+          <rect x={-3} y={-6} width={1006} height={566} fill={C.panel} opacity={0.65} />
+        </g>
         <g transform={SIDE_XF}>
           <defs>
             <linearGradient id={`inner-${uid}`} x1="0" y1="0" x2="0" y2="1">

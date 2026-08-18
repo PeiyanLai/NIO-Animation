@@ -75,20 +75,20 @@ export const BODY = {x0: 336, y0: 40, x1: 604, y1: 556};
 export const DASH = {y0: 84, y1: CABIN.y0};
 /** 三排 H 点 */
 export const ROW_Y = [planRowY(0), planRowY(1), planRowY(2)];
-/** 前/二排座椅中心 x（±480mm：座舱内宽 1620 − 岛台 300，两侧各 660，座宽 520）*/
-export const SEAT_DX = pmm(480);
+/** 前排座椅中心 x —— 由 ES8 俯视照片标定：照片座椅中心 x 360/660 → 舞台 ±61.5（≈±406mm） */
+export const SEAT_DX = 61.5;
 export const SEAT_X = {l: PLAN.cx - SEAT_DX, r: PLAN.cx + SEAT_DX};
 
-/** 中央岛台（俯视）矩形 + 三段分界 y */
-export const ISL = {
-  x0: PLAN.cx - ISLAND_PLAN_W / 2,
-  x1: PLAN.cx + ISLAND_PLAN_W / 2,
-  y0: ISLAND_PLAN.y0,
-  y1: ISLAND_PLAN.y1,
-};
-const ISL_L = ISL.y1 - ISL.y0;
-export const ISL_SEG = ISLAND_PLAN.seg.map((k) => ISL.y0 + ISL_L * k);
-/** 软包扶手段（宠物包放这里）*/
+/**
+ * 中央岛台（俯视）—— **由 ES8 全舱俯视照片标定**（es8-cabin-photo.ts 里的变换）：
+ * 照片岛台 x 445–570、杯架段前沿 y300、软包段 y 390–560、console 尾端 y660，
+ * 经 s=0.41 / tx=261.72 / ty=−5 变换成下面这些舞台数。
+ * ⚠️ 改照片或改变换时这里必须跟着重标——这些数不再来自 ISLAND_PLAN 概念值。
+ */
+export const PLAN_PHOTO = {s: 0.41, tx: 261.72, ty: -5, w: 1023, h: 1537} as const;
+export const ISL = {x0: 444.2, x1: 495.4, y0: 118.0, y1: 265.6};
+export const ISL_SEG = [118.0, 154.9, 224.6, 265.6];
+/** 软包扶手段（宠物包放这里）= 照片软包段 y 390–560 */
 export const PAD_PLAN = {y0: ISL_SEG[1], y1: ISL_SEG[2]};
 
 /** 宠物包（俯视）：长 = BAG_MM.w、宽 = BAG_MM.d，居中落在软包段 */

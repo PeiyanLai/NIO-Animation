@@ -117,12 +117,18 @@ const ik2 = (a: P, c: P, l1: number, l2: number, bend: 1 | -1): P => {
 
 /* ═══ 配色（NIO 浅色体系 + TERRA 环境色）═════════════════════════════════ */
 
+// 真实动物是**反荫蔽**（countershading）：背深、腹浅。早先画成「腹部一条深带」正好画反，
+// 加上肩/髋/肋三条结构描边像装甲拼缝、远侧腿黑得像金属肢——「机械狗」的观感就是这么来的。
+// 取不到实拍参考（外网 egress 403），比例按拉布拉多公开体型数据：体长/肩高≈1.67、
+// 胸深≈0.5h、垂耳长≈头长 0.6。
 const FUR = {
   base: TERRA.sand.base,                                  // #E3CE9C 主体暖米
   lit: mix(TERRA.sand.base, T_COLORS.panel, 0.24),        // 近侧腿 / 高光
-  mid: TERRA.sand.dk,                                     // #C4A96E 胸腹暗部
-  dk: mix(TERRA.sand.dk, TERRA.mud.dk, 0.45),             // 远侧腿
-  dpr: mix(TERRA.sand.dk, TERRA.mud.dk, 0.72),            // 远耳 / 尾尖
+  cream: mix(TERRA.sand.base, T_COLORS.panel, 0.52),      // 胸腹奶油色（反荫蔽：下浅）
+  saddle: mix(TERRA.sand.base, TERRA.sand.dk, 0.60),      // 背鞍（反荫蔽：上深）
+  mid: TERRA.sand.dk,                                     // #C4A96E 结构暗部
+  dk: mix(TERRA.sand.dk, TERRA.mud.dk, 0.22),             // 远侧腿（0.45 太黑，像金属肢）
+  dpr: mix(TERRA.sand.dk, TERRA.mud.dk, 0.40),            // 远耳
   ear: mix(TERRA.sand.dk, TERRA.mud.base, 0.30),          // 近侧垂耳
   gray: mix(TERRA.sand.base, T_COLORS.panel, 0.62),       // 老年犬花白口鼻
   line: T_COLORS.ink2,                                    // 轮廓线
@@ -244,14 +250,15 @@ const HEAD_PTS: P[] = [
   [0.085, 0.058], [0.009, 0.081],
   [-0.052, 0.086],   // 16 喉（颈下接点）
 ];
-const EYE: P = [0.150, -0.096];
+// 眼必须在垂耳前缘之前：耳根 x + 耳前缘宽 0.128 要 < 眼 x，否则耳把眼盖住，脸读不出来
+const EYE: P = [0.172, -0.100];
 const NOSE: P = [0.326, -0.042];
-const EAR_ANCHOR: P = [0.034, -0.128];
+const EAR_ANCHOR: P = [0.018, -0.130];
 
 /** 垂耳（耳根为原点，+y 向下）—— 金毛/拉布拉多式中长垂耳 */
 const EAR_D =
-  'M0,0C-0.052,0.044 -0.084,0.130 -0.074,0.224C-0.062,0.302 -0.004,0.338 0.048,0.318' +
-  'C0.104,0.296 0.130,0.214 0.126,0.130C0.122,0.064 0.098,0.014 0.068,-0.016Z';
+  'M-0.010,-0.006C-0.066,0.034 -0.098,0.116 -0.088,0.208C-0.078,0.290 -0.024,0.336 0.034,0.326' +
+  'C0.092,0.314 0.124,0.246 0.128,0.162C0.130,0.084 0.108,0.020 0.070,-0.022Z';
 
 /* ═══ pose → 姿态参数 ═══════════════════════════════════════════════════ */
 
@@ -402,14 +409,19 @@ const LegPart: React.FC<{chain: P[]; near: boolean; hind: boolean}> = ({chain, n
   return (
     <g>
       <path d={d} fill={near ? FUR.lit : FUR.dk} stroke={FUR.line} strokeWidth={near ? LW : LW * 0.85}
-        strokeLinejoin="round" opacity={near ? 1 : 0.92} />
+        strokeLinejoin="round" />
       <g transform={`translate(${F(b[0])} ${F(b[1])}) rotate(${F(ang)}) translate(0 ${F(-LW / 2)})`}>
         <path d={`M${F(-pw * 0.44)},${F(-ppp)}L${F(pw * 0.30)},${F(-ppp * 1.05)}` +
           `Q${F(pw * 0.60)},${F(-ppp * 0.9)} ${F(pw * 0.58)},${F(-ppp * 0.25)}` +
           `Q${F(pw * 0.56)},0 ${F(pw * 0.30)},0L${F(-pw * 0.32)},0` +
           `Q${F(-pw * 0.52)},0 ${F(-pw * 0.50)},${F(-ppp * 0.5)}Z`}
           fill={near ? FUR.lit : FUR.dk} stroke={FUR.line} strokeWidth={near ? LW : LW * 0.85}
-          strokeLinejoin="round" opacity={near ? 1 : 0.92} />
+          strokeLinejoin="round" />
+        {/* 趾缝：一条极短竖线就能让「楔形块」读成「爪子」 */}
+        {near && (
+          <path d={`M${F(pw * 0.12)},${F(-ppp * 0.72)}L${F(pw * 0.10)},${F(-ppp * 0.1)}`}
+            fill="none" stroke={FUR.line} strokeWidth={LW2 * 0.9} strokeLinecap="round" opacity={0.4} />
+        )}
       </g>
     </g>
   );
@@ -420,8 +432,8 @@ const Ear: React.FC<{org: P; ang: number; near: boolean}> = ({org, ang, near}) =
     <path d={EAR_D} fill={near ? FUR.ear : FUR.dpr} stroke={FUR.line}
       strokeWidth={near ? LW : LW * 0.8} strokeLinejoin="round" opacity={near ? 1 : 0.9} />
     {near && (
-      <path d="M0.006,0.030C-0.014,0.062 -0.024,0.108 -0.020,0.146"
-        fill="none" stroke={FUR.dpr} strokeWidth={LW2} strokeLinecap="round" opacity={0.55} />
+      <path d="M0.056,0.050C0.074,0.118 0.070,0.198 0.040,0.262"
+        fill="none" stroke={FUR.dpr} strokeWidth={LW2} strokeLinecap="round" opacity={0.45} />
     )}
   </g>
 );
@@ -461,7 +473,16 @@ export const Dog: React.FC<{
   const headFill = closedPath(head);
   const headLine = openStroke(head);
 
-  // 结构分色引导线
+  const standFamily = pose !== 'sit' && pose !== 'lie';
+  /** 结构弧 → 无描边肌群块面：沿弧法线向躯干内侧加宽后闭合 */
+  const blobOf = (arc: P[], w: number): P[] => {
+    const off: P[] = arc.map((p, i) => {
+      const a = arc[Math.max(0, i - 1)], b = arc[Math.min(arc.length - 1, i + 1)];
+      const m = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+      return [p[0] - ((b[1] - a[1]) / m) * w - 0.05, p[1] + ((b[0] - a[0]) / m) * w] as P;
+    });
+    return [...arc, ...off.reverse()];
+  };
   const underline = rig.torso.slice(rig.under[0], rig.under[1] + 1);
   const shoulderArc: P[] = pose === 'lie'
     ? [[0.372, -0.572], [0.420, -0.416], [0.408, -0.248]]
@@ -507,8 +528,11 @@ export const Dog: React.FC<{
       {/* 尾 */}
       <path d={taperPoly(tailPts, [0.118, 0.100, 0.078, 0.054, 0.030])}
         fill={FUR.base} stroke={FUR.line} strokeWidth={LW} strokeLinejoin="round" />
-      <path d={polyPath(tailPts.slice(1))} fill="none" stroke={FUR.mid}
-        strokeWidth={LW2 * 1.4} strokeLinecap="round" opacity={0.5} />
+      {/* 尾下缘两笔羽毛（不要整条中线——那是拼缝） */}
+      <g fill="none" stroke={FUR.mid} strokeWidth={LW2} strokeLinecap="round" opacity={0.5}>
+        <path d={`M${pt(lerpP(tailPts[1], tailPts[2], 0.4))}q-0.020,0.052 -0.052,0.070`} />
+        <path d={`M${pt(lerpP(tailPts[2], tailPts[3], 0.5))}q-0.016,0.046 -0.044,0.062`} />
+      </g>
 
       {/* 颈（端头被躯干与头压住，接缝不可见） */}
       <path d={neckFill} fill={FUR.base} />
@@ -518,20 +542,25 @@ export const Dog: React.FC<{
       {/* 远侧垂耳（压在头下） */}
       <Ear org={earOrgFar} ang={earAngNear - 6} near={false} />
 
-      {/* 躯干 */}
+      {/* 躯干。内部**不许出现线**——线读作拼缝，块面才读作肌肉（机械感的主根源） */}
       <path d={torsoFill} fill={FUR.base} />
       <g clipPath={`url(#dgT${uid})`}>
-        <path d={polyPath(underline)} fill="none" stroke={FUR.mid}
-          strokeWidth={0.16} strokeLinecap="round" opacity={0.62} />
-        <path d={polyPath(underline)} fill="none" stroke={FUR.dk}
-          strokeWidth={0.055} strokeLinecap="round" opacity={0.30} />
-        <path d={polyPath(shoulderArc)} fill="none" stroke={FUR.mid}
-          strokeWidth={LW2 * 1.2} strokeLinecap="round" opacity={0.75} />
-        <path d={polyPath(haunchArc)} fill="none" stroke={FUR.mid}
-          strokeWidth={LW2 * 1.2} strokeLinecap="round" opacity={0.75} />
-        {ribArc && (
-          <path d={polyPath(ribArc)} fill="none" stroke={FUR.mid}
-            strokeWidth={LW2} strokeLinecap="round" opacity={0.34} />
+        {/* 反荫蔽：背鞍略深（上）、胸腹奶油色（下）。方向不能反 */}
+        <path d={polyPath(rig.torso.slice(1, 9))} fill="none" stroke={FUR.saddle}
+          strokeWidth={0.15} strokeLinecap="round" opacity={0.32} />
+        <path d={polyPath(underline)} fill="none" stroke={FUR.cream}
+          strokeWidth={0.17} strokeLinecap="round" opacity={0.9} />
+        {/* 肩与大腿肌群：无描边填色块面（由原结构弧加宽闭合而来） */}
+        <path d={closedPath(blobOf(shoulderArc, 0.20))} fill={FUR.mid} opacity={0.15} />
+        <path d={closedPath(blobOf(haunchArc, 0.17))} fill={FUR.mid} opacity={0.20} />
+        {/* 稀疏毛发笔触：胸前 + 大腿后缘（只在站立族姿态，坐卧不套用这些坐标） */}
+        {standFamily && (
+          <g fill="none" stroke={FUR.mid} strokeWidth={LW2} strokeLinecap="round" opacity={0.42}>
+            <path d="M0.472,-0.470C0.462,-0.436 0.466,-0.404 0.482,-0.378" />
+            <path d="M0.398,-0.492C0.390,-0.462 0.394,-0.436 0.406,-0.414" />
+            <path d="M-0.700,-0.640C-0.724,-0.610 -0.734,-0.572 -0.728,-0.536" />
+            <path d="M-0.742,-0.700C-0.766,-0.672 -0.776,-0.638 -0.772,-0.606" />
+          </g>
         )}
       </g>
       <path d={torsoLine} fill="none" stroke={FUR.line} strokeWidth={LW}
@@ -564,7 +593,7 @@ export const Dog: React.FC<{
       <g transform={`translate(${F(rig.headPos[0])} ${F(rig.headPos[1])}) rotate(${F(rig.headAng)})`}>
         <ellipse cx={EYE[0]} cy={EYE[1]} rx={0.031} ry={0.026} fill={T_COLORS.ink} />
         <ellipse cx={EYE[0] + 0.010} cy={EYE[1] - 0.009} rx={0.010} ry={0.008} fill={T_COLORS.panel} opacity={0.85} />
-        <path d="M0.106,-0.128C0.134,-0.142 0.166,-0.140 0.184,-0.126"
+        <path d="M0.128,-0.132C0.156,-0.146 0.188,-0.144 0.206,-0.130"
           fill="none" stroke={FUR.mid} strokeWidth={LW2} strokeLinecap="round" opacity={0.85} />
         <ellipse cx={NOSE[0]} cy={NOSE[1]} rx={0.030} ry={0.027} fill={T_COLORS.ink}
           transform={`rotate(-18 ${NOSE[0]} ${NOSE[1]})`} />

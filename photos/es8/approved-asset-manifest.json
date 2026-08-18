@@ -23,6 +23,59 @@
         "refSpec": "官方参数表：5280×2010×1800，轴距 3130"
       },
       "usageNote": "**reference-only：只能用来读造型、灯语、车顶特征，不得作为俯视贴图。** 泊车这类动画里车要在平面内转角，透视图一转，画面上那些本不该看见的垂直面会跟着甩，物理上不可能；拉伸校正也救不回来（拉了只是把透视图拉变形）。要做 ES8 俯视动画，需要一张真正的正投影俯视图。内部演示用；对外发布前需重新确认授权；不得裁切修图去除任何标识。"
+    },
+    {
+      "id": "es8-cabin-topdown",
+      "path": "es8-cabin-topdown.jpg",
+      "view": "cabin-top-down",
+      "source": "用户上传《ES8 座舱素材》PDF（fe2a7860）嵌入原图提取",
+      "copyrightClearance": "internal-official-material",
+      "watermarkChecked": true,
+      "marketingOverlayChecked": true,
+      "reviewedBy": "peiyanl@umich.edu",
+      "reviewedAt": "2026-08-18",
+      "visualFidelity": "official-photo",
+      "usageNote": "宠物包动画第一/三章座舱俯视底图。标定：岛台中线 x=508、前排 H y=500、内宽≈600px；舞台变换 s=0.41/tx=261.72/ty=-5（见 animations/src/bag-data.ts PLAN_PHOTO 与 es8-cabin-photo.ts）。photo 内宽×0.41≈245.5 与 PLAN.mmPerPx=6.6 一致，几何主张不需重标。轻微透视（车头收窄、可见后视镜），作静态底图可用，不得旋转使用。"
+    },
+    {
+      "id": "es8-front-row-side",
+      "path": "es8-front-row-side.jpg",
+      "view": "front-row-side-perspective",
+      "source": "用户上传《ES8 座舱素材》PDF（fe2a7860）嵌入原图提取",
+      "copyrightClearance": "internal-official-material",
+      "watermarkChecked": true,
+      "marketingOverlayChecked": true,
+      "reviewedBy": "peiyanl@umich.edu",
+      "reviewedAt": "2026-08-18",
+      "visualFidelity": "official-photo",
+      "orthographic": false,
+      "usageNote": "宠物包侧视场景环境背景（镜像+白纱打底）。**透视图**：只做氛围背景，不参与任何几何标定，几何主张全部由矢量层承担。"
+    },
+    {
+      "id": "es8-cabin-topdown-front2rows",
+      "path": "es8-cabin-topdown-front2rows.jpg",
+      "view": "cabin-top-down",
+      "source": "用户上传《ES8 座舱素材》PDF（fe2a7860）嵌入原图提取",
+      "copyrightClearance": "internal-official-material",
+      "watermarkChecked": true,
+      "marketingOverlayChecked": true,
+      "reviewedBy": "peiyanl@umich.edu",
+      "reviewedAt": "2026-08-18",
+      "visualFidelity": "official-photo",
+      "usageNote": "前两排俯视备选素材（更近机位）。当前未使用——全舱那张能覆盖整个座舱不需要拼接。"
+    },
+    {
+      "id": "es8-side-cutaway",
+      "path": "es8-side-cutaway.jpg",
+      "view": "side-cutaway",
+      "source": "用户上传《ES8 座舱素材》PDF（fe2a7860）嵌入原图提取",
+      "copyrightClearance": "internal-official-material",
+      "watermarkChecked": true,
+      "marketingOverlayChecked": true,
+      "reviewedBy": "peiyanl@umich.edu",
+      "reviewedAt": "2026-08-18",
+      "visualFidelity": "official-photo",
+      "usageNote": "整车侧剖视。reference-only：读三排布局与内饰配色。"
     }
   ]
 }
