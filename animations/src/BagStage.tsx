@@ -543,7 +543,7 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
                 ))}
               </g>
             )}
-            {lat.ext > 0.9 && (
+            {lat.ext > 0.9 && st !== 'released' && (
               <text x={(LATCH_X[0] + LATCH_X[1]) / 2} y={ISLAND_TOP + 36} textAnchor="middle"
                 fontFamily={F_UI} fontSize={11.5} fontWeight={700} fill={C.ok} stroke="#FFFFFF"
                 strokeWidth={3} strokeOpacity={0.82} paintOrder="stroke">锁舌 ×2 已咬合</text>
