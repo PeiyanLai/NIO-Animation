@@ -14,7 +14,7 @@ export {
 export {ES9_RIM_FRONT, ES9_RIM_PHOTO_R, ES9_RIM_REAR} from './side-rim';
 export {
   ES9_TOP, ES9_TOP_ANCHORS, ES9_TOP_BBOX, ES9_TOP_BODY, ES9_TOP_HEADLIGHTS,
-  ES9_TOP_PHOTO, ES9_TOP_SRC, HEADLIGHT_LAYERS, topAnchorPoint, topBodyTransform,
+  ES9_TOP_PHOTO, ES9_TOP_SRC, HEADLIGHT_FILLS, topAnchorPoint, topBodyTransform,
   topCarWidth, topScale,
 } from './top';
 export {

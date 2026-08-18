@@ -4,7 +4,7 @@ import {
   A_CFG, B_CFG, C_CFG, D_CFG, GEO, RADIO_SCENES, R, T_COLORS as C,
   F_DATA, F_UI, type RadioKey, dCarX, frac, qPath, qPt, radioState, textW, win,
 } from './radio-data';
-import {CAR_BBOX, CAR_SRC, CAR_TOP_BODY, HEADLIGHTS} from './parking-data';
+import {CAR_BBOX, CAR_SRC, CAR_TOP_BODY, HEADLIGHTS, HEADLIGHT_FILLS} from './parking-data';
 import {ES9_TOP_URI} from './es9-top-photo';
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
@@ -98,12 +98,12 @@ const Car: React.FC<{x: number; y?: number; kind: 'nio' | 'oth'; op?: number}> =
         strokeWidth={7}
         opacity={kind === 'nio' ? 0.85 : 0.7}
       />
-      {/* 前大灯：照片里的灯条只有几像素，叠一层灯罩 + 灯芯才读得出来 */}
-      {HEADLIGHTS.map((d, i) => (
-        <g key={i} strokeLinecap="round" fill="none">
-          <path d={d} stroke="#0E1414" strokeWidth={11} opacity={0.92} />
-          <path d={d} stroke="#FFF6E2" strokeWidth={5.2} />
-          <path d={d} stroke="#FFFFFF" strokeWidth={2} opacity={0.95} />
+      {/* 前大灯：三层实心刀锋（暗壳 → 暖白灯体 → 高亮灯芯）。
+          照片里的灯带只有几像素，在浅底上会糊掉，叠这一层让它读得出来 */}
+      {HEADLIGHT_FILLS.map((L) => (
+        <g key={L.key} fill={L.fill} opacity={L.opacity}>
+          <path d={HEADLIGHTS.left[L.key]} />
+          <path d={HEADLIGHTS.right[L.key]} />
         </g>
       ))}
     </g>
