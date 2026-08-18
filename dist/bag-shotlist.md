@@ -1,6 +1,6 @@
 # 灵动宠物包 · 实拍分镜表
 
-> 由 `remotion-terrain/bag-manifest.json` 自动生成。**这是拍摄前的技术底稿，不是最终分镜**——
+> 由 `animations/manifests/bag-manifest.json` 自动生成。**这是拍摄前的技术底稿，不是最终分镜**——
 > 景别与机位只给了起点，需要导演/摄影指导按场地和车辆实况改。
 
 - 演示空间：`cockpit`　机制：user-action / state-transition

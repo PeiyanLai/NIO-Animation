@@ -57,7 +57,7 @@ import {sideWheelDeg} from './assets/es9/side';
 这种漂移**肉眼发现不了**（base64 几万字符、轮廓几百个数字）。
 
 ```bash
-python3 scripts/assert-assets-in-sync.py --project remotion-terrain
+python3 scripts/assert-assets-in-sync.py --project animations
 ```
 
 逐项比 md5。不一致时**不要直接覆盖**——两边都可能是新的，先确认哪一版对再同步。

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 环境自检：这台 agent 能不能跑本 skill 的生产链路？
 #
-#   bash scripts/preflight.sh [项目目录，默认 remotion-terrain]
+#   bash scripts/preflight.sh [项目目录，默认 animations]
 #
 # 为什么需要它：**HTML 和 GIF 出自同一条流水线**（都靠 remotion render + 无头浏览器）。
 # 所以不存在「能出 HTML 但出不了 GIF」这种中间态——一次自检就能定死分工。
@@ -13,7 +13,7 @@
 # 那份 HTML 很可能是别人产好递给它的，它只做了插入。
 
 set -uo pipefail
-PROJ="${1:-remotion-terrain}"
+PROJ="${1:-animations}"
 fail=0
 ok()   { printf '  ✅ %s\n' "$1"; }
 bad()  { printf '  ❌ %s\n' "$1"; fail=1; }

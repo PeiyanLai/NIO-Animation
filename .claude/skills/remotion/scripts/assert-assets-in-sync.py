@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """校验**资产库**与**已交付动画工程**里的同一份素材没有走样。
 
-    python3 assert-assets-in-sync.py --project remotion-terrain
+    python3 assert-assets-in-sync.py --project animations
 
 ## 为什么需要
 
@@ -19,7 +19,7 @@
 import argparse, hashlib, os, re, sys
 
 ap = argparse.ArgumentParser()
-ap.add_argument('--project', default='remotion-terrain')
+ap.add_argument('--project', default='animations')
 ap.add_argument('--assets', default=os.path.join(os.path.dirname(__file__), '..', 'assets', 'vehicles'))
 a = ap.parse_args()
 

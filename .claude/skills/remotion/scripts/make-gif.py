@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """把 Remotion 合成渲成**飞书文档里能自动循环播放的高清 GIF**。
 
-    python3 make-gif.py <CompId> --out out/xxx.gif [--project remotion-terrain]
+    python3 make-gif.py <CompId> --out out/xxx.gif [--project animations]
                         [--scale 0.75] [--every 5] [--max-mb 12]
 
 为什么需要它：**飞书文档不能内嵌运行 HTML**，文档里唯一能「自己动起来」的是 GIF——
@@ -31,7 +31,7 @@ from PIL import Image
 
 ap = argparse.ArgumentParser()
 ap.add_argument('comp', help='Remotion 合成 id，如 SceneA / RampC3 / BagA')
-ap.add_argument('--project', default='remotion-terrain')
+ap.add_argument('--project', default='animations')
 ap.add_argument('--out', required=True)
 ap.add_argument('--scale', type=float, default=0.75, help='0.75 → 1920×1080 变 1440×810，飞书里的及格线')
 ap.add_argument('--every', type=int, default=5, help='每 N 帧取一帧，5 → 30fps 变 6fps')

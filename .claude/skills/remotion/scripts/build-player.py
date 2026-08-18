@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """把 Remotion Player 入口打成**单文件交互 HTML**（Artifact 片段形态）。
 
-    python3 build-player.py src/radio-entry.tsx radio-player.html [--project remotion-terrain]
+    python3 build-player.py src/radio-entry.tsx radio-player.html [--project animations]
 
 改了组件或素材之后**必须重跑一遍**——HTML 里内联的是打包快照，不会自己跟着源码更新。
 这是最容易忘的一步：源码改对了、还渲了 still 验证过，但发出去的链接还是旧的。
@@ -23,7 +23,7 @@ import argparse, os, subprocess, sys
 ap = argparse.ArgumentParser()
 ap.add_argument('entry', help='入口 tsx，如 src/radio-entry.tsx')
 ap.add_argument('out', help='输出 HTML')
-ap.add_argument('--project', default='remotion-terrain')
+ap.add_argument('--project', default='animations')
 ap.add_argument('--title', default='')
 a = ap.parse_args()
 

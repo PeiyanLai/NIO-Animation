@@ -674,7 +674,7 @@ node scripts/assert-self-contained-html.mjs page.html --fragment   # Artifact �
 - 切换场景时给 `<Player key={scn}>` 加 key，强制重挂载以重置播放头
 - **主画面必须能点击暂停/继续**（`clickToPlay`），暂停时时间轴、车辆位移、地面纹理、CSS 动画要一起冻结，并给一个简短的「已暂停 · 点击继续」反馈。只在页面底部放播放条是不够的——评审时需要停在某一帧细看
 - 讲「行驶中地形/场景切换」时，**不要用静态换图代替过程**：车辆要有可感知的横向位移、路面纹理反向流动，再在识别时刻过渡背景，最后给提醒
-- 参考实现：本仓库 `remotion-terrain/src/player-entry.tsx`
+- 参考实现：本仓库 `animations/src/player-entry.tsx`
 
 交付页版式已经稳定，直接照抄（六个动画都是这一套）：**标题 + 一段导语（把功能一句话讲完，
 并点出关键数字）→ 章节 chips（每个带标题与一行副标题）→ Player → 3–4 段实现注记

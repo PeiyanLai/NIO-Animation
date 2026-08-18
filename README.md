@@ -1,51 +1,67 @@
-# 平移泊入 · 车载功能动画
+# NIO 功能演示动画
 
-面向具备**后轮转向**车型的「平移泊入」功能用户教育动画：四轮同角度偏转，整车横向平移滑入车位，无需前进-倒车揉库。
+> **内部资料，请勿外传。** 含未发布功能的演示设计与 ES9 实拍素材。
 
-两个版本，均无外部依赖、可直接嵌入车机 WebView：
+用 Claude Code 的 **remotion skill** 把车辆功能做成用户教育动画，
+交付可发链接的单文件交互 HTML，并能导出飞书文档里自动播放的 GIF。
 
-- `index.html` —— **V1 示意版**：车轮画成 90° 横移，强调"整车平移"的概念
-- `v2.html` —— **V2 真实转角版**：前轮上限 40°、后轮同向上限 8°，车身保持摆正，全程小幅「斜向前挪→反向后挪」匀步蹭移入位；车位为现实尺寸、两侧邻车限位；统一蔚来车矢量形象
+## 仓库结构
 
-## 场景
+| 路径 | 内容 |
+|---|---|
+| **`.claude/skills/remotion/`** | **★ skill 本体**：SKILL.md + 车辆资产库 + 工具脚本 + 参考文档 |
+| `animations/` | 动画工程（Remotion）。六个功能动画共用一个工程，`src/*-entry.tsx` 各是一个交付页入口 |
+| `photos/` | 素材原图 + `approved-asset-manifest.json`（授权/水印/营销文案审核记录） |
+| `dist/` | 交付产物：交互 HTML、MP4、分镜表 |
+| `archive/` | 早期单文件 SVG 动画（feature-animation 时代）与 skill 变体，已被 `dist/` 里的版本取代 |
+| `scripts/` | 仓库级脚本 |
 
-1. **车位旁一键泊入** —— 车身平行停在车位旁，整车横移入位
-2. **泊车中途解围** —— 自己泊到一半车身已正、仍有一截在位外，横移补完
+⚠️ **skill 必须留在 `.claude/skills/remotion/`** —— Claude Code 按这个路径发现 skill，
+挪走就不生效了。所以「把 skill 相关的东西放一起」是**在这个目录里放齐**，
+而不是把它挪到别处。
 
-## 动画节奏
+## 装到别的项目 / 给团队用
 
-停靠 → 点按开启（无需操作）→ 四轮同步转向（后轮高亮）→ 整车横向平移 → 泊入完成、车轮回正，自动循环。
+```bash
+# 项目级
+mkdir -p <目标项目>/.claude/skills && cp -r .claude/skills/remotion <目标项目>/.claude/skills/
 
-## 实现
+# 用户级（所有项目可用）
+mkdir -p ~/.claude/skills && cp -r .claude/skills/remotion ~/.claude/skills/
+```
 
-单文件 SVG + JS 时间轴驱动，日/夜双主题（跟随系统），支持 `prefers-reduced-motion` 降级。
+装完先跑环境自检：
 
----
+```bash
+bash .claude/skills/remotion/scripts/preflight.sh
+```
 
-# 对讲机组队 · 车队互联动画
+查 node / remotion / chromium / ffmpeg / PIL。**HTML 和 GIF 出自同一条流水线**
+（都靠 remotion render + 无头浏览器），不存在「能出 HTML 但出不了 GIF」的中间态。
+全绿 = 这台机器能跑完整链路；有红 = 只能做飞书插入那一段，产物由别处提供。
 
-`team-radio.html` —— 对讲机组队功能的用户教育动画（无视频导出版 feature-animation skill 产出），四台统一蔚来车矢量 + 一台"朋友的非蔚来车"，三个场景：
+## 常用命令
 
-1. **组队对讲（有网）** 12.4s —— 组队完成（上限 50 台）→ 共享定位/车辆信息/导航目的地（1.2–4.6s）→ 方向盘中键按下讲话（4.6–7.0s）→ 经云端全队同收并播放（7.0–10.2s）→ 完成
-2. **无网地形 · 对讲机组网** 15.0s —— 车队驶入网络信号复杂的地形、陆续断网（0–4.6s，云端消息送达失败 ✕）→ 车载对讲机自动组网、基础通信 5–8 km（4.6–7.2s）→ 无网车经硬件逐跳接力，有网车作**桥接节点**上云（7.2–12.6s）→ 全队互联
-3. **朋友的车 · App 入队** 13.2s —— 非蔚来车无组队功能 → 递出对讲机（1.4–4.0s）→ App 绑定新账号（4.0–7.0s）→ 入队、有网远距对讲（7.0–11.0s）→ 混合车队互联
+```bash
+# 打包某个功能的交互 HTML（改完组件必须重跑，否则发出去的还是旧快照）
+python3 .claude/skills/remotion/scripts/build-player.py src/radio-entry.tsx dist/radio-player.html
+node .claude/skills/remotion/scripts/assert-self-contained-html.mjs dist/radio-player.html --fragment
 
-各场景自动循环、chips 切换；测试钩子 `__seek/__scn/__play/__info`。
+# 导飞书文档用的高清 GIF（默认 1440×810 / 6fps）
+python3 .claude/skills/remotion/scripts/make-gif.py SceneA --out dist/gif/terrain-ch1.gif
 
----
+# 校验资产库与工程里的素材没走样（改完素材必跑）
+python3 .claude/skills/remotion/scripts/assert-assets-in-sync.py
+```
 
-# 全地形模式 · 车载功能动画
+脚本默认 `--project animations`，在仓库根目录跑即可。
 
-`terrain-mode.html` + `terrain-mode-demo.mp4`（42s 三场景连播）—— 全地形模式（泥地/沙地/雪地/湿地/碎石）的用户教育动画，侧视图行驶场景：**ES9 官方照片真车形象**（`photos/es9/` 图集抠形贴图，SVG clipPath 手描轮廓 + 接地阴影融合）+ 地形带滚动 + 车身微浮动，NOMI 气泡提醒文案与需求文档逐字一致。
+## 车辆素材的硬规矩
 
-1. **自动识别 · 一键开启** 13.6s —— 柏油路标准模式（0–1.6s）→ 驶入雪地、激光雷达识别脉冲（1.6–4.6s）→ 气泡「已驶入雪地，是否为您打开全地形模式？」（4.6–7.6s）→ 方向盘按键确认、雪地模式激活（7.6–11.0s，徽标点亮/抓地标识/扬尘）→ 完成
-2. **行驶中场景切换** 13.6s —— 雪地模式行驶中 → 路面切为沙地、主动识别 → 气泡「已驶入沙地，是否为您切换到沙地模式？」→ 一键切换 → 完成
-3. **五种地形一览** 14.0s —— 柏油 → 泥地 → 沙地 → 雪地 → 湿地 → 碎石逐段驶过，模式徽标与 HUD 逐段跟随
+**视角定了，图就定死了。** ES9 正侧视用 `<ES9SideView />`，正俯视用 `ES9_TOP`——
+不要另找图、不要画矢量车。同一台车在不同动画里长得不一样，团队一眼看出是拼的。
 
-## Remotion 重制版
+这条**只管蔚来车**：画面里的第三方车必须明显不是同一台（尺寸/颜色/造型三个维度同时拉开）。
 
-`remotion-terrain/` + `terrain-remotion.mp4`（42.2s，1080p30）—— 同一动画的 **Remotion（React）产线**重制：片头字卡 + 三场景经 TransitionSeries 淡入淡出串成一条成片；所有动画均为 `useCurrentFrame()` 帧驱动纯函数（几何与时序常量与 HTML 版完全一致），真车照片经 `staticFile` + SVG clipPath 抠形，矢量轮随地面速度旋转。**默认交付 HTML**：`terrain-player.html`（`@remotion/player` + esbuild 打包的单文件交互页，可暂停/拖拽逐帧、三场景切换）——
-`npx esbuild src/player-entry.tsx --bundle --minify --format=iife --outfile=bundle.js` 后内联进 HTML。
-MP4 仅在需要时导出：`npx remotion render TerrainMode out.mp4 --browser-executable=/opt/pw-browsers/chromium --chrome-mode=chrome-for-testing`（需 Remotion ≥ 4.0.5xx）。
-
-各场景自动循环、chips 切换；测试钩子 `__seek/__scn/__play/__info`。
+细则见 `.claude/skills/remotion/assets/vehicles/README.md`，
+每份素材的标定来历和踩过的坑写在各自文件头部——**改之前先读**。

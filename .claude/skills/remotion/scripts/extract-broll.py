@@ -25,9 +25,9 @@ from PIL import Image, ImageStat
 
 def find_ffmpeg():
     here = os.path.dirname(os.path.abspath(__file__))
-    roots = [os.path.join(here, '../../../../remotion-terrain/node_modules'),
+    roots = [os.path.join(here, '../../../../animations/node_modules'),
              os.path.join(os.getcwd(), 'node_modules'),
-             os.path.join(os.getcwd(), 'remotion-terrain/node_modules')]
+             os.path.join(os.getcwd(), 'animations/node_modules')]
     for r in roots:
         for p in ('@remotion/compositor-linux-x64-gnu', '@remotion/compositor-linux-x64-musl'):
             f = os.path.join(r, p, 'ffmpeg')
