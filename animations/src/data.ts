@@ -1,7 +1,7 @@
 // 全地形动画 · 常量与场景配置（自 terrain-mode.html 移植，几何/时序完全一致）
 
 export const T_COLORS = {
-  // NIOFlow 浅色 token（见 .claude/skills/feature-animation/references/nio-colors.md）
+  // NIOFlow 浅色 token（见 .claude/skills/remotion/references/nio-colors.md）
   // 大面积背景仅限 #FFFFFF / #F0FAFA / #E8FAFA；主色 #00bebe 只做强调；背景纯色无网格
   ground: '#F0FAFA',
   panel: '#FFFFFF',

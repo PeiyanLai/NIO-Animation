@@ -17,8 +17,6 @@
 | 文件 | 说明 |
 |---|---|
 | `terrain-remotion.mp4` | 全地形 Remotion 成片，42.2s / 1080p30 |
-| `terrain-mode-demo.mp4` | 全地形早期单文件 SVG 版录屏 |
-| `pet-mode-demo.mp4` | 宠物模式早期版录屏 |
 | `ramp-shotlist.md` / `bag-shotlist.md` | 实拍分镜表（`make-shotlist.mjs` 生成） |
 
 **分镜表里的 `conceptualItems` 是开拍前必须归零的清单**——概念件可以画，但拍不出来。

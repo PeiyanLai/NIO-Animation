@@ -174,7 +174,7 @@ node scripts/make-shotlist.mjs <manifest.json> > shotlist.md
 
 ## 配色与背景（强制）
 
-**一律用 NIO（NIOFlow）配色**，完整 token 见 `.claude/skills/feature-animation/references/nio-colors.md`；用户未指定其他品牌时不得自选配色。要点：
+**一律用 NIO（NIOFlow）配色**，完整 token 见 `references/nio-colors.md`；用户未指定其他品牌时不得自选配色。要点：
 
 - **默认浅色底**：大面积背景**仅限 #FFFFFF / #F0FAFA / #E8FAFA**。⚠️ 不要自作主张做成黑底/深色底——NIO 规范的底色是浅青调，深色版只在用户明确要求时才做
 - 主色 **#00bebe（文本/描边）、#00D4D4（高亮/渐变顶）只做强调**，单块面积 ≤15%，每屏 ≤3 处

@@ -13,8 +13,6 @@
 | `animations/` | 动画工程（Remotion）。六个功能动画共用一个工程，`src/*-entry.tsx` 各是一个交付页入口 |
 | `photos/` | 素材原图 + `approved-asset-manifest.json`（授权/水印/营销文案审核记录） |
 | `dist/` | 交付产物：交互 HTML、MP4、分镜表 |
-| `archive/` | 早期单文件 SVG 动画（feature-animation 时代）与 skill 变体，已被 `dist/` 里的版本取代 |
-| `scripts/` | 仓库级脚本 |
 
 ⚠️ **skill 必须留在 `.claude/skills/remotion/`** —— Claude Code 按这个路径发现 skill，
 挪走就不生效了。所以「把 skill 相关的东西放一起」是**在这个目录里放齐**，

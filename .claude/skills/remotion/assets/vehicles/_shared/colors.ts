@@ -1,5 +1,5 @@
 // NIO（NIOFlow）浅色系配色 token —— 资产库统一色源
-// 完整规范见 .claude/skills/feature-animation/references/nio-colors.md
+// 完整规范见 skill 的 references/nio-colors.md
 //
 // 硬规则（照抄自 SKILL.md，改动前先回去看）：
 //   · 大面积背景仅限 #FFFFFF / #F0FAFA / #E8FAFA，背景必须纯色、无网格无纹理
