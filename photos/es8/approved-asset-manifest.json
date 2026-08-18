@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0",
+  "vehicle": "NIO ES8",
+  "assets": [
+    {
+      "id": "es8-topdown-rear-highangle",
+      "path": "es8-topdown-rear-highangle.jpg",
+      "view": "top-down-high-angle-rear",
+      "source": "用户上传 PDF（fe2a7860）第 1 页嵌入原图，941×1672，影棚白底",
+      "copyrightClearance": "internal-official-material",
+      "watermarkChecked": true,
+      "marketingOverlayChecked": true,
+      "reviewedBy": "peiyanl@umich.edu",
+      "reviewedAt": "2026-08-18",
+      "visualFidelity": "official-photo",
+      "orthographic": false,
+      "orthographicCheck": {
+        "script": "assert-orthographic.py",
+        "lengthWidthDeviation": "-12.5%",
+        "wheelbaseLengthDeviation": "-16.3%",
+        "verdict": "fail",
+        "note": "两条判据都偏 → 真透视。均匀缩放只会让长宽比偏、轴距/车长比不变；两条都偏说明是从车后上方拍的。放大看车尾可直接确认：整个尾门立面（尾灯条、NIO 标、牌照凹槽、后杠）都可见，正投影看不到任何垂直面。"
+      },
+      "usageNote": "**reference-only：只能用来读造型、灯语、车顶特征，不得作为俯视贴图。** 泊车这类动画里车要在平面内转角，透视图一转，画面上那些本不该看见的垂直面会跟着甩，物理上不可能；拉伸校正也救不回来（拉了只是把透视图拉变形）。要做 ES8 俯视动画，需要一张真正的正投影俯视图。内部演示用；对外发布前需重新确认授权；不得裁切修图去除任何标识。"
+    }
+  ]
+}
