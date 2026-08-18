@@ -639,10 +639,6 @@ export const Stage: React.FC<{scene: 'a' | 'b' | 'c'}> = ({scene}) => {
         <ellipse cx={257.5} cy={420} rx={49} ry={7} fill="#2E3D3D" opacity={0.34} />
         <ellipse cx={415} cy={421} rx={215} ry={8} fill="#5C7070" opacity={0.14} />
 
-        {/* 轮腔（暗底）：填满轮拱开口，使轮胎与轮眉之间留出机械缝隙 */}
-        <circle cx={573.2} cy={376.6} r={46.8} fill="#151A1A" />
-        <circle cx={257.5} cy={376.6} r={47.3} fill="#151A1A" />
-
         {/* 车身照片（抠形 + 镜像 + 微浮动）——最后绘制，覆盖轮子上沿 */}
         <g transform={`translate(120 ${(201.7 + bob).toFixed(2)})`}>
           <g transform="scale(0.55)">

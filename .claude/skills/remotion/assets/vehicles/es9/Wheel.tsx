@@ -30,8 +30,8 @@
 // 或直接用 <ES9Wheel cx={573.2} cy={376.6} scale={0.407} deg={deg} />
 
 import React from 'react';
-import {NioLogo} from './NioLogo';
-import {NIO} from './colors';
+import {NioLogo} from '../_shared/NioLogo';
+import {NIO} from '../_shared/colors';
 
 // ─── 几何常量（实拍量得，不要凭手感改） ──────────────────────────────────
 export const R_FACE = 69; //   盘面外缘（r=73 轮辋内，留 4 单位暗色轮辋唇）
@@ -177,7 +177,7 @@ export const WheelCap: React.FC = () => (
         教学动画里「一眼可辨」优先于比例严格 */}
     <circle r={20} fill="none" stroke={NIO.ink2} strokeWidth={1.3} opacity={0.75} />
     <circle r={17} fill="url(#rimFace)" opacity={0.9} />
-    <circle r={13} fill={NIO.ink} stroke={{NIO.rimSilver}} strokeWidth={0.9} />
+    <circle r={13} fill={NIO.ink} stroke={NIO.rimSilver} strokeWidth={0.9} />
     <NioLogo r={11.5} fill={NIO.rimHighlight} />
   </g>
 );

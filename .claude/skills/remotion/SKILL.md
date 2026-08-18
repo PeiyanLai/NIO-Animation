@@ -370,31 +370,37 @@ type LatchState = 'free' | 'placed' | 'locked' | 'released';
 - 旋转件的高光要画在**旋转组之外**（光源固定不跟着转），孔用 `<mask>` 做成真镂空并透出下层轮腔/卡钳，转起来才看得出在转
 - 登记进 `approved-asset-manifest.json`，`visualFidelity: "reference-only"`——参考图只用来定型，不直接贴图
 
-## 现成资产：不要重画车
+## 现成资产：不要重画车（**资产库按车型分目录**）
 
-`assets/nio-vehicle/` 是从已交付动画沉淀下来的资产库，**每个文件独立可用**（不 import 动画工程、贴图 base64 已内联、只依赖 react）。做新动画前先看这里，不要重画车、不要重推物理。
+```
+assets/vehicles/
+  _shared/     与车型无关：colors / NioLogo / Kinematics / FollowCard / terrain-props
+  es9/         ES9 专属：spec / side / side-rim / SideView / top / Wheel
+```
 
-| 文件 | 用途 |
-|---|---|
-| `colors.ts` | NIO 浅色 token + 地形色 + 字体栈；**资产库唯一允许出现裸色值的地方** |
-| `spec.ts` | ES9 实车规格 + mm/px 标尺换算 + 比例自检 |
-| `side.ts` | 正侧视车身（照片 + 轮廓 + 轮拱 + 车轮/阴影摆位） |
-| `top.ts` | 正俯视车身（照片 + 轮廓 + 包围盒 + 锚点 + 大灯灯带） |
-| `Wheel.tsx` | ES9 大饼轮毂（9 孔）+ 它依赖的 `<defs>`（`WheelDefs`） |
-| `Kinematics.ts` | 四轮转向运动学：解析积分 / 反推起点 / 退化自检 |
-| `FollowCard.tsx` | 贴主体信息卡：卡片 + 三角 + 引导线 + 安全区 clamp |
-| `terrain-props.tsx` | 环境道具：雪人/松树/仙人掌/芦苇/石堆/底纹/飘雪/扬沙 |
+**加新车型就加一个平级目录**（`et9/`、`es6/`…），照 `es9/` 的文件名与导出结构照抄。
+不要把新车型的贴图塞进 `es9/`，也不要退回不分车型的扁平目录——两个车型一混，
+下一个人分不清哪张图是哪台车，动画里就会出现「前后不是同一台车」。
+
+每个文件独立可用（不 import 动画工程、贴图 base64 已内联、只依赖 react）。
+做新动画前先看这里，不要重画车、不要重推物理。目录清单见 `assets/vehicles/README.md`。
 
 ### 视角选定后，图就定死了（强制）
 
-| 视角 | 唯一指定素材 | 出处 |
-|---|---|---|
-| **正俯视** | `top.ts`（**泊车动画那张实拍图**） | 任何需要俯视的功能都用它，不许另找、不许画矢量简图 |
-| **正侧视** | `side.ts`（**白车身 + 黑车顶**影棚图） | 同上 |
-| **轮毂** | `Wheel.tsx`（9 孔大饼轮毂 + `NioLogo`） | 同上 |
+| 车型 | 视角 | **唯一入口** | 说明 |
+|---|---|---|---|
+| ES9 | **正侧视** | `es9/SideView.tsx` → `<ES9SideView deg bob />` | **开箱即用**，已含遮罩/镜像/旋转轮辋/静态高光/接地投影 |
+| ES9 | **正俯视** | `es9/top.ts` → `ES9_TOP` | 泊车动画那张实拍图 |
+| ES9 | 轮毂（矢量） | `es9/Wheel.tsx` | **兜底**，只在拿不到可用照片时用 |
+
+判断流程就一句话：**功能演示要用 ES9 正侧视 → 直接 `<ES9SideView />`**。
+不要另找图、不要画矢量车、不要沿用别的车型的轮廓、不要「照着调一下参数」。
 
 同一个车型在不同动画里长得不一样，团队一眼就会看出是「拼的」，可信度直接归零。
 **换视角可以，换车不行。**
+
+⚠️ `es9/side.ts` 顶部记着这条轮廓是**怎么逐像素测出来的**，以及五个已经踩过的坑。
+那是多轮返工的结果，**改之前先读那一段**——凭感觉调参数只会退回到已经修好的老问题上。
 
 已经踩过的教训：对讲机动画原先自己画了一套矢量俯视简图（112×52，比例 2.15），
 和泊车的实拍图（5365:2029 = **2.64**）根本不是一台车。换图时**尺寸要按实车比例重算**，
@@ -419,7 +425,8 @@ type LatchState = 'free' | 'placed' | 'locked' | 'released';
 两个必须配套做的：**圆盘 y 要带上车身的 bob**（不然轮子在车身里上下窜）；
 **叠一层不旋转的穹面高光**（opacity 0.5）压住照片自带的、会跟着转的高光，否则高速时有频闪感。
 
-矢量轮（`assets/nio-vehicle/Wheel.tsx`）降级为**拿不到可用照片时的兜底**。
+矢量轮（`assets/vehicles/es9/Wheel.tsx`）降级为**拿不到可用照片时的兜底**——
+`<ES9SideView />` 里已经把「照片车身 + 旋转轮辋 + 静态高光」这套装好了，直接用就行。
 
 ### 品牌标不跟着轮子转（画矢量中心盖时）
 
@@ -431,7 +438,7 @@ type LatchState = 'free' | 'placed' | 'locked' | 'released';
 中心盖占盘面的比例也从实拍的 0.13 放大到 0.19，同理——**教学动画里「一眼可辨」优先于比例严格**，
 但每一处这样的偏离都要在代码注释里写清楚为什么。
 
-用法：把整个目录复制进工程（`cp -r .claude/skills/remotion/assets/nio-vehicle my-video/src/assets/`）再按相对路径 import——**交付过的动画要复制不要引用**，否则 skill 更新会改变旧动画。
+用法：把 `_shared/` 和需要的车型目录复制进工程（`cp -r .claude/skills/remotion/assets/vehicles/{_shared,es9} my-video/src/assets/`）再按相对路径 import——**交付过的动画要复制不要引用**，否则 skill 更新会改变旧动画。
 
 ### 抠图体检：`bleed` 对白 / 银 / 灰主体是失效的
 
@@ -969,7 +976,7 @@ const AnimatedButton = () => {
 
 - `references/animation-routing.md` — 演示空间/机制/输出形式/分镜模板的完整选择规则
 - `references/vehicle-assets.md` — 车辆资产库使用说明（硬性约束、落位公式、换车型改动清单）
-- `assets/nio-vehicle/` — 现成资产：侧视/俯视车身、大饼轮毂、四轮转向运动学、贴身信息卡、环境道具、配色 token
+- `assets/vehicles/` — **按车型分目录**的资产库；`README.md` 是索引与调用规则，`_shared/` 放与车型无关的件，`es9/` 是 ES9 的侧视/俯视/轮毂
 - `scripts/validate-animation-manifest.mjs` — 校验动画决策卡（scope、mechanism、每章 claim/startState/endState）
 - `scripts/assert-self-contained-html.mjs` — 交付前拦截外链依赖（`--fragment` 用于 Artifact 片段）
 - `scripts/make-shotlist.mjs` — 决策卡 → 实拍分镜表（含开拍前必须归零的项、可量化验收清单、合规清单）

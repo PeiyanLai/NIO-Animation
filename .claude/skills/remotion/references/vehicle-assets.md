@@ -1,4 +1,4 @@
-# 车辆资产库使用说明（`assets/nio-vehicle/`）
+# 车辆资产库使用说明（`assets/vehicles/`，按车型分目录）
 
 **这份资产库存在的意义只有一句话：做新功能动画时不要重画车、不要重推物理。**
 四个已交付动画（全地形 / 平移泊入 / 宠物模式 / 车队电台）里所有可复用的部分都沉淀在这里，
@@ -30,13 +30,13 @@ base64 贴图直接内联，只依赖 `react`。
 **推荐：整个目录复制进工程**，动画自带资产、互不影响：
 
 ```bash
-cp -r .claude/skills/remotion/assets/nio-vehicle my-video/src/assets/
+cp -r .claude/skills/remotion/assets/vehicles/{_shared,es9} my-video/src/assets/
 ```
 
 ```tsx
-import {NIO, F_UI} from './assets/nio-vehicle/colors';
-import {ES9_SIDE, ES9_SIDE_BODY, sideWheelDeg} from './assets/nio-vehicle/side';
-import {WheelDefs, ES9Wheel} from './assets/nio-vehicle/Wheel';
+import {NIO, F_UI} from './assets/_shared/colors';
+import {ES9SideDefs, ES9SideView, sideWheelDeg} from './assets/es9';   // 正侧视首选这个
+import {WheelDefs, ES9Wheel} from './assets/es9/Wheel';   // 矢量轮，兜底才用
 ```
 
 也可以直接按相对路径引用 skill 目录（esbuild / Remotion 都能解析），但一旦 skill 更新，
