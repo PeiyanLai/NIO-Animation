@@ -426,6 +426,9 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
 
             {/* 包壳实体打底：照片舞台上包必须是实的，否则照片透出来像鬼影 */}
             <path d={bagShell(BAG.x, bagY, BAG.w, BAG.h, rim)} fill={C.panel} opacity={0.93} />
+            {/* 舀口补板：敞篷合上时舀口不再透出照片（否则像包顶破了个洞）；开盖时淡出让猫头露出 */}
+            <rect x={BAG.x + BAG.w * 0.3 + 1} y={bagT - 1} width={BAG.w * 0.7 - 4}
+              height={rim - bagT + 1} fill={C.panel} opacity={0.93 * (1 - openK)} />
 
             {/* 包内（剖面：看得见内部） */}
             <g clipPath={`url(#bagIn-${uid})`}>
