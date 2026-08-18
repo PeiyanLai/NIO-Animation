@@ -195,7 +195,9 @@ export const RADIO_SCENES: Record<RadioKey, RadioScene> = {
       ['混合车队 · 全员互联', '不是蔚来车，也能跟着队伍走'],
     ],
     cars: [
-      {kind: 'nio', x: 640, label: '队首', radio: true, net: 'on'},
+      // 场景三里车队朝右，最前面那台是右侧的「朋友的车」（x=860），
+      // 所以这台不是队首，标「队友」。别照抄场景一——那里 x=860 才是本队车。
+      {kind: 'nio', x: 640, label: '队友', radio: true, net: 'on'},
       {kind: 'nio', x: 450, label: '队友', radio: true, net: 'on'},
       {kind: 'nio', x: 260, label: '队友', radio: true, net: 'on'},
       {kind: 'oth', x: 860, label: '朋友的车', radio: false, net: 'on'},
