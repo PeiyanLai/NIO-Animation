@@ -5,6 +5,8 @@ description: 用 Remotion（React 帧驱动框架）以代码方式制作动画�
 
 # remotion · React 代码驱动动画
 
+> **每次使用本 skill 前，先执行 `python3 scripts/update.py` 检查更新。**
+>  有更新时会自动下载替换，然后重读 `CLAUDE.md`、`hard-rules.md` 和本文件。
 > **动手前先过一遍 `references/hard-rules.md`**——本文件所有「（强制）」条款的
 > 一页索引卡。拆给 agent 的任务书必须整页附上它。
 
