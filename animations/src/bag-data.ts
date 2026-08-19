@@ -66,8 +66,13 @@ export const CORNERS = [
  * 由虚实双层自动虚化——这正是用户点名的「虚实结合」场景。
  * 敞篷开满时最高点舞台 y≈138（断言里有这条）。
  * ⚠️ 换照片或挪包位必须重量再解；BUTTON 是照片锚定，要跟着反解。
+ *
+ * 【取景重构】用户定「画面里不要出现轮毂」（左下角轮毂标注怎么画都难对）：
+ * 照片放大 1.18 并左上平移（BagStage 里 image 摆位 (-160,-40,1187.1×667.9)），
+ * 轮毂整体移出画面。相机/SEAT_EDGE 同步做同一仿射 new = old·1.18 + (-156.46,-32.92)，
+ * 世界坐标（BUTTON/包位）与照片的对应关系因此**不变**，只有舞台数字变了。
  */
-export const SIDE_CAM = {s: 0.58, tx: 331.5, ty: 186.2};
+export const SIDE_CAM = {s: 0.6844, tx: 234.71, ty: 186.8};
 export const sideX = (x: number) => x * SIDE_CAM.s + SIDE_CAM.tx;
 export const sideY = (y: number) => y * SIDE_CAM.s + SIDE_CAM.ty;
 export const sidePt = (p: Pt): Pt => ({x: sideX(p.x), y: sideY(p.y)});
@@ -81,10 +86,10 @@ export const SIDE_XF =
  * BagStage 把该区域画成 34% 透明度的「虚」层，可见区为「实」层。
  */
 export const SEAT_EDGE: [number, number][] = [
-  [647, 380], [663, 307], [692, 247], [719, 187], [746, 126], [773, 66], [790, 20],
+  [607.0, 415.5], [625.9, 329.3], [660.1, 258.5], [692.0, 187.7], [723.8, 115.8], [755.7, 45.0], [775.7, -9.3],
 ];
 export const SEAT_OCC_POLY =
-  SEAT_EDGE.map(([x, y]) => `${x},${y}`).join(' ') + ' 990,20 990,380';
+  SEAT_EDGE.map(([x, y]) => `${x},${y}`).join(' ') + ' 1010,-10 1010,430';
 
 // ── 视角 A 派生几何（座舱俯视平面，车头朝上）────────────────────────────
 export const CABIN = {
@@ -688,7 +693,7 @@ export const cardsAt = (scene: BagKey, t: number): Card[] => {
     if (stOp > 0.01) {
       const st = stateAt(scene, t);
       out.push({
-        id: 'state', view: 'side', x: 330, y: 150, w: 220, h: 88, op: stOp,
+        id: 'state', view: 'side', x: 314, y: 128, w: 190, h: 88, op: stOp,
         anchor: {x: BAG.x, y: bagBottom(scene, t) - BAG.h * 0.42}, edge: 'right',
         kicker: '固定状态', lines: [STATE_LABEL[st]],
         tone: st === 'locked' ? 'ok' : 'accent',
@@ -704,7 +709,7 @@ export const cardsAt = (scene: BagKey, t: number): Card[] => {
         ? ['活动范围 · 半径 260mm']
         : [tv.connected > 0.99 ? '已连接 · 绳长 260mm' : '未连接'];
       out.push({
-        id: 'tether', view: 'side', x: 330, y: 150, w: 220, h: 88, op: stOp,
+        id: 'tether', view: 'side', x: 314, y: 128, w: 190, h: 88, op: stOp,
         anchor: {x: BAG.x + 4, y: BAG_RIM_Y + 10}, edge: 'right',
         kicker: '包内栓扣', lines, tone: tv.connected > 0.99 ? 'ok' : 'accent',
       });
@@ -738,7 +743,7 @@ export const cardsAt = (scene: BagKey, t: number): Card[] => {
   if (scene === 'c4') {
     const st = stateAt(scene, t);
     out.push({
-      id: 'state', view: 'side', x: 330, y: 150, w: 220, h: 88, op: 1,
+      id: 'state', view: 'side', x: 314, y: 128, w: 190, h: 88, op: 1,
       anchor: {x: BAG.x, y: bagBottom(scene, t) - BAG.h * 0.42}, edge: 'right',
       kicker: '固定状态', lines: [STATE_LABEL[st]],
       tone: st === 'released' ? 'warn' : 'ok',

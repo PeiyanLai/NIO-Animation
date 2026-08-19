@@ -9,7 +9,6 @@
 import React from 'react';
 import {AbsoluteFill, useCurrentFrame, useVideoConfig} from 'remotion';
 import {CatTop} from './Cat';
-import {NioLogo} from './NioLogo';
 import {PhotoCat} from './PetsPhoto';
 import {ES8_CABIN_SIDE_URI, ES8_CABIN_TOP_URI} from './es8-cabin-photo';
 import {
@@ -574,15 +573,9 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
             不镜像——照片车头在 −x，与视角 B 方向约定一致；只罩一层极轻的纱让机构线条读得清。
             ⚠️ 透视照片，只锚定「台面接触线」这一条几何（SIDE_CAM 按它标定），
             毫米级主张（绳长/锁舌行程/可及范围）仍由矢量机构层承担 */}
-        <image href={ES8_CABIN_SIDE_URI} x={-3} y={-6} width={1006} height={566} />
-        {/* 照片轮毂中心盖不是蔚来标——盖一层深色盘 + 实测比例的 NioLogo(舞台坐标由轮毂放大读数标定) */}
-        {/* 中心盖:圆心/半径按渲染帧放大复核定案(舞台 (53.4,515.6) r17.5)——
-            第一次按原图网格读数偏了 20px,教训:标注类叠加要在**合成结果**上闭环校验。
-            深色盘压掉照片里原有的白标,NioLogo 取盖径 ~58% 与参考实拍比例一致 */}
-        <g transform="translate(66.5 536)">
-          <circle r={22.2} fill="#232527" stroke="#3A3D40" strokeWidth={1.2} />
-          <NioLogo r={12.8} fill="#EDEFF1" />
-        </g>
+        {/* 取景放大 1.18 左上移:左下角轮毂移出画面(用户定的,不再做轮毂标注)。
+            相机与 SEAT_EDGE 已在 bag-data 里做了同一仿射,世界↔照片对应关系不变 */}
+        <image href={ES8_CABIN_SIDE_URI} x={-160} y={-40} width={1187.1} height={667.9} />
         <rect x={-3} y={-6} width={1006} height={566} fill={C.panel} opacity={0.13} />
 
         {/* 虚实结合（用户要求）：被近侧座椅遮挡的区域不许生硬叠画。
