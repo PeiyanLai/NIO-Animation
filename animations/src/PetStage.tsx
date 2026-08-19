@@ -328,9 +328,11 @@ export const PetStage: React.FC<{scene: PetKey}> = ({scene}) => {
         </div>
       </div>
 
-      {/* 字幕 + 进度点：左竖带下段（宽 436 ≤ 带宽 467，不压照片） */}
+      {/* 字幕 + 进度点：左竖带**垂直居中**（宽 436 ≤ 带宽 467，不压照片）。
+          ⚠️ 不许放画面四角——信息卡四角禁区是全局规则(bag-data.CORNERS 同款),
+          曾因放到左下角被用户点名返工,别再挪回去 */}
       <div style={{
-        position: 'absolute', left: 24, width: 436, bottom: 30,
+        position: 'absolute', left: 24, width: 436, top: 460,
       }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 18,
