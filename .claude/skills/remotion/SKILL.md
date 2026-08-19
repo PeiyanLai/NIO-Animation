@@ -70,6 +70,29 @@ python3 scripts/make-gif.py SceneA --out out/terrain-ch1.gif   # 默认 0.75 / e
 交付闭环见 `references/feishu-delivery.md`。**GIF 必须走 image 块**才会自动播放，
 走 file 块就只是个要点开的附件。
 
+## 在公司/外部 agent 里交付时的形态（强制）
+
+本 skill 被公司内部 agent（或任何非 Claude Code 环境）消费时，交付方式有两条硬要求：
+
+1. **HTML 必须作为文件附件推送到对话框**，让用户能点击打开、在线查看、下载留存。
+   不许只把产物留在工作目录、只贴代码块、或只报一句「已生成」。
+2. **交付页右上角必须带「高清 GIF 一键下载」入口**：每个场景一个按钮 + 一个
+   「全部场景打包 (zip)」。做法是 GIF 先用 `make-gif.py` 预渲染，再由
+   `build-player.py --gif 标签=path.gif --gif-name 功能名` 内嵌（可重复传 `--gif`）。
+   **不要**尝试在浏览器里现场截帧转 GIF——Player 是 DOM/SVG 渲染，客户端转
+   GIF 又重又不稳。
+
+   为什么这么设计：第一版动画往往不是终稿，用户会跟 agent 对话迭代；每一版
+   HTML 都自带 GIF 下载，用户满意的那一刻就能立刻拿走高清 GIF 贴进飞书，
+   不用再回来向 agent 要一轮。
+
+   两个已踩过的坑：
+   - fragment 必须自带 `<meta charset="utf-8">`（build-player.py 已内置）——
+     下载到本地直接打开时没有外层 head，浏览器猜错编码会让全页中文和
+     zip 文件名变乱码。
+   - claude.ai Artifact 查看器的沙箱会拦截页面自身发起的下载，**GIF 下载入口
+     的验收必须把 HTML 下载到本地打开来做**，在 Artifact 里点了没反应不是 bug。
+
 ## 交付形态：从网页演示到实拍宣传片
 
 决策卡可以带 `deliverable` 字段，默认 `["explainer-html"]`。可选：
