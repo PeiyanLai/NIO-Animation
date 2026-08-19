@@ -39,6 +39,12 @@ def fetch(url, timeout=120, retries=5):
 
 
 def main():
+    # 0. git 工作区保护：开发克隆用 git pull 更新,本脚本只服务 tarball 解压副本。
+    #    没有这层保护的话,下面的替换会把 .git(全部历史)一起删掉。
+    if (REPO_ROOT / '.git').exists():
+        print(f'{REPO_ROOT} 是 git 工作区：请用 git pull 更新，本脚本不做替换')
+        return
+
     # 1. 查远端 SHA
     sha = json.load(urllib.request.urlopen(
         urllib.request.Request(API + f'/branches/{BRANCH}', headers=UA),
@@ -66,9 +72,13 @@ def main():
             m.name = rel
             tar.extract(m, tmp)
 
-    # 4. 原子替换
-    shutil.rmtree(str(REPO_ROOT), ignore_errors=True)
+    # 4. 原子替换：先把旧副本挪到一边、新副本就位后才删——
+    #    任何一步失败旧副本都还在,不会出现「删了旧的、新的没就位」的两头空。
+    old = str(REPO_ROOT) + '.old'
+    shutil.rmtree(old, ignore_errors=True)
+    os.rename(str(REPO_ROOT), old)
     os.rename(tmp, str(REPO_ROOT))
+    shutil.rmtree(old, ignore_errors=True)
     SHAF.write_text(sha)
     print(f'已更新到 {sha[:9]}')
     print('⚠️ 请重读 CLAUDE.md、hard-rules.md、SKILL.md 的交付形态章节')
