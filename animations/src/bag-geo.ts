@@ -87,7 +87,7 @@ export const LATCH_X = [BAG.x + BAG.w * 0.26, BAG.x + BAG.w * 0.74];
  *  这里的世界坐标由 SIDE_CAM 反解得来（(442−tx)/s, (315.5−ty)/s）——
  *  **换相机必须重反解**，否则开关会飘离照片里的真实按键。 */
 export const BUTTON = {
-  x: 269.8, y: 223,
+  x: 190.5, y: 223,
   w: smm(70), h: smm(16),
 };
 

@@ -522,7 +522,7 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
             <circle cx={hingeNow.x} cy={hingeNow.y} r={4.2} fill={BAGC.shell} stroke={BAGC.edge}
               strokeWidth={1.8} />
             {openK > 0.15 && (
-              <text x={hingeNow.x + 34} y={hingeNow.y + 22} textAnchor="middle" fontFamily={F_UI}
+              <text x={hingeNow.x - 62} y={hingeNow.y + 22} textAnchor="middle" fontFamily={F_UI}
                 fontSize={15} fill={C.ink2} opacity={openK} stroke="#FFFFFF" strokeWidth={4}
                 strokeOpacity={0.82} paintOrder="stroke">敞篷（已打开）</text>
             )}
@@ -557,7 +557,7 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
               </g>
             )}
             {lat.ext > 0.9 && st !== 'released' && (
-              <text x={(LATCH_X[0] + LATCH_X[1]) / 2} y={ISLAND_TOP + 36} textAnchor="middle"
+              <text x={LATCH_X[0] - 18} y={ISLAND_TOP + 36} textAnchor="middle"
                 fontFamily={F_UI} fontSize={15} fontWeight={700} fill={C.ok} stroke="#FFFFFF"
                 strokeWidth={4} strokeOpacity={0.82} paintOrder="stroke">锁舌 ×2 已咬合</text>
             )}
@@ -576,9 +576,12 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
             毫米级主张（绳长/锁舌行程/可及范围）仍由矢量机构层承担 */}
         <image href={ES8_CABIN_SIDE_URI} x={-3} y={-6} width={1006} height={566} />
         {/* 照片轮毂中心盖不是蔚来标——盖一层深色盘 + 实测比例的 NioLogo(舞台坐标由轮毂放大读数标定) */}
-        <g transform="translate(57.2 523.5)">
-          <circle r={11.2} fill="#26282B" stroke="#3A3D40" strokeWidth={1.2} />
-          <NioLogo r={7.4} fill="#C9CED4" />
+        {/* 中心盖:圆心/半径按渲染帧放大复核定案(舞台 (53.4,515.6) r17.5)——
+            第一次按原图网格读数偏了 20px,教训:标注类叠加要在**合成结果**上闭环校验。
+            深色盘压掉照片里原有的白标,NioLogo 取盖径 ~58% 与参考实拍比例一致 */}
+        <g transform="translate(66.5 536)">
+          <circle r={22.2} fill="#232527" stroke="#3A3D40" strokeWidth={1.2} />
+          <NioLogo r={12.8} fill="#EDEFF1" />
         </g>
         <rect x={-3} y={-6} width={1006} height={566} fill={C.panel} opacity={0.13} />
 
