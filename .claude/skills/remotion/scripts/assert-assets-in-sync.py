@@ -61,6 +61,8 @@ CHECKS = [
      '../pets/pets-photo.ts', r"CAT_URI =\n  'data:image/png;base64,([A-Za-z0-9+/=]+)'"),
     ('宠物 · 狗剪纸整图', 'src/pets-photo.ts', r"DOG_URI =\n  'data:image/png;base64,([A-Za-z0-9+/=]+)'",
      '../pets/pets-photo.ts', r"DOG_URI =\n  'data:image/png;base64,([A-Za-z0-9+/=]+)'"),
+    ('宠物 · 正面坐姿猫', 'src/pets-photo.ts', r"CAT_FRONT_URI = 'data:image/png;base64,([A-Za-z0-9+/=]+)'",
+     '../pets/pets-photo.ts', r"CAT_FRONT_URI = 'data:image/png;base64,([A-Za-z0-9+/=]+)'"),
     ('宠物 · 狗关节腿身体', 'src/pets-photo.ts', r"DOG_BODY_URI =\n  'data:image/png;base64,([A-Za-z0-9+/=]+)'",
      '../pets/pets-photo.ts', r"DOG_BODY_URI =\n  'data:image/png;base64,([A-Za-z0-9+/=]+)'"),
     ('ES9 正俯视 · 大灯', 'src/parking-data.ts', r"left: \{\s*case: '([^']+)'",
