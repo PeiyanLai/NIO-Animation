@@ -112,12 +112,12 @@ const NioCarSide: React.FC = () => (
  * 弧与底边 y=−8.2 的交点 = 轮心x ± √(13²−2.4²) = ±12.78，弧顶 −23.6 盖过轮顶 −21.2。
  */
 const OTH_SIDE_BODY =
-  'M74.8,-10.5' +
-  'Q75.9,-16 75.1,-21' +          // 车头圆鼻
-  'Q73.7,-24.6 67.5,-26.4' +      // 灯眉转机盖
-  'L45,-29.3' +                   // 机盖
-  'Q40.5,-30.1 37.5,-32.4' +      // cowl
-  'L14,-44.6' +                   // 前风挡
+  'M74.9,-10.8' +
+  'Q76.2,-16.5 75.4,-21.5' +      // 前脸偏竖直（斜成楔形会像跑车影射，也丑）
+  'Q74.8,-24.4 70.5,-25.8' +      // 灯眉圆角
+  'L48,-28.2' +                   // 机盖（短机盖 = 两厢比例）
+  'Q42.5,-29.1 39.5,-31.6' +      // cowl
+  'L15,-43.8' +                   // 前风挡
   'Q8,-47.2 -4,-47.2' +           // 车顶前缘（车高 47.2 = 1470mm）
   'L-38,-47.2' +                  // 车顶
   'Q-49,-46.9 -55.5,-43.5' +      // 顶后转角
@@ -130,7 +130,7 @@ const OTH_SIDE_BODY =
   'L30.6,-8.2' +
   'A13,13 0 1 1 56.2,-8.2' +      // 前轮拱（轮心 +43.4）
   'L69.8,-8.2' +
-  'Q73.8,-8.5 74.8,-10.5Z';
+  'Q73.9,-8.5 74.9,-10.8Z';
 
 const OtherCarSide: React.FC = () => (
   <g>
@@ -145,14 +145,14 @@ const OtherCarSide: React.FC = () => (
     {/* 车身：一笔闭合样条。描边很淡——重描边会像贴纸 */}
     <path d={OTH_SIDE_BODY} fill={R.oth} stroke={R.othLine} strokeWidth={0.9} />
     {/* 舱线（玻璃带）：沿腰线 y=−31.5 一整条，比车顶轮廓内缩 ~2.5px */}
-    <path d="M32.5,-31.5 L12.5,-42.6 Q8,-44.8 -2,-44.8 L-39,-44.8 Q-47.5,-44.5 -53.3,-41.5 L-62.5,-35.8 L-63.5,-31.5 Z"
+    <path d="M34.5,-31.5 L13.5,-42.4 Q8,-44.8 -2,-44.8 L-39,-44.8 Q-47.5,-44.5 -53.3,-41.5 L-62.5,-35.8 L-63.5,-31.5 Z"
       fill={R.othRoof} opacity={0.88} />
     {/* B 柱：玻璃带上一条车身色窄条（正常侧视要素，不算拼缝线） */}
     <rect x={-14} y={-44.6} width={2.8} height={13.1} fill={R.oth} />
     {/* 车身高光：光源上方，与 ES9 实拍一致 */}
     <path d={OTH_SIDE_BODY} fill="url(#othGloss)" />
-    {/* 前大灯（小平行四边形）+ 尾灯 —— 普通矩形灯，不画刀锋灯带 */}
-    <path d="M66.5,-25.7 L74.6,-23.2 L74.3,-19.6 L65.4,-21.6 Z" fill="#FFF6E2" />
+    {/* 前大灯（小四边形）+ 尾灯 —— 普通矩形灯，不画刀锋灯带 */}
+    <path d="M66,-25.3 L74.8,-23 L74.5,-18.6 L64.8,-21 Z" fill="#FFF6E2" />
     <path d="M-74.4,-26.3 L-69.8,-27.4 L-69.2,-21.6 L-74.6,-21 Z" fill="#D14545" opacity={0.78} />
   </g>
 );
@@ -180,14 +180,14 @@ const CarPulse: React.FC<{x: number; t: number; col?: string}> = ({x, t, col = R
 /* ═══ 贴车状态徽标（尖角朝下 + 虚线引导线到车顶）═══════════════════ */
 const Badge: React.FC<{
   cx: number; tipX: number; label: string; radio: boolean; net: 'on' | 'off' | 'none';
-  wheel?: boolean; wheelLive?: boolean;
+  wheel?: boolean; wheelLive?: boolean; dy?: number;
   tone?: 'n' | 'hl' | 'bad' | 'ok'; t: number; pulse?: boolean;
-}> = ({cx, tipX, label, radio, net, wheel = false, wheelLive = false, tone = 'n', t, pulse = false}) => {
+}> = ({cx, tipX, label, radio, net, wheel = false, wheelLive = false, dy = 0, tone = 'n', t, pulse = false}) => {
   const fs = 13.5;
   const iw = (radio ? 25 : 0) + (wheel ? 26 : 0) + (net !== 'none' ? 26 : 0);
   const w = Math.max(92, textW(label, fs) + iw + 28);
   const h = GEO.badgeH;
-  const y = GEO.badgeY;
+  const y = GEO.badgeY + dy;
   const x0 = clamp(cx - w / 2, 8, 992 - w);
   const tip = clamp(tipX, x0 + 15, x0 + w - 15);
   const col = tone === 'hl' ? C.accent : tone === 'bad' ? R.neg : tone === 'ok' ? C.ok : C.line;
@@ -212,8 +212,8 @@ const Badge: React.FC<{
       {radio && <RadioIcon x={radX} y={y + 17} k={0.9} col={tone === 'bad' ? R.neg : R.hw} />}
       {wheel && <WheelIcon x={whlX} y={y + 17} k={0.86} col={wheelLive ? C.accent : C.ink3} live={wheelLive} />}
       {net !== 'none' && <NetIcon x={netX} y={y + 17} on={net === 'on'} />}
-      {/* 虚线引导线：徽标尖角 → 侧视车顶上方（roofY−8=359） */}
-      <path d={`M${tip} ${y + h + GEO.badgeTip + 2} V${ROOF - 8}`} stroke={col}
+      {/* 虚线引导线：徽标尖角 → 侧视车顶上方（roofY−8=359；徽标下沉时终点跟半程） */}
+      <path d={`M${tip} ${y + h + GEO.badgeTip + 2} V${ROOF - 8 + dy * 0.5}`} stroke={col}
         strokeWidth={1.4} strokeDasharray="3 4" opacity={0.55} />
     </g>
   );
@@ -530,7 +530,8 @@ export const RadioStage: React.FC<{scene: RadioKey}> = ({scene}) => {
                   strokeDasharray="6 7" opacity={0.5} />
                 <circle cx={dHandPt.x} cy={dHandPt.y} r={17} fill={R.hwWash} stroke={R.hw} strokeWidth={2} />
                 <RadioIcon x={dHandPt.x} y={dHandPt.y + 2} k={1.05} />
-                <LinkTag x={(D_CFG.slot[0] + D_CFG.slot[1]) / 2} y={206} text="全队只有这一台" col={R.hw} />
+                {/* 「全队只有这一台」不再单独挂药丸标注：递机期在相位 0 内，
+                    字幕气泡（y164~240，此时正指向 x560）已原句说明且会盖住该位置 */}
               </g>
             )}
             {/* 错误队形：队尾只有 App，弱网 → 链路断开 */}
@@ -602,8 +603,11 @@ export const RadioStage: React.FC<{scene: RadioKey}> = ({scene}) => {
             if (i === 3 && st.dLost) { label = '掉队 · 失联'; tone = 'bad'; net = 'off'; }
             if (st.dGood && !st.dTalk && !st.dRecv && (i === 0 || i === 1)) tone = 'hl';
           }
+          // 场景四换队形：借近道（y>groundY）那台的徽标同步下沉 ×3.0（满偏 12→36px，
+          // 大于徽标高 34+2），否则与超车车的徽标在同一行相遇会叠在一起
+          const dy = scene === 'd' && ys[i] > GY ? (ys[i] - GY) * 3.0 : 0;
           return (
-            <Badge key={i} cx={xs[i] + ((c.bx ?? c.x) - c.x)} tipX={xs[i]} label={label}
+            <Badge key={i} cx={xs[i] + ((c.bx ?? c.x) - c.x)} tipX={xs[i]} label={label} dy={dy}
               radio={radio} net={net} wheel={wheel} wheelLive={wheelLive} tone={tone} t={t} pulse={pulse} />
           );
         })}
