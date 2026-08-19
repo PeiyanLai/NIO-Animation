@@ -1,13 +1,22 @@
 import React from 'react';
-import {AbsoluteFill, useCurrentFrame, useVideoConfig} from 'remotion';
+import {AbsoluteFill, Img, useCurrentFrame, useVideoConfig} from 'remotion';
 import {
-  A_CFG, B_CFG, C_CFG, D_CFG, GEO, RADIO_SCENES, R, T_COLORS as C,
-  F_DATA, F_UI, type RadioKey, dCarX, dCarY, frac, qPath, qPt, radioState, textW, win,
+  A_CFG, B_CFG, C_CFG, D_CFG, GEO, NIO_PHOTO, OTH_WHEEL_R, OTH_WHEEL_X, RADIO_SCENES, R, S_NIO,
+  TIRES, T_COLORS as C, F_DATA, F_UI, type RadioKey,
+  dCarScale, dCarX, dCarY, frac, qPath, qPt, radioState, textW, win,
 } from './radio-data';
-import {CAR_BBOX, CAR_SRC, CAR_TOP_BODY, HEADLIGHTS, HEADLIGHT_FILLS} from './parking-data';
-import {ES9_TOP_URI} from './es9-top-photo';
+import {PHOTO_URI} from './photo';
+import {CAR_BODY} from './data';
 
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+
+/* 侧视纵向锚点（数字来源见 radio-data GEO 注释） */
+const GY = GEO.groundY;        // 430 地面线（轮胎接地）
+const ROOF = GEO.roofY;        // 367 蔚来车顶线
+const ARC_Y = ROOF - 5;        // 362 硬件对讲弧的车端
+const LINK_Y = ROOF - 7;       // 360 云端链路的车端
+const HAND_Y = GY - 42;        // 388 递对讲机的起止高度（≈车窗下沿）
+const CHAIN_Y = ROOF - 15;     // 352 组队连线（车顶上方一条虚线链）
 
 /* ═══ 图标 ═══════════════════════════════════════════════════════════ */
 
@@ -64,117 +73,107 @@ const Cloud: React.FC<{x: number; y: number; live: number; t: number}> = ({x, y,
   </g>
 );
 
-/* ═══ 俯视车（车头朝右）═════════════════════════════════════════════ */
+/* ═══ 正侧视车（车队朝右）═══════════════════════════════════════════ */
 
 /**
- * **蔚来车**用泊车动画那张实拍图（`es9-top-photo.ts` + `CAR_TOP_BODY` 遮罩）。
- * 「正俯视统一用同一张图」这条规则**只管我们自己的车**——
- * 保证 ES9 在各个动画里长一样。
+ * **蔚来车**用 photo.ts 那张 ES9 正侧视实拍（全工程侧视统一用同一张图，
+ * 与 Stage.tsx / RampStage.tsx 同源），mask = CAR_BODY 车身抠形 + TIRES 轮胎圆
+ * （CAR_BODY 下缘在轮胎中部，只用它会把轮子切掉——见 ramp-data 的教训）。
  *
- * 两处必须注意：
- * 1. 原图**车头朝上**，这里车队是横向的，所以整组 `rotate(90)`（SVG 正角=顺时针，
- *    (0,-1) 转 90° 得 (1,0)，正好朝右）。灯条路径在图坐标系里，跟着一起转，不用另算。
- * 2. 尺寸按**实车比例** 5365:2029 = 2.644 定，不能沿用早先矢量简图的 112×52（2.15）。
+ * **镜像说明**：原始照片**车头朝左**——CAR_BODY 实测前悬 144 photo-px（≈850mm）
+ * < 后悬 190px（≈1118mm），前风挡从 x≈276 起坡、激光雷达平顶在 x 406~435，
+ * 都在小 x 端。本片车队朝右，所以 scale(-1 1) 镜像，与 Stage/RampStage 的用法一致。
+ *
+ * 变换链（右侧先作用）：镜像 (px,py)→(−px,py) → 平移 (505.75, −394) 把车身
+ * 中点挪到 x=0、接地线挪到 y=0 → scale(0.19) 进舞台（车长 907.5×0.19≈172.4px）。
+ * 静止摆位，不需要旋转轮辋那套（skill「转轮」方案只在行驶时用）。
  */
-const CAR_L = 120;                                   // ES9 舞台车长（5365mm）
-const RADIO_CAR_SCALE = CAR_L / (CAR_BBOX.y1 - CAR_BBOX.y0);
-const MM_PER_STAGE_PX = 5365 / CAR_L;                // 44.7 mm/px，两种车共用这把尺子
+const NioCarSide: React.FC = () => (
+  <g transform={`scale(${S_NIO}) translate(${NIO_PHOTO.cx} ${-NIO_PHOTO.ground}) scale(-1 1)`}>
+    <image href={PHOTO_URI} width={1020} height={460} mask="url(#radioCarMask)" />
+  </g>
+);
 
-const NioCarTop: React.FC = () => (
-  <g
-    transform={`rotate(90) scale(${RADIO_CAR_SCALE}) translate(${-(CAR_BBOX.x0 + CAR_BBOX.x1) / 2} ${-(CAR_BBOX.y0 + CAR_BBOX.y1) / 2})`}
-  >
-    <image href={ES9_TOP_URI} width={CAR_SRC.w} height={CAR_SRC.h} mask="url(#carTopMask)" />
-    {/* 前大灯：三层实心刀锋（暗壳 → 暖白灯体 → 高亮灯芯）。
-        照片里的灯带只有几像素，在浅底上会糊掉，叠这一层让它读得出来 */}
-    {HEADLIGHT_FILLS.map((L) => (
-      <g key={L.key} fill={L.fill} opacity={L.opacity}>
-        <path d={HEADLIGHTS.left[L.key]} />
-        <path d={HEADLIGHTS.right[L.key]} />
+/**
+ * **朋友的非蔚来车** —— 正侧视中性矢量车，**绝对不能用 ES9 那张照片**。
+ * 本片叙事主线是「非蔚来车也能入队」，主体长一样这条主线就垮了（合规同理：
+ * 不带品牌特征、不影射具体车型）。
+ *
+ * 三个维度同时拉开差距（skill 教训，单用任何一个都不够）：
+ * - **尺寸**：4700×1470mm 紧凑两厢，经同一把 MM_PER_STAGE_PX 尺子换算成
+ *   长 151 / 高 47.2 / 轴距 86.9 / 轮径 21.2（舞台px）——对 ES9 明显短一截矮一头；
+ * - **颜色**：浅蓝灰实心（R.oth），对近黑的实拍图反差极大；
+ * - **造型**：掀背轮廓 + 小矩形灯，完全不是 ES9 的三厢比例和刀锋灯带。
+ *
+ * 画法守 skill 侧视规则：车身**一笔闭合样条**、面内不加拼缝线；
+ * 侧视要素 = 车身整块 + 舱线（玻璃带）+ 两个轮（深色圆 + 浅圈）。
+ * 局部坐标：原点 = 接地线中点，+x 车头（右），y 向上为负。
+ * 轮拱开口是圆心在轮心、r=13 的圆弧（轮 r=10.6，留 2.4px 机械缝隙）；
+ * 弧与底边 y=−8.2 的交点 = 轮心x ± √(13²−2.4²) = ±12.78，弧顶 −23.6 盖过轮顶 −21.2。
+ */
+const OTH_SIDE_BODY =
+  'M74.8,-10.5' +
+  'Q75.9,-16 75.1,-21' +          // 车头圆鼻
+  'Q73.7,-24.6 67.5,-26.4' +      // 灯眉转机盖
+  'L45,-29.3' +                   // 机盖
+  'Q40.5,-30.1 37.5,-32.4' +      // cowl
+  'L14,-44.6' +                   // 前风挡
+  'Q8,-47.2 -4,-47.2' +           // 车顶前缘（车高 47.2 = 1470mm）
+  'L-38,-47.2' +                  // 车顶
+  'Q-49,-46.9 -55.5,-43.5' +      // 顶后转角
+  'L-66.5,-37' +                  // 掀背斜面
+  'Q-72.6,-33 -73.6,-26' +        // 尾上沿
+  'L-74.6,-14' +
+  'Q-74.9,-8.6 -69.5,-8.2' +      // 尾杠圆角
+  'L-56.2,-8.2' +
+  'A13,13 0 1 1 -30.6,-8.2' +     // 后轮拱（轮心 −43.4）
+  'L30.6,-8.2' +
+  'A13,13 0 1 1 56.2,-8.2' +      // 前轮拱（轮心 +43.4）
+  'L69.8,-8.2' +
+  'Q73.8,-8.5 74.8,-10.5Z';
+
+const OtherCarSide: React.FC = () => (
+  <g>
+    {/* 车轮：深色圆 + 浅圈 + 毂心点。先画轮，车身的轮拱弧从它上方跨过 */}
+    {[-OTH_WHEEL_X, OTH_WHEEL_X].map((wx) => (
+      <g key={wx} transform={`translate(${wx} ${-OTH_WHEEL_R})`}>
+        <circle r={OTH_WHEEL_R} fill="#23292F" />
+        <circle r={5.6} fill="none" stroke="#C7D0D8" strokeWidth={2.1} />
+        <circle r={1.6} fill="#C7D0D8" />
       </g>
     ))}
+    {/* 车身：一笔闭合样条。描边很淡——重描边会像贴纸 */}
+    <path d={OTH_SIDE_BODY} fill={R.oth} stroke={R.othLine} strokeWidth={0.9} />
+    {/* 舱线（玻璃带）：沿腰线 y=−31.5 一整条，比车顶轮廓内缩 ~2.5px */}
+    <path d="M32.5,-31.5 L12.5,-42.6 Q8,-44.8 -2,-44.8 L-39,-44.8 Q-47.5,-44.5 -53.3,-41.5 L-62.5,-35.8 L-63.5,-31.5 Z"
+      fill={R.othRoof} opacity={0.88} />
+    {/* B 柱：玻璃带上一条车身色窄条（正常侧视要素，不算拼缝线） */}
+    <rect x={-14} y={-44.6} width={2.8} height={13.1} fill={R.oth} />
+    {/* 车身高光：光源上方，与 ES9 实拍一致 */}
+    <path d={OTH_SIDE_BODY} fill="url(#othGloss)" />
+    {/* 前大灯（小平行四边形）+ 尾灯 —— 普通矩形灯，不画刀锋灯带 */}
+    <path d="M66.5,-25.7 L74.6,-23.2 L74.3,-19.6 L65.4,-21.6 Z" fill="#FFF6E2" />
+    <path d="M-74.4,-26.3 L-69.8,-27.4 L-69.2,-21.6 L-74.6,-21 Z" fill="#D14545" opacity={0.78} />
   </g>
 );
 
-/**
- * **朋友的非蔚来车** —— 中性矢量车，**绝对不能用 ES9 那张图**。
- *
- * 这一版之前的做法是「同一张 ES9 照片 + 不同描边色」，被一眼看穿：
- * 画面上就是同一台车，标签写「朋友的车」也没用。本片的叙事主线正是
- * 「非蔚来车也能入队」，主体长一样，这条主线就垮了。
- *
- * 三个维度同时拉开差距，任意一个单独用都不够：
- * - **尺寸**：4700×1850mm（常见中型车），对 ES9 的 5365×2029 明显短一截、窄一圈。
- *   两者共用 `MM_PER_STAGE_PX` 这把尺子换算，不是随手缩小。
- * - **颜色**：浅蓝灰实心，对 ES9 那张近黑的实拍图反差极大。
- * - **造型**：普通方正三厢轮廓 + 矩形前后灯，**不画 ES9 的刀锋灯带**。
- *
- * 中性车不带任何品牌特征，也不影射具体车型——这是合规要求，别加标识。
- */
-const OTH_MM = {len: 4700, wid: 1850};
-const OTH_L = OTH_MM.len / MM_PER_STAGE_PX;          // ≈ 105.1
-const OTH_W = OTH_MM.wid / MM_PER_STAGE_PX;          // ≈ 41.4
-
-/**
- * 轮廓由「(x, 半宽) 取样点 + Catmull-Rom 样条」生成，不是圆角矩形拼的。
- *
- * 三次画丑的教训，都记下来免得再犯：
- * 1. 「圆角矩形 + 六边形玻璃 + 矩形车顶」三层套 → 盒子套盒子。
- * 2. 座舱画成中间一小块椭圆 → 像肥皂上印个「O」。
- * 3. 深色座舱**围着**车身色的车顶画一圈 → 还是「O」，车顶被读成一个洞。
- *
- * 关键认知：**俯视时侧窗是侧立面，几乎看不见**，玻璃只出现在车顶的**前后两端**
- * （前风挡、后风挡）。所以正确画法是「车顶一整块 + 前后各一块玻璃」，
- * 不是「玻璃一整块 + 中间挖个车顶」。
- *
- * 另外：座舱要占到车长一半左右（这里 x 从 +21 到 −30，占 49%），
- * 车身两端要**钝圆**——收成尖就成了纺锤/药丸。
- */
-const OTH_BODY = 'M-52.5,0.0C-52.5,-3.0 -52.3,-6.5 -52.0,-9.0C-51.7,-11.5 -51.3,-13.4 -50.5,-15.0C-49.7,-16.6 -48.8,-17.5 -47.0,-18.3C-45.2,-19.1 -43.7,-19.5 -40.0,-19.9C-36.3,-20.3 -31.7,-20.4 -25.0,-20.5C-18.3,-20.6 -7.8,-20.7 0.0,-20.7C7.8,-20.7 16.0,-20.6 22.0,-20.4C28.0,-20.2 32.2,-19.9 36.0,-19.4C39.8,-18.9 42.7,-18.4 45.0,-17.3C47.3,-16.2 48.8,-14.7 50.0,-13.0C51.2,-11.3 51.6,-9.2 52.0,-7.0C52.4,-4.8 52.5,-2.3 52.5,0.0C52.5,2.3 52.4,4.8 52.0,7.0C51.6,9.2 51.2,11.3 50.0,13.0C48.8,14.7 47.3,16.2 45.0,17.3C42.7,18.4 39.8,18.9 36.0,19.4C32.2,19.9 28.0,20.2 22.0,20.4C16.0,20.6 7.8,20.7 0.0,20.7C-7.8,20.7 -18.3,20.6 -25.0,20.5C-31.7,20.4 -36.3,20.3 -40.0,19.9C-43.7,19.5 -45.2,19.1 -47.0,18.3C-48.8,17.5 -49.7,16.6 -50.5,15.0C-51.3,13.4 -51.7,11.5 -52.0,9.0C-52.3,6.5 -52.5,3.0 -52.5,0.0Z';
-
-const OtherCarTop: React.FC = () => (
-  <g>
-    {/* 车身。描边很淡——重描边会让它像贴纸 */}
-    <path d={OTH_BODY} fill={R.oth} stroke={R.othLine} strokeWidth={0.9} opacity={0.98} />
-    {/* 车顶钣金：比车身略深一点，读得出是个抬高的面 */}
-    <path d="M-18,-13.4 Q-18.6,-13.4 -18.6,-12.4 L-18.6,12.4 Q-18.6,13.4 -18,13.4 L6,13.4 Q6.6,13.4 6.6,12.4 L6.6,-12.4 Q6.6,-13.4 6,-13.4 Z"
-      fill={R.othLine} opacity={0.3} />
-    {/* 前风挡：接车顶那端窄、接机盖那端宽（俯视时是这个朝向，画反会像箭头） */}
-    <path d="M6.6,-13.2 L18.4,-15.8 Q20.9,-14.5 21.1,-11.3 L21.1,11.3 Q20.9,14.5 18.4,15.8 L6.6,13.2 Z"
-      fill={R.othRoof} opacity={0.66} />
-    {/* 后风挡 */}
-    <path d="M-18.6,-13.2 L-27.4,-15.1 Q-29.9,-13.8 -30.1,-10.4 L-30.1,10.4 Q-29.9,13.8 -27.4,15.1 L-18.6,13.2 Z"
-      fill={R.othRoof} opacity={0.66} />
-    {/* 车顶两侧的行李架/顶边：一条细线，代替俯视看不见的侧窗 */}
-    <path d="M-18,-13.4 L6,-13.4 M-18,13.4 L6,13.4"
-      stroke={R.othLine} strokeWidth={1} opacity={0.5} strokeLinecap="round" />
-    {/* 车身高光：光源左上，与 ES9 实拍图一致 */}
-    <path d={OTH_BODY} fill="url(#othGloss)" />
-    {/* 后视镜：小椭圆、后掠 22°，起点压在车身边缘之内才像是长在车上的，
-        画成尖角四边形会像两个飘在旁边的箭头 */}
-    <ellipse cx={18.2} cy={-21.4} rx={4.4} ry={2.3} fill={R.othLine}
-      transform="rotate(-22 18.2 -21.4)" />
-    <ellipse cx={18.2} cy={21.4} rx={4.4} ry={2.3} fill={R.othLine}
-      transform="rotate(22 18.2 21.4)" />
-    {/* 前灯 */}
-    <path d="M44,-15.4 C47.6,-14.4 49.6,-12.3 50.3,-9.4 L46.4,-8.4 C45.9,-10.8 44.9,-12.5 42.8,-13.8 Z"
-      fill="#FFF6E2" />
-    <path d="M44,15.4 C47.6,14.4 49.6,12.3 50.3,9.4 L46.4,8.4 C45.9,10.8 44.9,12.5 42.8,13.8 Z"
-      fill="#FFF6E2" />
-    {/* 尾灯 */}
-    <path d="M-45.5,-14.6 C-48.3,-13.6 -49.9,-11.7 -50.4,-9.2 L-46.6,-8.3 C-46.2,-10.4 -45.2,-11.9 -43.6,-13 Z"
-      fill="#D14545" opacity={0.72} />
-    <path d="M-45.5,14.6 C-48.3,13.6 -49.9,11.7 -50.4,9.2 L-46.6,8.3 C-46.2,10.4 -45.2,11.9 -43.6,13 Z"
-      fill="#D14545" opacity={0.72} />
-  </g>
-);
-
-const Car: React.FC<{x: number; y?: number; kind: 'nio' | 'oth'; op?: number}> = ({
-  x, y = GEO.carY, kind, op = 1,
+const Car: React.FC<{x: number; y?: number; k?: number; kind: 'nio' | 'oth'; op?: number}> = ({
+  x, y = GY, k = 1, kind, op = 1,
 }) => (
-  <g transform={`translate(${x} ${y})`} opacity={op}>
-    <ellipse cx={0} cy={26} rx={kind === 'nio' ? 58 : 51} ry={7} fill="#5C7070" opacity={0.11} />
-    {kind === 'nio' ? <NioCarTop /> : <OtherCarTop />}
+  <g transform={`translate(${x} ${y}) scale(${k})`} opacity={op}>
+    <ellipse cx={0} cy={5} rx={kind === 'nio' ? 94 : 80} ry={7} fill="#5C7070" opacity={0.13} />
+    {kind === 'nio' ? <NioCarSide /> : <OtherCarSide />}
+  </g>
+);
+
+/** 讲话/收到的提示环：以车身中心（groundY−30）为心的椭圆脉冲 */
+const CarPulse: React.FC<{x: number; t: number; col?: string}> = ({x, t, col = R.hw}) => (
+  <g>
+    {[0, 0.33, 0.66].map((d, i) => {
+      const k = frac(t * 0.75 + d);
+      return <ellipse key={i} cx={x} cy={GY - 30} rx={100 + 42 * k} ry={46 + 24 * k}
+        fill="none" stroke={col} strokeWidth={2.4} opacity={0.6 * (1 - k)} />;
+    })}
   </g>
 );
 
@@ -213,7 +212,8 @@ const Badge: React.FC<{
       {radio && <RadioIcon x={radX} y={y + 17} k={0.9} col={tone === 'bad' ? R.neg : R.hw} />}
       {wheel && <WheelIcon x={whlX} y={y + 17} k={0.86} col={wheelLive ? C.accent : C.ink3} live={wheelLive} />}
       {net !== 'none' && <NetIcon x={netX} y={y + 17} on={net === 'on'} />}
-      <path d={`M${tip} ${y + h + GEO.badgeTip + 2} V${GEO.carY - 28}`} stroke={col}
+      {/* 虚线引导线：徽标尖角 → 侧视车顶上方（roofY−8=359） */}
+      <path d={`M${tip} ${y + h + GEO.badgeTip + 2} V${ROOF - 8}`} stroke={col}
         strokeWidth={1.4} strokeDasharray="3 4" opacity={0.55} />
     </g>
   );
@@ -249,10 +249,11 @@ const Callout: React.FC<{main: string; sub: string; tipX: number; ph: number; op
   );
 };
 
-/* ═══ 硬件对讲弧（紫 · 实线，画出后常驻）═══════════════════════════ */
+/* ═══ 硬件对讲弧（紫 · 实线，画出后常驻；画在车顶上方）═══════════════
+   端点 y=ARC_Y(362)、控制点 −86 ⇒ 弧顶 ≈ 319，在徽标尖角(301)之下、车顶之上 */
 const HwArc: React.FC<{x1: number; x2: number; p: number; t: number}> = ({x1, x2, p, t}) => {
   if (p <= 0) return null;
-  const y = GEO.carY - 26;
+  const y = ARC_Y;
   const d = `M${x1} ${y} Q${(x1 + x2) / 2} ${y - 86} ${x2} ${y}`;
   return (
     <g>
@@ -337,14 +338,25 @@ const InfoCard: React.FC<{
   );
 };
 
-/* ═══ 公路 ═════════════════════════════════════════════════════════ */
-const Road: React.FC<{t: number}> = ({t}) => (
+/* ═══ 地面（侧视：地面线 + 路面带，参考 Stage.tsx 的地面画法）═══════
+   车队静止摆位（轮不转），路面标线也**静止**——滚动标线配不转的轮会读成打滑 */
+const Road: React.FC = () => (
   <g>
-    <rect x={0} y={GEO.roadTop} width={1000} height={GEO.roadBot - GEO.roadTop} fill={R.road} />
-    <path d={`M0 ${GEO.roadTop} H1000`} stroke={R.roadEdge} strokeWidth={2.5} />
-    <path d={`M0 ${GEO.roadBot} H1000`} stroke={R.roadEdge} strokeWidth={2.5} />
-    <path d={`M0 418 H1000`} stroke={R.lane} strokeWidth={4} strokeDasharray="30 26"
-      strokeDashoffset={-frac(t * 0.75) * 56} opacity={0.9} />
+    <rect x={0} y={GY} width={1000} height={560 - GY} fill={R.road} />
+    <path d={`M0 ${GY} H1000`} stroke={R.roadEdge} strokeWidth={2.5} />
+    <path d="M0 447 H1000" stroke={R.lane} strokeWidth={3} strokeDasharray="30 26" opacity={0.8} />
+  </g>
+);
+
+/* ═══ 场景二：无网地形 —— 侧视远山 / 山谷剪影（分界线右侧）═══════════
+   两层山脊折线，底边落在地面线上（侧视里地面线即地平线）；
+   峰高 330~400，在车顶(367)上下、徽标区(258~301)之下，压不到任何 UI */
+const Hills: React.FC = () => (
+  <g>
+    <path d={`M560 ${GY} L618 374 L666 400 L742 336 L806 388 L874 330 L942 392 L1000 352 L1000 ${GY} Z`}
+      fill={C.ink4} opacity={0.16} />
+    <path d={`M560 ${GY} L648 394 L714 421 L792 380 L868 414 L946 378 L1000 402 L1000 ${GY} Z`}
+      fill={C.ink4} opacity={0.24} />
   </g>
 );
 
@@ -358,8 +370,11 @@ export const RadioStage: React.FC<{scene: RadioKey}> = ({scene}) => {
   const ph = st.ph;
 
   const xs = s.cars.map((c, i) => (scene === 'd' ? dCarX(i, t) : c.x));
-  // 场景四换队形时超车的那台会拉到邻道，其余场景恒为 GEO.carY
-  const ys = s.cars.map((_, i) => (scene === 'd' ? dCarY(i, t) : GEO.carY));
+  // 场景四换队形：超车走远道（画高+缩小）、退队走近道（画低+放大），其余场景恒在地面线
+  const ys = s.cars.map((_, i) => (scene === 'd' ? dCarY(i, t) : GY));
+  const ks = s.cars.map((_, i) => (scene === 'd' ? dCarScale(i, t) : 1));
+  // 侧视 z 序：远（y 小）先画，近（y 大）后画
+  const zOrder = [0, 1, 2, 3].sort((p, q) => ys[p] - ys[q] || p - q);
   const phStart = ph === 0 ? 0 : s.ph[ph - 1];
   const capK = win(t, phStart, phStart + 0.4);
   const tipX = scene === 'd' && ph === 1 ? xs[3] : s.capTip[ph];
@@ -367,22 +382,23 @@ export const RadioStage: React.FC<{scene: RadioKey}> = ({scene}) => {
   /* 场景一：讲话车 → 云 → 其余三台 */
   const aSpk = A_CFG.speaker;
   const aCloud = [A_CFG.cloud[0], A_CFG.cloud[1]] as number[];
-  const aTop = GEO.carY - 28;
 
-  /* 场景二：链路几何 */
-  const b3 = [455, GEO.carY - 26];
+  /* 场景二：链路几何（标注锚点推导见 B_CFG 注释） */
+  const b3 = [B_CFG.divider - 95, LINK_Y];        // = [465, 360] 桥接车车顶
   const bCloudA = [356, 128];
   const bCloudB = [305, 128];
-  const b4 = [204, GEO.carY - 26];
+  const b4 = [160, LINK_Y];
   const bRecvT = [0, B_CFG.a12[1] + 0.15, B_CFG.a23[1] + 0.15, B_CFG.down[1] + 0.15];
 
-  /* 场景三：对讲机飞行 */
-  const cHandPt = qPt([640, GEO.carY - 6], [750, 230], [C_CFG.friend, GEO.carY - 6], st.cHand);
-  const dHandPt = qPt([D_CFG.slot[0], GEO.carY - 6],
-    [(D_CFG.slot[0] + D_CFG.slot[1]) / 2, 232], [D_CFG.slot[1], GEO.carY - 6], st.dHand);
+  /* 场景三/四：对讲机递出的飞行弧（起止在车窗高度，弧顶飞过车顶） */
+  const cHandPt = qPt([640, HAND_Y], [750, 230], [C_CFG.friend, HAND_Y], st.cHand);
+  const dHandPt = qPt([D_CFG.slot[0], HAND_Y],
+    [(D_CFG.slot[0] + D_CFG.slot[1]) / 2, 232], [D_CFG.slot[1], HAND_Y], st.dHand);
 
   return (
     <AbsoluteFill style={{background: C.stageBg, fontFamily: F_UI}}>
+      {/* 预载真车照片（Img 阻塞渲染直至加载完成，确保 SVG image 同帧就绪） */}
+      <Img src={PHOTO_URI} style={{position: 'absolute', width: 1, height: 1, opacity: 0}} />
       <svg viewBox="0 0 1000 560" style={{position: 'absolute', inset: 0, width: 1920, height: 1075}}>
         <defs>
           <linearGradient id="othGloss" x1="0" y1="0" x2="0" y2="1">
@@ -390,14 +406,20 @@ export const RadioStage: React.FC<{scene: RadioKey}> = ({scene}) => {
             <stop offset="42%" stopColor="#FFFFFF" stopOpacity="0.04" />
             <stop offset="100%" stopColor="#2E3D3D" stopOpacity="0.14" />
           </linearGradient>
-          <mask id="carTopMask">
-            <path d={CAR_TOP_BODY} fill="#fff" />
+          {/* ES9 侧视抠形：车身 + 轮胎圆（坐标都在照片系里，随镜像组一起变换） */}
+          <mask id="radioCarMask">
+            <path d={CAR_BODY} fill="#fff" />
+            {TIRES.map((w, i) => <circle key={i} cx={w.cx} cy={w.cy} r={w.r} fill="#fff" />)}
           </mask>
         </defs>
-        {/* ── 场景二：无网区底色 + 分界线 ── */}
+
+        <Road />
+
+        {/* ── 场景二：无网区底色 + 远山剪影 + 分界线 ── */}
         {scene === 'b' && (
           <g>
             <rect x={B_CFG.divider} y={0} width={1000 - B_CFG.divider} height={560} fill={R.nonet} opacity={0.17} />
+            <Hills />
             <path d={`M${B_CFG.divider} 60 V520`} stroke={C.ink4} strokeWidth={2.2} strokeDasharray="11 9" />
             <circle cx={B_CFG.divider} cy={60} r={4} fill={C.ink4} />
             <circle cx={B_CFG.divider} cy={520} r={4} fill={C.ink4} />
@@ -410,45 +432,35 @@ export const RadioStage: React.FC<{scene: RadioKey}> = ({scene}) => {
           </g>
         )}
 
-        <Road t={t} />
-
         {/* ── 云端 ── */}
         {scene === 'a' && <Cloud x={aCloud[0]} y={aCloud[1]} live={st.aUp} t={t} />}
         {scene === 'b' && <Cloud x={B_CFG.cloud[0]} y={B_CFG.cloud[1]} live={st.bUp} t={t} />}
         {scene === 'c' && st.cJoined && <Cloud x={520} y={104} live={1} t={t} />}
 
-        {/* ── 场景一：组队连线 + 云端扇出 ── */}
+        {/* ── 场景一：组队连线（车顶上方虚线链）+ 云端扇出 ── */}
         {scene === 'a' && (
           <g>
-            <path d={`M${xs[3]} 404 H${xs[0]}`} stroke={C.accent} strokeWidth={2} strokeDasharray="7 7"
+            <path d={`M${xs[3]} ${CHAIN_Y} H${xs[0]}`} stroke={C.accent} strokeWidth={2} strokeDasharray="7 7"
               strokeDashoffset={-frac(t * 0.6) * 14} opacity={0.55} />
-            {xs.map((x, i) => <circle key={i} cx={x} cy={404} r={4.5} fill={C.accent} opacity={0.75} />)}
-            {st.aPress && [0, 0.33, 0.66].map((d, i) => {
-              const k = frac(t * 0.75 + d);
-              return <ellipse key={i} cx={xs[aSpk]} cy={GEO.carY} rx={62 + 40 * k} ry={36 + 24 * k}
-                fill="none" stroke={R.hw} strokeWidth={2.4} opacity={0.6 * (1 - k)} />;
-            })}
-            <CloudLink p0={[xs[aSpk], aTop]} c={[600, 210]} p1={[aCloud[0] + 34, aCloud[1] + 22]} p={st.aUp} t={t} />
+            {xs.map((x, i) => <circle key={i} cx={x} cy={CHAIN_Y} r={4.5} fill={C.accent} opacity={0.75} />)}
+            {st.aPress && <CarPulse x={xs[aSpk]} t={t} />}
+            <CloudLink p0={[xs[aSpk], LINK_Y]} c={[600, 210]} p1={[aCloud[0] + 34, aCloud[1] + 22]} p={st.aUp} t={t} />
             {[0, 2, 3].map((i) => (
               <CloudLink key={i} p0={[aCloud[0] - 30, aCloud[1] + 24]}
-                c={[(aCloud[0] + xs[i]) / 2, 250]} p1={[xs[i], aTop]} p={st.aFan} t={t} />
+                c={[(aCloud[0] + xs[i]) / 2, 250]} p1={[xs[i], LINK_Y]} p={st.aFan} t={t} />
             ))}
-            {st.aFan > 0.1 && <LinkTag x={335} y={236} text="信号传输" op={Math.min(1, st.aFan * 3)} />}
+            {st.aFan > 0.1 && <LinkTag x={376} y={254} text="信号传输" op={Math.min(1, st.aFan * 3)} />}
           </g>
         )}
 
         {/* ── 场景二：硬件接力 → 桥接上云 ── */}
         {scene === 'b' && (
           <g>
-            {st.bTalk && [0, 0.33, 0.66].map((d, i) => {
-              const k = frac(t * 0.75 + d);
-              return <ellipse key={i} cx={890} cy={GEO.carY} rx={62 + 40 * k} ry={36 + 24 * k}
-                fill="none" stroke={R.hw} strokeWidth={2.4} opacity={0.6 * (1 - k)} />;
-            })}
+            {st.bTalk && <CarPulse x={890} t={t} />}
             <HwArc x1={890} x2={700} p={st.b12} t={t} />
-            <HwArc x1={700} x2={500} p={st.b23} t={t} />
+            <HwArc x1={700} x2={465} p={st.b23} t={t} />
             {st.b12 > 0.15 && (
-              <LinkTag x={795} y={322} text="对讲机硬件直连" col={R.hw} op={Math.min(1, st.b12 * 3)} />
+              <LinkTag x={795} y={340} text="对讲机硬件直连" col={R.hw} op={Math.min(1, st.b12 * 3)} />
             )}
             <CloudLink p0={b3} c={[390, 235]} p1={bCloudA} p={st.bUp} t={t} />
             <CloudLink p0={bCloudB} c={[250, 235]} p1={b4} p={st.bDown} t={t} />
@@ -456,16 +468,16 @@ export const RadioStage: React.FC<{scene: RadioKey}> = ({scene}) => {
               <LinkTag key={i} x={g.x} y={g.y} text="信号传输"
                 op={Math.min(1, (i === 0 ? st.bUp : st.bDown) * 3)} />
             ))}
-            {/* 桥接节点高亮 */}
+            {/* 桥接节点高亮（罩住整台侧视车：x 465±100，y 356~438） */}
             {st.bBridge && (
               <g>
                 {[0, 0.5].map((d, i) => {
                   const k = frac(t * 0.6 + d);
-                  return <rect key={i} x={500 - 62 - 12 * k} y={GEO.carY - 38 - 8 * k}
-                    width={124 + 24 * k} height={76 + 16 * k} rx={26} fill="none"
+                  return <rect key={i} x={365 - 12 * k} y={356 - 8 * k}
+                    width={200 + 24 * k} height={82 + 16 * k} rx={24} fill="none"
                     stroke={C.accent} strokeWidth={2.2} opacity={0.5 * (1 - k)} />;
                 })}
-                <rect x={438} y={GEO.carY - 38} width={124} height={76} rx={26} fill="none"
+                <rect x={365} y={356} width={200} height={82} rx={24} fill="none"
                   stroke={C.accent} strokeWidth={2.4} strokeDasharray="8 8" opacity={0.9} />
               </g>
             )}
@@ -474,7 +486,7 @@ export const RadioStage: React.FC<{scene: RadioKey}> = ({scene}) => {
               const k = win(t, bRecvT[i], bRecvT[i] + 1.3);
               if (k <= 0 || k >= 1) return null;
               return (
-                <ellipse key={i} cx={xs[i]} cy={GEO.carY} rx={60 + 46 * k} ry={34 + 28 * k} fill="none"
+                <ellipse key={i} cx={xs[i]} cy={GY - 30} rx={98 + 46 * k} ry={44 + 26 * k} fill="none"
                   stroke={i === 3 ? C.accent : R.hw} strokeWidth={3} opacity={0.85 * (1 - k)} />
               );
             })}
@@ -488,7 +500,7 @@ export const RadioStage: React.FC<{scene: RadioKey}> = ({scene}) => {
         {/* ── 场景三：递对讲机 ── */}
         {scene === 'c' && st.cHand > 0 && st.cHand < 1 && (
           <g>
-            <path d={qPath([640, GEO.carY - 6], [750, 230], [C_CFG.friend, GEO.carY - 6])} fill="none"
+            <path d={qPath([640, HAND_Y], [750, 230], [C_CFG.friend, HAND_Y])} fill="none"
               stroke={R.hw} strokeWidth={2} strokeDasharray="6 7" opacity={0.5} />
             <circle cx={cHandPt.x} cy={cHandPt.y} r={17} fill={R.hwWash} stroke={R.hw} strokeWidth={2} />
             <RadioIcon x={cHandPt.x} y={cHandPt.y + 2} k={1.05} />
@@ -496,14 +508,14 @@ export const RadioStage: React.FC<{scene: RadioKey}> = ({scene}) => {
         )}
         {scene === 'c' && st.cJoined && (
           <g>
-            <path d={`M${xs[2]} 404 H${C_CFG.friend}`} stroke={C.accent} strokeWidth={2} strokeDasharray="7 7"
+            <path d={`M${xs[2]} ${CHAIN_Y} H${C_CFG.friend}`} stroke={C.accent} strokeWidth={2} strokeDasharray="7 7"
               strokeDashoffset={-frac(t * 0.6) * 14} opacity={0.6} />
             {[xs[0], xs[1], xs[2], C_CFG.friend].map((x, i) => (
-              <circle key={i} cx={x} cy={404} r={4.5} fill={C.accent} opacity={0.8} />
+              <circle key={i} cx={x} cy={CHAIN_Y} r={4.5} fill={C.accent} opacity={0.8} />
             ))}
-            <CloudLink p0={[C_CFG.friend, GEO.carY - 28]} c={[720, 220]} p1={[556, 122]} p={1} t={t} />
-            <CloudLink p0={[486, 122]} c={[380, 240]} p1={[xs[2], GEO.carY - 28]} p={1} t={t} />
-            <LinkTag x={376} y={235} text="信号传输" />
+            <CloudLink p0={[C_CFG.friend, LINK_Y]} c={[720, 220]} p1={[556, 122]} p={1} t={t} />
+            <CloudLink p0={[486, 122]} c={[380, 240]} p1={[xs[2], LINK_Y]} p={1} t={t} />
+            <LinkTag x={376} y={240} text="信号传输" />
           </g>
         )}
 
@@ -513,8 +525,8 @@ export const RadioStage: React.FC<{scene: RadioKey}> = ({scene}) => {
             {/* 全队唯一的一台对讲机，从蔚来车主递给朋友的车 */}
             {st.dHand > 0 && st.dHand < 1 && (
               <g>
-                <path d={qPath([D_CFG.slot[0], GEO.carY - 6], [(D_CFG.slot[0] + D_CFG.slot[1]) / 2, 232],
-                  [D_CFG.slot[1], GEO.carY - 6])} fill="none" stroke={R.hw} strokeWidth={2}
+                <path d={qPath([D_CFG.slot[0], HAND_Y], [(D_CFG.slot[0] + D_CFG.slot[1]) / 2, 232],
+                  [D_CFG.slot[1], HAND_Y])} fill="none" stroke={R.hw} strokeWidth={2}
                   strokeDasharray="6 7" opacity={0.5} />
                 <circle cx={dHandPt.x} cy={dHandPt.y} r={17} fill={R.hwWash} stroke={R.hw} strokeWidth={2} />
                 <RadioIcon x={dHandPt.x} y={dHandPt.y + 2} k={1.05} />
@@ -524,9 +536,9 @@ export const RadioStage: React.FC<{scene: RadioKey}> = ({scene}) => {
             {/* 错误队形：队尾只有 App，弱网 → 链路断开 */}
             {ph === 1 && st.dLost && (
               <g>
-                <path d={qPath([xs[2], GEO.carY - 26], [(xs[2] + xs[3]) / 2, 250], [xs[3], GEO.carY - 26])}
+                <path d={qPath([xs[2], ARC_Y], [(xs[2] + xs[3]) / 2, 250], [xs[3], ARC_Y])}
                   fill="none" stroke={R.neg} strokeWidth={2.4} strokeDasharray="8 8" opacity={0.75} />
-                <g transform={`translate(${(xs[2] + xs[3]) / 2} 288)`}>
+                <g transform={`translate(${(xs[2] + xs[3]) / 2} 306)`}>
                   <circle r={14} fill={C.panel} stroke={R.neg} strokeWidth={2.2} />
                   <path d="M-6 -6 L6 6 M6 -6 L-6 6" stroke={R.neg} strokeWidth={2.6} strokeLinecap="round" />
                 </g>
@@ -544,8 +556,10 @@ export const RadioStage: React.FC<{scene: RadioKey}> = ({scene}) => {
           </g>
         )}
 
-        {/* ── 车 ── */}
-        {s.cars.map((c, i) => <Car key={i} x={xs[i]} y={ys[i]} kind={c.kind} />)}
+        {/* ── 车（远道先画、近道后画）── */}
+        {zOrder.map((i) => (
+          <Car key={i} x={xs[i]} y={ys[i]} k={ks[i]} kind={s.cars[i].kind} />
+        ))}
 
         {/* ── 贴车徽标 ── */}
         {s.cars.map((c, i) => {
@@ -599,14 +613,14 @@ export const RadioStage: React.FC<{scene: RadioKey}> = ({scene}) => {
           <g>
             {st.dGood && (
               <g opacity={Math.min(1, win(t, D_CFG.swap[1], D_CFG.swap[1] + 0.5))}>
-                <text x={xs[0]} y={456} textAnchor="middle" fontSize={13.5} fontWeight={700} fill={R.hw}>
+                <text x={xs[0]} y={472} textAnchor="middle" fontSize={13.5} fontWeight={700} fill={R.hw}>
                   队首 · 车机方向盘发话
                 </text>
-                <text x={xs[1]} y={456} textAnchor="middle" fontSize={13.5} fontWeight={700} fill={R.hw}>
+                <text x={xs[1]} y={472} textAnchor="middle" fontSize={13.5} fontWeight={700} fill={R.hw}>
                   队尾 · 手持对讲机
                 </text>
-                <path d={`M${xs[2] + 74} 444 v10 H${xs[3] - 74} v-10`} fill="none" stroke={C.accent} strokeWidth={2} />
-                <text x={(xs[2] + xs[3]) / 2} y={476} textAnchor="middle" fontSize={13.5} fontWeight={600} fill={C.accent}>
+                <path d={`M${xs[2] + 78} 458 v10 H${xs[3] - 78} v-10`} fill="none" stroke={C.accent} strokeWidth={2} />
+                <text x={(xs[2] + xs[3]) / 2} y={490} textAnchor="middle" fontSize={13.5} fontWeight={600} fill={C.accent}>
                   中间两台只有 App · 被头尾守在中间
                 </text>
               </g>
