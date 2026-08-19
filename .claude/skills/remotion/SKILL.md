@@ -92,6 +92,11 @@ python3 scripts/make-gif.py SceneA --out out/terrain-ch1.gif   # 默认 0.75 / e
      zip 文件名变乱码。
    - claude.ai Artifact 查看器的沙箱会拦截页面自身发起的下载，**GIF 下载入口
      的验收必须把 HTML 下载到本地打开来做**，在 Artifact 里点了没反应不是 bug。
+   - 带 GIF 的页面可能超过 Artifact 16MB 上限（实拍舞台的章节 GIF 单条 2–4MB，
+     长章节地形类可到 10MB+）。线上预览版可以不带 `--gif` 重打一份去发布——
+     反正沙箱里下载入口也不可用；**对话框附件版必须是带 GIF 的完整版**。
+     超长章节的内嵌 GIF 允许把 `--every` 提到 8（≈3.75fps）控体积，
+     分辨率保持 1440×810 不降。
 
 ## 交付形态：从网页演示到实拍宣传片
 
