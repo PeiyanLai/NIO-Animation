@@ -17,6 +17,7 @@
    | `dist/` | 成品：自包含 HTML + 分镜表（MP4 不入库，按需现导） |
 
 3. 跑 `bash .claude/skills/remotion/scripts/preflight.sh` 自检环境。
+4. **跑 `python3 .claude/skills/remotion/scripts/update.py` 检查仓库更新。**
 
 ## 分支与发版
 
