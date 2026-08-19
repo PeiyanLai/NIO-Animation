@@ -12,12 +12,14 @@
 | `bag-player.html` | 灵动宠物包 | 放置 · 锁定 · 栓扣活动范围 · 解锁取出 |
 | `pet-mode-player.html` | 宠物模式 | 座舱俯视示意 |
 
-## 视频与分镜
+## 分镜
 
 | 文件 | 说明 |
 |---|---|
-| `terrain-remotion.mp4` | 全地形 Remotion 成片，42.2s / 1080p30 |
 | `ramp-shotlist.md` / `bag-shotlist.md` | 实拍分镜表（`make-shotlist.mjs` 生成） |
+
+MP4 成片**不入库**（体积原因，2026-08-19 起）——需要时用
+`npx remotion render` 现导，产线见 SKILL.md「MP4 导出」节。
 
 **分镜表里的 `conceptualItems` 是开拍前必须归零的清单**——概念件可以画，但拍不出来。
 

@@ -5,6 +5,9 @@ description: 用 Remotion（React 帧驱动框架）以代码方式制作动画�
 
 # remotion · React 代码驱动动画
 
+> **动手前先过一遍 `references/hard-rules.md`**——本文件所有「（强制）」条款的
+> 一页索引卡。拆给 agent 的任务书必须整页附上它。
+
 > 来源：Remotion 官方推荐的 AI 编码规则（安装自 gist.github.com/ThariqS/3d446e7c7aa9eb94f468194deb73028f）。以下技术规则保持原文（英文）。
 
 ## 交付策略：默认 HTML，不默认出 MP4（成本约束）

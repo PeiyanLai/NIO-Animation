@@ -12,7 +12,7 @@
 | **`.claude/skills/remotion/`** | **★ skill 本体**：SKILL.md + 车辆资产库 + 工具脚本 + 参考文档 |
 | `animations/` | 动画工程（Remotion）。六个功能动画共用一个工程，`src/*-entry.tsx` 各是一个交付页入口 |
 | `photos/` | 素材原图 + `approved-asset-manifest.json`（授权/水印/营销文案审核记录） |
-| `dist/` | 交付产物：交互 HTML、MP4、分镜表 |
+| `dist/` | 交付产物：交互 HTML、分镜表（MP4 仅按需现导，不入库） |
 
 ⚠️ **skill 必须留在 `.claude/skills/remotion/`** —— Claude Code 按这个路径发现 skill，
 挪走就不生效了。所以「把 skill 相关的东西放一起」是**在这个目录里放齐**，
@@ -63,3 +63,6 @@ python3 .claude/skills/remotion/scripts/assert-assets-in-sync.py
 
 细则见 `.claude/skills/remotion/assets/vehicles/README.md`，
 每份素材的标定来历和踩过的坑写在各自文件头部——**改之前先读**。
+
+全部强制规则（布局四角禁区、配色、选材、断言、交付闭环）的一页清单：
+`.claude/skills/remotion/references/hard-rules.md`。
