@@ -87,8 +87,8 @@ export const PetStage: React.FC<{scene: PetKey}> = ({scene}) => {
   const ownerDx = -26 * (scene === 'd' ? win(t, 0.3, s.ph[0] + 0.4) : win(t, s.ph[0], s.ph[1]));
 
   const cardTint = purify ? C.ok : C.accent;
-  // 状态卡引导线终点：猫检测环右上缘（第 4 章猫离车后指向其原座位）
-  const lead = {x: 664, y: 428};
+  // 状态卡引导线终点：猫守护环右上缘（第 4 章猫离车后指向其原座位）
+  const lead = {x: 684, y: 430};
 
   return (
     <AbsoluteFill style={{background: C.stageBg, fontFamily: F_UI}}>
@@ -106,13 +106,14 @@ export const PetStage: React.FC<{scene: PetKey}> = ({scene}) => {
           <rect x={PET_FRAME.x} y={PET_FRAME.y} width={PET_FRAME.w} height={PET_FRAME.h} fill="#FFFFFF" opacity={0.1} />
         </g>
 
-        {/* 恒温气流（第 3 章宠物模式）：沿岛台中线自前向后 → 尾端出风口分两股扇向二排的猫 */}
+        {/* 恒温气流（第 3 章宠物模式）：沿岛台中线自前向后 → 尾端出风口分两股扇向二排的猫
+            （扇股终点收在猫左缘 578.6 之外，避免可见段被猫剪纸盖掉） */}
         {petMode && (
           <g opacity={0.9}>
             {[
-              ['M 496 142 C 496 210 496 270 495 326', 0],
-              [`M 486 334 C 500 392 540 432 585 466`, 0.33],
-              [`M 507 334 C 528 386 572 424 606 486`, 0.66],
+              ['M 495 96 C 496 180 496 260 495 326', 0],
+              ['M 486 334 C 498 388 532 428 566 452', 0.33],
+              ['M 507 334 C 522 392 552 448 574 498', 0.66],
             ].map(([d, off], i) => (
               <path key={i} d={d as string} fill="none" stroke={C.accent}
                 strokeWidth={3} strokeLinecap="round" strokeDasharray="10 14"
@@ -128,7 +129,7 @@ export const PetStage: React.FC<{scene: PetKey}> = ({scene}) => {
             {[
               ['M 298 96 C 300 200 302 320 318 470', 0],
               ['M 495 92 C 495 200 497 310 501 478', 0.4],
-              ['M 686 96 C 684 200 680 320 664 470', 0.8],
+              ['M 676 96 C 675 200 672 320 652 474', 0.8],
             ].map(([d, off], i) => (
               <path key={i} d={d as string} fill="none" stroke={C.ok}
                 strokeWidth={3} strokeLinecap="round" strokeDasharray="9 15"
@@ -154,6 +155,25 @@ export const PetStage: React.FC<{scene: PetKey}> = ({scene}) => {
           </g>
         )}
 
+        {/* 检测高亮环（第 2 章）：椭圆围住猫身。画在猫剪纸之下——
+            底弧被猫身遮住中段，读作「环绕到身后」，不横穿主体 */}
+        {scene === 'b' && ph >= 1 && (
+          <g transform={`translate(${catC.x} ${catC.y})`}>
+            {[0, 0.5].map((d, i) => {
+              const kk = frac(t * 0.7 + d);
+              return <ellipse key={i} rx={64 + 26 * kk} ry={80 + 26 * kk} fill="none"
+                stroke={C.accent} strokeWidth={2.6} opacity={0.8 * (1 - kk)} />;
+            })}
+            {detected && <ellipse rx={72} ry={88} fill="none" stroke={C.accent} strokeWidth={2.6} strokeDasharray="6 6" />}
+          </g>
+        )}
+
+        {/* 守护环（第 3 章宠物模式持续态）：同样画在猫之下 */}
+        {petMode && (
+          <ellipse cx={catC.x} cy={catC.y} rx={76 + 3 * Math.sin(t * 2)} ry={92 + 4 * Math.sin(t * 2)}
+            fill="none" stroke={C.accent} strokeWidth={2.6} strokeDasharray="7 9" opacity={0.8} />
+        )}
+
         {/* 猫：接地投影 + 正面坐姿照片剪纸，坐在二排长椅右侧座位坐垫上 */}
         {catOp > 0.01 && (
           <g opacity={catOp}>
@@ -167,24 +187,6 @@ export const PetStage: React.FC<{scene: PetKey}> = ({scene}) => {
 
         {/* 定位硬件徽标（胸口挂牌位） */}
         {tagOp > 0.01 && <ChestTag x={chest.x} y={chest.y} pulse={tagPulse} op={tagOp} />}
-
-        {/* 检测高亮环（第 2 章）：椭圆围住猫身（竖构图主体用椭圆更贴） */}
-        {scene === 'b' && ph >= 1 && (
-          <g transform={`translate(${catC.x} ${catC.y})`}>
-            {[0, 0.5].map((d, i) => {
-              const kk = frac(t * 0.7 + d);
-              return <ellipse key={i} rx={64 + 26 * kk} ry={80 + 26 * kk} fill="none"
-                stroke={C.accent} strokeWidth={2.6} opacity={0.8 * (1 - kk)} />;
-            })}
-            {detected && <ellipse rx={72} ry={88} fill="none" stroke={C.accent} strokeWidth={2.6} strokeDasharray="6 6" />}
-          </g>
-        )}
-
-        {/* 守护环（第 3 章宠物模式持续态） */}
-        {petMode && (
-          <ellipse cx={catC.x} cy={catC.y} rx={76 + 3 * Math.sin(t * 2)} ry={92 + 4 * Math.sin(t * 2)}
-            fill="none" stroke={C.accent} strokeWidth={2.6} strokeDasharray="7 9" opacity={0.8} />
-        )}
 
         {/* 车主离车（第 3/4 章）：左门区箭头向车外 + 文案（照片上小字带白描边） */}
         {ownerOp > 0.01 && (
@@ -243,8 +245,8 @@ export const PetStage: React.FC<{scene: PetKey}> = ({scene}) => {
         {(scene === 'b' || scene === 'c' || scene === 'd') && ph >= 2 && (
           <g opacity={Math.min(1, win(t, s.ph[2], s.ph[2] + 0.45) * 2)}
             transform={`translate(${G.card.x + G.card.w / 2} ${G.card.y + G.card.h / 2}) scale(${easeOutBack(win(t, s.ph[2], s.ph[2] + 0.45)).toFixed(3)}) translate(${-(G.card.x + G.card.w / 2)} ${-(G.card.y + G.card.h / 2)})`}>
-            {/* 引导线：卡片下缘 → 猫检测环缘（第 4 章猫离车后指向其原座位），端点圆点 */}
-            <path d={`M ${G.card.x + 28} ${G.card.y + G.card.h} C 788 300 724 384 ${lead.x} ${lead.y}`}
+            {/* 引导线：卡片下缘 → 猫守护环缘（第 4 章猫离车后指向其原座位），端点圆点 */}
+            <path d={`M ${G.card.x + 20} ${G.card.y + G.card.h} C 772 292 724 384 ${lead.x} ${lead.y}`}
               fill="none" stroke={cardTint} strokeWidth={2.2} strokeDasharray="5 6" opacity={0.85} />
             <circle cx={lead.x} cy={lead.y} r={3.5} fill={cardTint} />
             <rect x={G.card.x} y={G.card.y} width={G.card.w} height={G.card.h} rx={14}
@@ -253,11 +255,13 @@ export const PetStage: React.FC<{scene: PetKey}> = ({scene}) => {
             <circle cx={G.card.x + 23.8} cy={G.card.y + 28} r={2.4} fill={cardTint} />
             <circle cx={G.card.x + 32.2} cy={G.card.y + 28} r={2.4} fill={cardTint} />
             <text x={G.card.x + 50} y={G.card.y + 36} fontSize={16.5} fontWeight={700} fill={C.ink}>
-              {scene === 'b' ? '检测到宠物在车内' : purify ? '宠物除味处理中' : '宠物模式已开启'}
+              {scene === 'b' ? '检测到宠物在车内'
+                : purify ? (ph >= 4 ? '除味净化已完成' : '宠物除味处理中')
+                : '宠物模式已开启'}
             </text>
             <text x={G.card.x + 20} y={G.card.y + 62} fontSize={13} fill={C.ink2}>
               {scene === 'b' ? '定位硬件信号来自车内'
-                : purify ? '正在完成一轮空气净化'
+                : purify ? (ph >= 4 ? '车内空气恢复清新' : '正在完成一轮空气净化')
                 : `车内保持 ${temp.toFixed(1)}°C 稳定舒适`}
             </text>
             <text x={G.card.x + G.card.w - 10} y={G.card.y + 84} textAnchor="end" fontFamily={F_DATA}
