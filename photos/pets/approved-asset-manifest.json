@@ -53,6 +53,19 @@
       "reviewedAt": "2026-08-18",
       "visualFidelity": "photo-cutout",
       "usageNote": "坡道动画的犬（RampStage，剪纸式动效；senior 用 SVG 滤镜压饱和表现）。⚠️ 清灰后地线 y≈373 不再是图底——标定常量在 pets-photo.ts DOG_PHOTO，改图必须重测。"
+    },
+    {
+      "id": "cat-front-cut",
+      "path": "cat-front-cut.png",
+      "view": "sit-front-facing",
+      "source": "cat-sheet.jpg 第一格正面坐姿裁剪 (30,15)-(435,845),逐行背景建模软抠(边条中值抗渐晕)+强阈值实体轮廓+闭运算封缝+补洞+定向擦影,裁至 360×712",
+      "copyrightClearance": "user-supplied-internal-demo",
+      "watermarkChecked": true,
+      "marketingOverlayChecked": true,
+      "reviewedBy": "peiyanl@umich.edu",
+      "reviewedAt": "2026-08-19",
+      "visualFidelity": "photo-cutout",
+      "usageNote": "宠物模式动画的猫(俯前视座舱里坐二排,正面朝向贴合机位)。地线=图底。内联与标定在 animations/src/pets-photo.ts CAT_FRONT。灰底白毛是抠图陷阱:参考色阈值会把浅灰白胸毛当背景,必须逐行建模背景+实体轮廓兜底(过程见本条 source)。"
     }
   ]
 }
