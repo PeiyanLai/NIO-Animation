@@ -66,6 +66,19 @@
       "reviewedAt": "2026-08-19",
       "visualFidelity": "photo-cutout",
       "usageNote": "宠物模式动画的猫(俯前视座舱里坐二排,正面朝向贴合机位)。地线=图底。内联与标定在 animations/src/pets-photo.ts CAT_FRONT。灰底白毛是抠图陷阱:参考色阈值会把浅灰白胸毛当背景,必须逐行建模背景+实体轮廓兜底(过程见本条 source)。"
+    },
+    {
+      "id": "dog-topdown-lying",
+      "path": "dog-topdown-lying.jpg",
+      "view": "top-down-lying",
+      "source": "用户上传 PDF（c147519a,2026-08-19）第 1 页嵌入原图提取,1020×1542,金毛(幼/青年)瓷砖地面俯拍趴卧,头朝画面下方、四肢舒展",
+      "copyrightClearance": "user-supplied-internal-demo",
+      "watermarkChecked": true,
+      "marketingOverlayChecked": true,
+      "reviewedBy": "peiyanl@umich.edu",
+      "reviewedAt": "2026-08-19",
+      "visualFidelity": "photo",
+      "usageNote": "为「二排折叠趴垫」动画补的素材缺口:俯视舞台(es8-cabin-topdown)配俯视趴卧大型犬。⚠️ 尚未抠图、未标定。抠图预警:奶油浅毛 + 浅灰瓷砖底,是已知「灰底白毛陷阱」的高危样本(比 cat-front 更难:背景砖缝还有直线纹理),必须走逐行背景建模 + 强阈值实体轮廓路线,参考 cat-front-cut 的 source 记录。"
     }
   ]
 }
