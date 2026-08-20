@@ -226,6 +226,8 @@ SVG 层和 HTML 层都算；只有「视角标签」这类非信息装饰允许�
   其他执行器按步骤 4 的降级序列交付即可；Artifact 相关坑只在 Claude Code 环境生效
 - **平台差异**：Chromium headless 相关修法在 Linux 实测；macOS/Windows 未验证，
   首次跑先过 preflight；无外网环境 npm 装不了 → 按步骤 0 的分工模式处理
+- **接入新平台前**：按 `references/environment.md` 的问题清单与平台方对表，
+  按其降级表确定能力边界
 - **产物零依赖**：交付 HTML 全内联单文件，任何现代浏览器离线可开，与执行环境无关
 
 ## 资源索引
@@ -243,6 +245,7 @@ SVG 层和 HTML 层都算；只有「视角标签」这类非信息装饰允许�
 - `references/remotion-basics.md` — Remotion 官方基础规则（英文原文）。**不熟 Remotion 时**
 - `references/animation-routing.md` — 决策卡完整路由。**步骤 1**
 - `references/vehicle-assets.md` — 车辆资产硬约束与落位公式。**用车辆资产前**
+- `references/environment.md` — 完整环境需求/降级表/平台方问题清单。**接入新平台前**
 - `references/nio-colors.md` — NIO 配色 token 全表
 - `references/live-action-path.md` — 实拍宣传片三条路径。**用户问宣传片时**
 - `references/feishu-delivery.md` — 飞书文档流程（仅用户点名时）
