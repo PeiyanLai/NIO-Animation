@@ -68,7 +68,8 @@ print(f'渲 GIF：{a.comp}  scale={a.scale}  every={a.every}')
 r = subprocess.run(
     ['npx', 'remotion', 'render', a.comp, out, '--codec=gif',
      f'--scale={a.scale}', f'--every-nth-frame={a.every}', f'--concurrency={a.concurrency}',
-     '--browser-executable=/opt/pw-browsers/chromium', '--chrome-mode=chrome-for-testing',
+     f"--browser-executable={os.environ.get('REMOTION_BROWSER', '/opt/pw-browsers/chromium')}",
+     '--chrome-mode=chrome-for-testing',
      '--log=error'],
     cwd=proj)
 if r.returncode != 0:
