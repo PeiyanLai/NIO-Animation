@@ -12,7 +12,8 @@
    | 路径 | 角色 |
    |---|---|
    | `photos/` | 素材原片 + `approved-asset-manifest.json` 授权登记（新素材必登记） |
-   | `.claude/skills/remotion/` | 方法与产线：SKILL.md、脚本、车辆/宠物资产库 |
+   | `.claude/skills/remotion/` | 动画方法与产线：SKILL.md、脚本、车辆/宠物资产库 |
+   | `.claude/skills/req-clarify/` | 需求澄清引导器：粗需求 → 访谈 → 详版需求文档（喂给 remotion） |
    | `animations/` | Remotion 工程源码（`src/*-entry.tsx` 各是一个交付页入口） |
    | `dist/` | 成品：自包含 HTML + 分镜表（MP4 不入库，按需现导） |
 

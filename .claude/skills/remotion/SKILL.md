@@ -38,6 +38,10 @@ bash scripts/preflight.sh     # 查 node / remotion / chromium / ffmpeg / PIL
 
 ### 步骤 1：动画决策卡（先分类，再写代码）
 
+**需求太粗时先别做**：用户只有一两句话、讲不出章节和机构动作的，
+先走 `req-clarify` skill 做引导式澄清，拿到详版需求文档再回来——
+带着粗需求硬做的历史返工率是三轮起步。
+
 **最容易犯的错是把所有功能都套成「车在路上行驶」**。先把结论写成
 `animation-manifest.json` 并校验：
 
