@@ -421,7 +421,8 @@ const SideView: React.FC<{scene: BagKey; t: number; op: number; settle: number}>
                 fill="none" stroke={st === 'released' ? C.warn : C.ok} strokeWidth={2.4}
                 opacity={1 - btn.ripple} />
             )}
-            <text x={BUTTON.x} y={BUTTON.y + BUTTON.h + 22} textAnchor="middle" fontFamily={F_UI}
+            {/* 标签左移:按钮纠偏到盖板前缘后,原位会与锁舌标注/引导线打架 */}
+            <text x={BUTTON.x - 105} y={BUTTON.y + BUTTON.h + 26} textAnchor="middle" fontFamily={F_UI}
               fontSize={15} fill={C.ink2} stroke="#FFFFFF" strokeWidth={4} strokeOpacity={0.82}
               paintOrder="stroke">岛台储物开关 · 固定/解锁共用</text>
           </g>
